@@ -1,17 +1,9 @@
-import { View, Text, Pressable, ActivityIndicator, Platform } from "react-native";
+import { View, Text, Pressable, ActivityIndicator } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useEffect } from "react";
 import { useMomentStore } from "../src/stores/momentStore";
-
-// Conditionally import MapView and Marker only on native
-let MapView: any = null;
-let Marker: any = null;
-if (Platform.OS !== "web") {
-  const Maps = require("react-native-maps");
-  MapView = Maps.default;
-  Marker = Maps.Marker;
-}
+import { MapComponent } from "../src/components/MapComponent";
 
 export default function MomentLiveScreen() {
   const router = useRouter();
@@ -99,72 +91,42 @@ export default function MomentLiveScreen() {
 
         {/* Map showing moment location */}
         <View className="mt-8 rounded-2xl h-52 overflow-hidden">
-          {Platform.OS !== "web" && MapView ? (
-            <MapView
-              style={{ flex: 1 }}
-              initialRegion={{
-                latitude: moment.location.lat,
-                longitude: moment.location.lng,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
-              }}
-              scrollEnabled={false}
-              zoomEnabled={false}
-              pitchEnabled={false}
-              rotateEnabled={false}
-            >
-              {Marker && (
-                <Marker
-                  coordinate={{
-                    latitude: moment.location.lat,
-                    longitude: moment.location.lng,
-                  }}
-                >
-                  {/* Pulse marker */}
-                  <View style={{ alignItems: "center", justifyContent: "center" }}>
-                    <View
-                      style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: 16,
-                        backgroundColor: "rgba(249, 115, 22, 0.25)",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <View
-                        style={{
-                          width: 16,
-                          height: 16,
-                          borderRadius: 8,
-                          backgroundColor: "#F97316",
-                        }}
-                      />
-                    </View>
+          <MapComponent
+            region={{
+              latitude: moment.location.lat,
+              longitude: moment.location.lng,
+              latitudeDelta: 0.01,
+              longitudeDelta: 0.01,
+            }}
+            markers={[{
+              id: moment.id,
+              latitude: moment.location.lat,
+              longitude: moment.location.lng,
+            }]}
+            scrollEnabled={false}
+            zoomEnabled={false}
+            style={{ flex: 1 }}
+            fallback={
+              <View className="flex-1 bg-[#F3F4F6] items-center justify-center">
+                <View className="w-12 h-12 items-center justify-center">
+                  <View className="w-8 h-10 bg-[#4B5563] rounded-full rounded-b-none items-center pt-1.5">
+                    <View className="w-3 h-3 bg-[#F3F4F6] rounded-full" />
                   </View>
-                </Marker>
-              )}
-            </MapView>
-          ) : (
-            <View className="flex-1 bg-[#F3F4F6] items-center justify-center">
-              <View className="w-12 h-12 items-center justify-center">
-                <View className="w-8 h-10 bg-[#4B5563] rounded-full rounded-b-none items-center pt-1.5">
-                  <View className="w-3 h-3 bg-[#F3F4F6] rounded-full" />
+                  <View
+                    style={{
+                      borderLeftWidth: 8,
+                      borderRightWidth: 8,
+                      borderTopWidth: 10,
+                      borderLeftColor: "transparent",
+                      borderRightColor: "transparent",
+                      borderTopColor: "#4B5563",
+                      marginTop: -1,
+                    }}
+                  />
                 </View>
-                <View
-                  style={{
-                    borderLeftWidth: 8,
-                    borderRightWidth: 8,
-                    borderTopWidth: 10,
-                    borderLeftColor: "transparent",
-                    borderRightColor: "transparent",
-                    borderTopColor: "#4B5563",
-                    marginTop: -1,
-                  }}
-                />
               </View>
-            </View>
-          )}
+            }
+          />
         </View>
 
         {/* Place name */}

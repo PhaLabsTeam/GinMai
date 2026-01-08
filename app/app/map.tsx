@@ -1,26 +1,10 @@
-import { View, Text, Pressable, ScrollView, Platform, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, ScrollView, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useEffect, useState, useCallback } from "react";
 import * as Location from "expo-location";
 import { useMomentStore } from "../src/stores/momentStore";
-
-// Conditionally import MapView and Marker only on native
-// Wrapped in try-catch due to TurboModule issues with new architecture
-let MapView: any = null;
-let Marker: any = null;
-let mapsAvailable = false;
-if (Platform.OS !== "web") {
-  try {
-    const Maps = require("react-native-maps");
-    MapView = Maps.default;
-    Marker = Maps.Marker;
-    mapsAvailable = true;
-  } catch (e) {
-    console.log("react-native-maps not available:", e);
-    mapsAvailable = false;
-  }
-}
+import { MapComponent, mapsAvailable } from "../src/components/MapComponent";
 
 // Default to Chiang Mai center
 const CHIANG_MAI = {
@@ -102,68 +86,34 @@ export default function MapScreen() {
 
   return (
     <View className="flex-1 bg-[#FAFAF9]">
-      {/* Full-screen Map (native only, when maps are available) */}
-      {mapsAvailable && MapView ? (
-        <MapView
-          style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
-          initialRegion={CHIANG_MAI}
-          region={region}
-          onMapReady={() => setMapReady(true)}
-          showsUserLocation
-          showsMyLocationButton={false}
-          mapType="standard"
-        >
-          {/* Render moment markers */}
-          {Marker && moments.map((moment) => (
-            <Marker
-              key={moment.id}
-              coordinate={{
-                latitude: moment.location.lat,
-                longitude: moment.location.lng,
-              }}
-              onPress={() => router.push(`/moment-detail?momentId=${moment.id}`)}
-            >
-              {/* Pulse marker */}
-              <View style={{ alignItems: "center", justifyContent: "center" }}>
-                <View
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 16,
-                    backgroundColor: "rgba(249, 115, 22, 0.25)",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <View
-                    style={{
-                      width: 16,
-                      height: 16,
-                      borderRadius: 8,
-                      backgroundColor: "#F97316",
-                    }}
-                  />
-                </View>
-              </View>
-            </Marker>
-          ))}
-        </MapView>
-      ) : (
-        /* Fallback when maps aren't available */
-        <View className="absolute top-0 left-0 right-0 bottom-0 bg-[#F3F4F6]">
-          <View className="flex-1 items-center justify-center px-8">
-            <Text className="text-[#6B7280] text-lg text-center">Chiang Mai</Text>
-            <Text className="text-[#9CA3AF] text-sm text-center mt-2">
-              Map view unavailable
-            </Text>
-            {moments.length > 0 && (
-              <Text className="text-[#1C1917] text-base font-medium mt-4">
-                {moments.length} meal{moments.length !== 1 ? "s" : ""} happening nearby
+      {/* Full-screen Map */}
+      <MapComponent
+        region={region}
+        markers={moments.map((moment) => ({
+          id: moment.id,
+          latitude: moment.location.lat,
+          longitude: moment.location.lng,
+          onPress: () => router.push(`/moment-detail?momentId=${moment.id}`),
+        }))}
+        onMapReady={() => setMapReady(true)}
+        showsUserLocation
+        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+        fallback={
+          <View className="absolute top-0 left-0 right-0 bottom-0 bg-[#F3F4F6]">
+            <View className="flex-1 items-center justify-center px-8">
+              <Text className="text-[#6B7280] text-lg text-center">Chiang Mai</Text>
+              <Text className="text-[#9CA3AF] text-sm text-center mt-2">
+                Map view unavailable
               </Text>
-            )}
+              {moments.length > 0 && (
+                <Text className="text-[#1C1917] text-base font-medium mt-4">
+                  {moments.length} meal{moments.length !== 1 ? "s" : ""} happening nearby
+                </Text>
+              )}
+            </View>
           </View>
-        </View>
-      )}
+        }
+      />
 
       {/* Overlay Content */}
       <SafeAreaView className="flex-1">
