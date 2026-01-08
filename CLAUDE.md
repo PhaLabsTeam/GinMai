@@ -205,6 +205,28 @@ supabase gen types typescript --local > ../app/src/types/database.ts
 
 ---
 
+## Git Workflow
+
+### Rules
+- ALWAYS create a feature branch before starting major changes
+- NEVER commit directly to `main`
+- Branch naming: `feature/description` or `fix/description`
+
+### Workflow for Major Changes
+1. Create a new branch: `git checkout -b feature/your-feature-name`
+2. Develop and commit on the feature branch
+3. Test locally before pushing
+4. Push the branch: `git push -u origin feature/your-feature-name`
+5. Only merge to main when fully tested
+
+### Commit Messages
+- `feat: description` — new feature
+- `fix: description` — bug fix
+- `refactor: description` — code cleanup
+- `docs: description` — documentation
+
+---
+
 ## Files to Read
 
 For full context, see:
