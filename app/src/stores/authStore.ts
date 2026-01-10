@@ -97,6 +97,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   // Send OTP to phone number
   sendOtp: async (phone: string) => {
+    console.log("[AUTH] sendOtp called with phone:", phone);
+    console.log("[AUTH] DEV_MODE:", DEV_MODE);
+    console.log("[AUTH] isSupabaseConfigured:", isSupabaseConfigured());
+
     // DEV MODE: Skip actual SMS sending
     if (DEV_MODE) {
       console.log(`[DEV MODE] OTP would be sent to ${phone}. Use code: ${DEV_OTP_CODE}`);
@@ -112,6 +116,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ loading: true, error: null });
 
     try {
+      console.log("[AUTH] Calling Supabase signInWithOtp...");
       const { error } = await db.auth.signInWithOtp({
         phone,
         options: {
@@ -119,13 +124,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("[AUTH] signInWithOtp error:", error);
+        throw error;
+      }
 
+      console.log("[AUTH] OTP sent successfully");
       set({ loading: false });
       return { success: true };
     } catch (error) {
       const authError = error as AuthError;
-      console.error("OTP send error:", authError);
+      console.error("[AUTH] OTP send error:", authError);
       set({ loading: false, error: authError.message });
       return { success: false, error: authError.message };
     }
@@ -133,6 +142,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   // Verify OTP and create/update user profile
   verifyOtp: async (phone: string, code: string, firstName: string) => {
+    console.log("[AUTH] verifyOtp called:");
+    console.log("[AUTH]   phone:", phone);
+    console.log("[AUTH]   code:", code);
+    console.log("[AUTH]   firstName:", firstName);
+    console.log("[AUTH]   DEV_MODE:", DEV_MODE);
+
     // DEV MODE: Accept any 6-digit code and create user in database
     if (DEV_MODE) {
       console.log(`[DEV MODE] Verifying code: ${code} for ${phone}`);
@@ -200,30 +215,52 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     try {
       // Verify the OTP
+      console.log("[AUTH] Calling Supabase verifyOtp...");
       const { data: authData, error: verifyError } = await db.auth.verifyOtp({
         phone,
         token: code,
         type: "sms",
       });
 
-      if (verifyError) throw verifyError;
+      if (verifyError) {
+        console.error("[AUTH] verifyOtp error:", verifyError);
+        throw verifyError;
+      }
+
+      console.log("[AUTH] OTP verified successfully");
+      console.log("[AUTH] authData.user:", authData.user?.id);
+      console.log("[AUTH] authData.session:", authData.session ? "exists" : "null");
 
       if (!authData.user) {
         throw new Error("No user returned after verification");
       }
 
-      // Check if user profile exists
-      const { data: existingUser, error: fetchError } = await db
+      // Try to create user profile first (upsert pattern to avoid RLS issues)
+      // This handles the case where user doesn't exist yet and SELECT fails due to RLS
+      console.log("[AUTH] Creating/updating user profile with upsert...");
+
+      const { data: upsertedUser, error: upsertError } = await db
         .from("users")
-        .select("*")
-        .eq("id", authData.user.id)
+        .upsert({
+          id: authData.user.id,
+          phone,
+          first_name: firstName,
+          phone_verified: true,
+          verified_at: new Date().toISOString(),
+        }, {
+          onConflict: "id",
+          ignoreDuplicates: false, // Update if exists
+        })
+        .select()
         .single();
 
       let userData: User;
 
-      if (fetchError?.code === "PGRST116" || !existingUser) {
-        // User doesn't exist, create profile
-        const { data: newUser, error: insertError } = await db
+      if (upsertError) {
+        console.error("[AUTH] Upsert error:", upsertError);
+        // If upsert fails, try a simple insert (in case upsert isn't supported)
+        console.log("[AUTH] Trying direct insert...");
+        const { data: insertedUser, error: insertError } = await db
           .from("users")
           .insert({
             id: authData.user.id,
@@ -235,26 +272,31 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           .select()
           .single();
 
-        if (insertError) throw insertError;
-        userData = newUser as User;
-      } else if (fetchError) {
-        throw fetchError;
-      } else {
-        // User exists, update first_name if needed
-        if ((existingUser as User).first_name !== firstName) {
-          const { data: updatedUser, error: updateError } = await db
+        if (insertError) {
+          // If insert also fails, it might be a duplicate - try to fetch
+          console.log("[AUTH] Insert failed, trying to fetch existing user...");
+          const { data: existingUser, error: fetchError } = await db
             .from("users")
-            .update({ first_name: firstName })
+            .select("*")
             .eq("id", authData.user.id)
-            .select()
             .single();
 
-          if (updateError) throw updateError;
-          userData = updatedUser as User;
-        } else {
+          if (fetchError || !existingUser) {
+            console.error("[AUTH] Could not create or fetch user:", insertError);
+            throw insertError;
+          }
           userData = existingUser as User;
+        } else {
+          console.log("[AUTH] User profile created via insert:", insertedUser);
+          userData = insertedUser as User;
         }
+      } else {
+        console.log("[AUTH] User profile upserted:", upsertedUser);
+        userData = upsertedUser as User;
       }
+
+      console.log("[AUTH] Final user data:", userData);
+      console.log("[AUTH] Setting auth state and returning success");
 
       set({
         session: authData.session,
@@ -265,7 +307,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return { success: true };
     } catch (error) {
       const authError = error as AuthError;
-      console.error("OTP verification error:", authError);
+      console.error("[AUTH] OTP verification error:", authError);
       set({ loading: false, error: authError.message });
       return { success: false, error: authError.message };
     }

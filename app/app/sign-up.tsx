@@ -95,6 +95,8 @@ export default function SignUpScreen() {
   };
 
   const handleOtpChange = (value: string, index: number) => {
+    console.log("[SIGNUP] OTP change - index:", index, "value:", value);
+
     if (value.length > 1) {
       value = value[value.length - 1];
     }
@@ -111,7 +113,9 @@ export default function SignUpScreen() {
     // Auto-submit when complete (6 digits)
     if (index === 5 && value) {
       const fullOtp = newOtp.join("");
+      console.log("[SIGNUP] All 6 digits entered, fullOtp:", fullOtp);
       if (fullOtp.length === 6) {
+        console.log("[SIGNUP] Auto-submitting OTP...");
         handleVerifyOtp(fullOtp);
       }
     }
@@ -124,17 +128,28 @@ export default function SignUpScreen() {
   };
 
   const handleVerifyOtp = async (code: string) => {
-    if (loading) return;
+    console.log("[SIGNUP] handleVerifyOtp called with code:", code);
+    console.log("[SIGNUP] formattedPhone:", formattedPhone);
+    console.log("[SIGNUP] firstName:", firstName.trim());
+
+    if (loading) {
+      console.log("[SIGNUP] Already loading, returning");
+      return;
+    }
 
     Keyboard.dismiss();
 
+    console.log("[SIGNUP] Calling verifyOtp...");
     const result = await verifyOtp(formattedPhone, code, firstName.trim());
+    console.log("[SIGNUP] verifyOtp result:", result);
 
     if (result.success) {
+      console.log("[SIGNUP] Success! Navigating to map...");
       // Navigate to the return destination or map
       const destination = params.returnTo || "/map";
       router.replace(destination as any);
     } else {
+      console.log("[SIGNUP] Failed:", result.error);
       Alert.alert(
         "Invalid code",
         result.error || "Please check the code and try again.",
