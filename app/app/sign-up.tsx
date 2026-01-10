@@ -1,8 +1,22 @@
-import { View, Text, Pressable, TextInput, Keyboard, Alert, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, TextInput, Keyboard, Alert, ActivityIndicator, Modal, FlatList } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useRef, useEffect } from "react";
 import { useAuthStore } from "../src/stores/authStore";
+
+// Country codes for the picker
+const COUNTRY_CODES = [
+  { code: "+66", country: "Thailand", flag: "🇹🇭" },
+  { code: "+1", country: "USA/Canada", flag: "🇺🇸" },
+  { code: "+44", country: "UK", flag: "🇬🇧" },
+  { code: "+61", country: "Australia", flag: "🇦🇺" },
+  { code: "+65", country: "Singapore", flag: "🇸🇬" },
+  { code: "+81", country: "Japan", flag: "🇯🇵" },
+  { code: "+82", country: "South Korea", flag: "🇰🇷" },
+  { code: "+49", country: "Germany", flag: "🇩🇪" },
+  { code: "+33", country: "France", flag: "🇫🇷" },
+  { code: "+31", country: "Netherlands", flag: "🇳🇱" },
+];
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -18,6 +32,8 @@ export default function SignUpScreen() {
   const [firstName, setFirstName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [formattedPhone, setFormattedPhone] = useState("");
+  const [countryCode, setCountryCode] = useState(COUNTRY_CODES[0]); // Default to Thailand
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
 
   // Step 2: OTP (6 digits for Supabase)
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
@@ -42,20 +58,15 @@ export default function SignUpScreen() {
   // Format phone number for Supabase (E.164 format)
   const formatPhoneNumber = (phone: string): string => {
     // Remove all non-digits
-    const digits = phone.replace(/\D/g, "");
+    let digits = phone.replace(/\D/g, "");
 
-    // If starts with 0 (Thai local), replace with +66
+    // If starts with 0 (local format), remove the leading 0
     if (digits.startsWith("0")) {
-      return "+66" + digits.substring(1);
+      digits = digits.substring(1);
     }
 
-    // If already has country code (starts with 66), add +
-    if (digits.startsWith("66")) {
-      return "+" + digits;
-    }
-
-    // Otherwise assume it needs +66
-    return "+66" + digits;
+    // Combine country code with phone number
+    return countryCode.code + digits;
   };
 
   const isStep1Valid = firstName.trim().length > 0 && phoneNumber.trim().length >= 9;
@@ -200,15 +211,28 @@ export default function SignUpScreen() {
                 className="border border-[#E5E7EB] rounded-xl px-4 py-4 text-[16px] text-[#1C1917] bg-white"
               />
 
-              {/* Phone number input */}
-              <TextInput
-                value={phoneNumber}
-                onChangeText={setPhoneNumber}
-                placeholder="Phone number"
-                placeholderTextColor="#9CA3AF"
-                keyboardType="phone-pad"
-                className="border border-[#E5E7EB] rounded-xl px-4 py-4 text-[16px] text-[#1C1917] bg-white mt-4"
-              />
+              {/* Phone number input with country code */}
+              <View className="flex-row mt-4">
+                {/* Country code picker button */}
+                <Pressable
+                  onPress={() => setShowCountryPicker(true)}
+                  className="border border-[#E5E7EB] rounded-xl px-3 py-4 bg-white flex-row items-center mr-2"
+                >
+                  <Text className="text-[18px]">{countryCode.flag}</Text>
+                  <Text className="text-[16px] text-[#1C1917] ml-1">{countryCode.code}</Text>
+                  <Text className="text-[12px] text-[#9CA3AF] ml-1">▼</Text>
+                </Pressable>
+
+                {/* Phone number input */}
+                <TextInput
+                  value={phoneNumber}
+                  onChangeText={setPhoneNumber}
+                  placeholder="Phone number"
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="phone-pad"
+                  className="flex-1 border border-[#E5E7EB] rounded-xl px-4 py-4 text-[16px] text-[#1C1917] bg-white"
+                />
+              </View>
 
               {/* Helper text */}
               <Text className="text-center text-[14px] text-[#9CA3AF] mt-3">
@@ -340,6 +364,57 @@ export default function SignUpScreen() {
           )}
         </Pressable>
       </View>
+
+      {/* Country Code Picker Modal */}
+      <Modal
+        visible={showCountryPicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCountryPicker(false)}
+      >
+        <Pressable
+          className="flex-1 bg-black/50 justify-end"
+          onPress={() => setShowCountryPicker(false)}
+        >
+          <View className="bg-white rounded-t-3xl max-h-[60%]">
+            <View className="p-4 border-b border-[#E5E7EB]">
+              <Text className="text-center text-[18px] font-semibold text-[#1C1917]">
+                Select Country
+              </Text>
+            </View>
+            <FlatList
+              data={COUNTRY_CODES}
+              keyExtractor={(item) => item.code}
+              renderItem={({ item }) => (
+                <Pressable
+                  onPress={() => {
+                    setCountryCode(item);
+                    setShowCountryPicker(false);
+                  }}
+                  className={`flex-row items-center px-5 py-4 border-b border-[#F3F4F6] ${
+                    countryCode.code === item.code ? "bg-[#F9FAFB]" : ""
+                  }`}
+                >
+                  <Text className="text-[24px] mr-3">{item.flag}</Text>
+                  <Text className="text-[16px] text-[#1C1917] flex-1">{item.country}</Text>
+                  <Text className="text-[16px] text-[#6B7280]">{item.code}</Text>
+                  {countryCode.code === item.code && (
+                    <Text className="text-[#22C55E] ml-2">✓</Text>
+                  )}
+                </Pressable>
+              )}
+            />
+            <View className="p-4 pb-8">
+              <Pressable
+                onPress={() => setShowCountryPicker(false)}
+                className="bg-[#F3F4F6] py-3 rounded-xl items-center"
+              >
+                <Text className="text-[16px] text-[#6B7280]">Cancel</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
