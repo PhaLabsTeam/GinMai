@@ -1,4 +1,4 @@
-import { View, Text, Pressable, ScrollView, Switch, Alert, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, ScrollView, Switch, Alert, ActivityIndicator, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
@@ -38,22 +38,31 @@ export default function SettingsScreen() {
     return date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
   };
 
-  const handleLogout = () => {
-    Alert.alert(
-      "Log out",
-      "Are you sure you want to log out?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Log out",
-          style: "destructive",
-          onPress: async () => {
-            await signOut();
-            router.replace("/");
+  const handleLogout = async () => {
+    // Use window.confirm for web, Alert.alert for native
+    if (Platform.OS === "web") {
+      const confirmed = window.confirm("Are you sure you want to log out?");
+      if (confirmed) {
+        await signOut();
+        router.replace("/");
+      }
+    } else {
+      Alert.alert(
+        "Log out",
+        "Are you sure you want to log out?",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Log out",
+            style: "destructive",
+            onPress: async () => {
+              await signOut();
+              router.replace("/");
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   const SettingRow = ({
