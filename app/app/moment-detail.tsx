@@ -1,7 +1,7 @@
 import { View, Text, Pressable, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMomentStore } from "../src/stores/momentStore";
 import { useAuthStore } from "../src/stores/authStore";
 
@@ -10,10 +10,20 @@ export default function MomentDetailScreen() {
   const params = useLocalSearchParams<{ momentId: string }>();
   const moments = useMomentStore((state) => state.moments);
   const joinMoment = useMomentStore((state) => state.joinMoment);
+  const hasJoinedMoment = useMomentStore((state) => state.hasJoinedMoment);
+  const fetchUserConnections = useMomentStore((state) => state.fetchUserConnections);
   const user = useAuthStore((state) => state.user);
   const [joining, setJoining] = useState(false);
 
   const moment = moments.find((m) => m.id === params.momentId);
+  const hasJoined = params.momentId ? hasJoinedMoment(params.momentId) : false;
+
+  // Fetch user's connections when user is available
+  useEffect(() => {
+    if (user?.id) {
+      fetchUserConnections(user.id);
+    }
+  }, [user?.id, fetchUserConnections]);
 
   if (!moment) {
     return (
@@ -49,6 +59,12 @@ export default function MomentDetailScreen() {
     // Check if user is logged in
     if (!user) {
       router.push(`/sign-up?returnTo=/moment-detail?momentId=${moment.id}`);
+      return;
+    }
+
+    // If already joined, go directly to confirmation
+    if (hasJoined) {
+      router.push(`/confirmation?momentId=${moment.id}`);
       return;
     }
 
@@ -169,6 +185,13 @@ export default function MomentDetailScreen() {
           <View className="bg-[#E5E7EB] py-4 rounded-2xl items-center">
             <Text className="text-[#9CA3AF] text-[17px] font-medium">Your moment</Text>
           </View>
+        ) : hasJoined ? (
+          <Pressable
+            onPress={handleJoin}
+            className="bg-[#22C55E] py-4 rounded-2xl items-center active:opacity-80"
+          >
+            <Text className="text-white text-[17px] font-medium">You're in →</Text>
+          </Pressable>
         ) : isFull ? (
           <View className="bg-[#E5E7EB] py-4 rounded-2xl items-center">
             <Text className="text-[#9CA3AF] text-[17px] font-medium">Full</Text>
@@ -188,13 +211,15 @@ export default function MomentDetailScreen() {
         )}
       </View>
 
-      {/* Floating action button - hide if host or full */}
-      {!isHost && !isFull && (
+      {/* Floating action button - hide if host or full (but show if already joined) */}
+      {!isHost && (!isFull || hasJoined) && (
         <View className="absolute bottom-24 right-6">
           <Pressable
             onPress={handleJoin}
             disabled={joining}
-            className={`w-14 h-14 bg-[#1F2937] rounded-full items-center justify-center shadow-lg ${joining ? "opacity-60" : "active:opacity-80"}`}
+            className={`w-14 h-14 rounded-full items-center justify-center shadow-lg ${
+              hasJoined ? "bg-[#22C55E]" : "bg-[#1F2937]"
+            } ${joining ? "opacity-60" : "active:opacity-80"}`}
           >
             {joining ? (
               <ActivityIndicator size="small" color="#FFFFFF" />

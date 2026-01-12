@@ -54,8 +54,16 @@ const localMomentToDbInsert = (local: Omit<MomentLocal, "id" | "created_at">): M
   status: local.status,
 });
 
+// User's connection to a moment
+interface UserConnection {
+  momentId: string;
+  status: "confirmed" | "cancelled" | "no_show" | "completed";
+  joinedAt: string;
+}
+
 interface MomentState {
   moments: MomentLocal[];
+  userConnections: UserConnection[];
   loading: boolean;
   error: string | null;
   subscription: RealtimeChannel | null;
@@ -66,6 +74,11 @@ interface MomentState {
   updateMoment: (id: string, updates: Partial<MomentLocal>) => void;
   removeMoment: (id: string) => void;
   clearMoments: () => void;
+
+  // User connections
+  fetchUserConnections: (userId: string) => Promise<void>;
+  hasJoinedMoment: (momentId: string) => boolean;
+  clearUserConnections: () => void;
 
   // Supabase operations
   fetchNearbyMoments: (lat: number, lng: number, radiusKm?: number) => Promise<void>;
@@ -78,6 +91,7 @@ interface MomentState {
 
 export const useMomentStore = create<MomentState>((set, get) => ({
   moments: [],
+  userConnections: [],
   loading: false,
   error: null,
   subscription: null,
@@ -95,6 +109,42 @@ export const useMomentStore = create<MomentState>((set, get) => ({
   removeMoment: (id) =>
     set((state) => ({ moments: state.moments.filter((m) => m.id !== id) })),
   clearMoments: () => set({ moments: [] }),
+
+  // User connections
+  fetchUserConnections: async (userId: string) => {
+    if (DEV_MODE || !isSupabaseConfigured()) {
+      console.log("[DEV MODE] Skipping user connections fetch");
+      return;
+    }
+
+    try {
+      const { data, error } = await db
+        .from("connections")
+        .select("moment_id, status, joined_at")
+        .eq("user_id", userId)
+        .in("status", ["confirmed", "completed"]); // Only active connections
+
+      if (error) throw error;
+
+      const connections: UserConnection[] = (data || []).map((c: any) => ({
+        momentId: c.moment_id,
+        status: c.status,
+        joinedAt: c.joined_at,
+      }));
+
+      set({ userConnections: connections });
+    } catch (err) {
+      console.error("Error fetching user connections:", err);
+    }
+  },
+
+  hasJoinedMoment: (momentId: string) => {
+    return get().userConnections.some(
+      (c) => c.momentId === momentId && (c.status === "confirmed" || c.status === "completed")
+    );
+  },
+
+  clearUserConnections: () => set({ userConnections: [] }),
 
   // Fetch nearby moments from Supabase
   fetchNearbyMoments: async (lat: number, lng: number, radiusKm = 5) => {
@@ -199,6 +249,13 @@ export const useMomentStore = create<MomentState>((set, get) => ({
           seats_taken: newSeatsTaken,
           status: newStatus as "active" | "full" | "completed" | "cancelled"
         });
+        // Add to user connections in dev mode
+        set((state) => ({
+          userConnections: [
+            ...state.userConnections,
+            { momentId, status: "confirmed", joinedAt: new Date().toISOString() }
+          ]
+        }));
       }
       return { success: true };
     }
@@ -255,7 +312,15 @@ export const useMomentStore = create<MomentState>((set, get) => ({
         status: newStatus as "active" | "full" | "completed" | "cancelled"
       });
 
-      set({ loading: false });
+      // Add to user connections
+      set((state) => ({
+        userConnections: [
+          ...state.userConnections,
+          { momentId, status: "confirmed", joinedAt: new Date().toISOString() }
+        ],
+        loading: false
+      }));
+
       return { success: true };
     } catch (err) {
       console.error("Error joining moment:", err);
@@ -275,6 +340,10 @@ export const useMomentStore = create<MomentState>((set, get) => ({
           seats_taken: moment.seats_taken - 1,
           status: "active"
         });
+        // Remove from user connections in dev mode
+        set((state) => ({
+          userConnections: state.userConnections.filter((c) => c.momentId !== momentId)
+        }));
       }
       return { success: true };
     }
@@ -316,7 +385,12 @@ export const useMomentStore = create<MomentState>((set, get) => ({
         });
       }
 
-      set({ loading: false });
+      // Remove from user connections
+      set((state) => ({
+        userConnections: state.userConnections.filter((c) => c.momentId !== momentId),
+        loading: false
+      }));
+
       return { success: true };
     } catch (err) {
       console.error("Error leaving moment:", err);

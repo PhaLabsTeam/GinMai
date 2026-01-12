@@ -174,42 +174,54 @@ export default function MapScreen() {
               <Text className="text-center text-[15px] text-[#78716C] py-4">
                 Eating soon?
               </Text>
-              {moments.map((moment) => (
-                <Pressable
-                  key={moment.id}
-                  onPress={() => router.push(`/moment-detail?momentId=${moment.id}`)}
-                  className="flex-row items-center px-4 py-3 border border-[#E5E7EB] rounded-xl mx-4 mb-3 bg-white active:bg-[#F9FAFB]"
-                >
-                  {/* Food emoji placeholder */}
-                  <Text className="text-2xl mr-3">🍜</Text>
+              {moments.map((moment) => {
+                const seatsOpen = moment.seats_total - moment.seats_taken;
+                const isFull = seatsOpen <= 0 || moment.status === "full";
 
-                  <View className="flex-1">
-                    {/* Time and place */}
-                    <View className="flex-row items-center">
-                      <Text className="text-[15px] font-semibold text-[#1C1917]">
-                        {new Date(moment.starts_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </Text>
-                      <Text className="text-[15px] text-[#1C1917] ml-2">
-                        · {moment.location.place_name || moment.location.area_name || "Somewhere tasty"}
-                      </Text>
+                return (
+                  <Pressable
+                    key={moment.id}
+                    onPress={() => router.push(`/moment-detail?momentId=${moment.id}`)}
+                    className="flex-row items-center px-4 py-3 border border-[#E5E7EB] rounded-xl mx-4 mb-3 bg-white active:bg-[#F9FAFB]"
+                  >
+                    {/* Food emoji placeholder */}
+                    <Text className="text-2xl mr-3">🍜</Text>
+
+                    <View className="flex-1">
+                      {/* Time and place */}
+                      <View className="flex-row items-center">
+                        <Text className="text-[15px] font-semibold text-[#1C1917]">
+                          {new Date(moment.starts_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </Text>
+                        <Text className="text-[15px] text-[#1C1917] ml-2">
+                          · {moment.location.place_name || moment.location.area_name || "Somewhere tasty"}
+                        </Text>
+                      </View>
+
+                      {/* Host and details */}
+                      <View className="flex-row items-center mt-1">
+                        <Text className="text-[14px] text-[#78716C]">
+                          {moment.host_name}
+                        </Text>
+                        {/* Show verification badge if host is authenticated */}
+                        {moment.host_id && moment.host_id !== "anonymous" && (
+                          <Text className="text-[13px] text-[#22C55E]"> ✓</Text>
+                        )}
+                        <Text className="text-[14px] text-[#78716C]">
+                          {"  ·  "}{moment.seats_taken}/{moment.seats_total} seats
+                        </Text>
+                      </View>
                     </View>
 
-                    {/* Host and details */}
-                    <View className="flex-row items-center mt-1">
-                      <Text className="text-[14px] text-[#78716C]">
-                        {moment.host_name}
-                      </Text>
-                      {/* Show verification badge if host is authenticated */}
-                      {moment.host_id && moment.host_id !== "anonymous" && (
-                        <Text className="text-[13px] text-[#22C55E]"> ✓</Text>
-                      )}
-                      <Text className="text-[14px] text-[#78716C]">
-                        {"  ·  "}{moment.seats_total - moment.seats_taken} {moment.seats_total - moment.seats_taken === 1 ? "seat" : "seats"}
-                      </Text>
-                    </View>
-                  </View>
-                </Pressable>
-              ))}
+                    {/* Full badge */}
+                    {isFull && (
+                      <View className="bg-[#F3F4F6] px-2 py-1 rounded-md">
+                        <Text className="text-[12px] text-[#6B7280] font-medium">Full</Text>
+                      </View>
+                    )}
+                  </Pressable>
+                );
+              })}
             </ScrollView>
           )}
 
