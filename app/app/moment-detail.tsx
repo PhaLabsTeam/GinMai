@@ -1,12 +1,17 @@
-import { View, Text, Pressable, ScrollView } from "react-native";
+import { View, Text, Pressable, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useState } from "react";
 import { useMomentStore } from "../src/stores/momentStore";
+import { useAuthStore } from "../src/stores/authStore";
 
 export default function MomentDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ momentId: string }>();
   const moments = useMomentStore((state) => state.moments);
+  const joinMoment = useMomentStore((state) => state.joinMoment);
+  const user = useAuthStore((state) => state.user);
+  const [joining, setJoining] = useState(false);
 
   const moment = moments.find((m) => m.id === params.momentId);
 
@@ -37,9 +42,37 @@ export default function MomentDetailScreen() {
   };
 
   const seatsOpen = moment.seats_total - moment.seats_taken;
+  const isFull = seatsOpen <= 0;
+  const isHost = user?.id === moment.host_id;
 
-  const handleJoin = () => {
-    router.push(`/confirmation?momentId=${moment.id}`);
+  const handleJoin = async () => {
+    // Check if user is logged in
+    if (!user) {
+      router.push(`/sign-up?returnTo=/moment-detail?momentId=${moment.id}`);
+      return;
+    }
+
+    // Check if user is the host
+    if (isHost) {
+      Alert.alert("Can't join", "You can't join your own moment.");
+      return;
+    }
+
+    // Check if moment is full
+    if (isFull) {
+      Alert.alert("Moment full", "This moment has no more seats available.");
+      return;
+    }
+
+    setJoining(true);
+    const result = await joinMoment(moment.id, user.id);
+    setJoining(false);
+
+    if (result.success) {
+      router.push(`/confirmation?momentId=${moment.id}`);
+    } else {
+      Alert.alert("Couldn't join", result.error || "Something went wrong. Please try again.");
+    }
   };
 
   // Simulated walking distance (would be calculated from actual location)
@@ -132,23 +165,45 @@ export default function MomentDetailScreen() {
 
       {/* Join button */}
       <View className="px-6 pb-6 pt-3 border-t border-[#F3F4F6]">
-        <Pressable
-          onPress={handleJoin}
-          className="bg-[#1C1917] py-4 rounded-2xl items-center active:opacity-80"
-        >
-          <Text className="text-white text-[17px] font-medium">Join</Text>
-        </Pressable>
+        {isHost ? (
+          <View className="bg-[#E5E7EB] py-4 rounded-2xl items-center">
+            <Text className="text-[#9CA3AF] text-[17px] font-medium">Your moment</Text>
+          </View>
+        ) : isFull ? (
+          <View className="bg-[#E5E7EB] py-4 rounded-2xl items-center">
+            <Text className="text-[#9CA3AF] text-[17px] font-medium">Full</Text>
+          </View>
+        ) : (
+          <Pressable
+            onPress={handleJoin}
+            disabled={joining}
+            className={`bg-[#1C1917] py-4 rounded-2xl items-center ${joining ? "opacity-60" : "active:opacity-80"}`}
+          >
+            {joining ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text className="text-white text-[17px] font-medium">Join</Text>
+            )}
+          </Pressable>
+        )}
       </View>
 
-      {/* Floating action button */}
-      <View className="absolute bottom-24 right-6">
-        <Pressable
-          onPress={handleJoin}
-          className="w-14 h-14 bg-[#1F2937] rounded-full items-center justify-center active:opacity-80 shadow-lg"
-        >
-          <Text className="text-white text-2xl font-light">›</Text>
-        </Pressable>
-      </View>
+      {/* Floating action button - hide if host or full */}
+      {!isHost && !isFull && (
+        <View className="absolute bottom-24 right-6">
+          <Pressable
+            onPress={handleJoin}
+            disabled={joining}
+            className={`w-14 h-14 bg-[#1F2937] rounded-full items-center justify-center shadow-lg ${joining ? "opacity-60" : "active:opacity-80"}`}
+          >
+            {joining ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text className="text-white text-2xl font-light">›</Text>
+            )}
+          </Pressable>
+        </View>
+      )}
     </SafeAreaView>
   );
 }

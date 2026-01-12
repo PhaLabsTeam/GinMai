@@ -1,17 +1,21 @@
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, Alert, ActivityIndicator } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useEffect } from "react";
 import { useMomentStore } from "../src/stores/momentStore";
+import { useAuthStore } from "../src/stores/authStore";
 
 export default function ConfirmationScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ momentId: string }>();
   const moments = useMomentStore((state) => state.moments);
+  const leaveMoment = useMomentStore((state) => state.leaveMoment);
+  const user = useAuthStore((state) => state.user);
 
   const moment = moments.find((m) => m.id === params.momentId);
 
   const [countdown, setCountdown] = useState({ hours: 0, minutes: 0, seconds: 0 });
+  const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
     if (!moment) return;
@@ -34,8 +38,27 @@ export default function ConfirmationScreen() {
   }, [moment]);
 
   const handleCancel = () => {
-    // In a real app, this would remove the guest from the moment
-    router.replace("/map");
+    Alert.alert(
+      "Can't make it?",
+      `${moment?.host_name} is counting on you. But things happen.`,
+      [
+        { text: "Stay", style: "cancel" },
+        {
+          text: "Leave",
+          style: "destructive",
+          onPress: async () => {
+            if (!user || !moment) {
+              router.replace("/map");
+              return;
+            }
+            setLeaving(true);
+            await leaveMoment(moment.id, user.id);
+            setLeaving(false);
+            router.replace("/map");
+          }
+        }
+      ]
+    );
   };
 
   if (!moment) {
@@ -110,6 +133,16 @@ export default function ConfirmationScreen() {
           {walkingDistance}
         </Text>
 
+        {/* Host info */}
+        <View className="flex-row items-center justify-center mt-4">
+          <Text className="text-[16px] text-[#1C1917]">
+            with {moment.host_name}
+          </Text>
+          {moment.host_id && moment.host_id !== "anonymous" && (
+            <Text className="text-[15px] text-[#22C55E] ml-1">✓</Text>
+          )}
+        </View>
+
         {/* I'm here button */}
         <View className="mt-10">
           <Pressable
@@ -123,10 +156,14 @@ export default function ConfirmationScreen() {
         </View>
 
         {/* Cancel link */}
-        <Pressable onPress={handleCancel} className="mt-4">
-          <Text className="text-center text-[16px] text-[#6B7280]">
-            Can't make it anymore →
-          </Text>
+        <Pressable onPress={handleCancel} disabled={leaving} className="mt-4">
+          {leaving ? (
+            <ActivityIndicator size="small" color="#6B7280" />
+          ) : (
+            <Text className="text-center text-[16px] text-[#6B7280]">
+              Can't make it anymore →
+            </Text>
+          )}
         </Pressable>
       </View>
 

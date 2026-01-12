@@ -71,6 +71,8 @@ interface MomentState {
   fetchNearbyMoments: (lat: number, lng: number, radiusKm?: number) => Promise<void>;
   createMomentInDb: (data: Omit<MomentLocal, "id" | "created_at">) => Promise<MomentLocal | null>;
   cancelMomentInDb: (id: string) => Promise<boolean>;
+  joinMoment: (momentId: string, userId: string) => Promise<{ success: boolean; error?: string }>;
+  leaveMoment: (momentId: string, userId: string) => Promise<{ success: boolean; error?: string }>;
   subscribeToMoments: () => () => void;
 }
 
@@ -181,6 +183,145 @@ export const useMomentStore = create<MomentState>((set, get) => ({
     } catch (err) {
       console.error("Error cancelling moment:", err);
       return false;
+    }
+  },
+
+  // Join a moment - create connection and increment seats_taken
+  joinMoment: async (momentId: string, userId: string) => {
+    // In DEV_MODE, just update local state
+    if (DEV_MODE || !isSupabaseConfigured()) {
+      console.log("[DEV MODE] Joining moment locally");
+      const moment = get().moments.find((m) => m.id === momentId);
+      if (moment) {
+        const newSeatsTaken = moment.seats_taken + 1;
+        const newStatus = newSeatsTaken >= moment.seats_total ? "full" : "active";
+        get().updateMoment(momentId, {
+          seats_taken: newSeatsTaken,
+          status: newStatus as "active" | "full" | "completed" | "cancelled"
+        });
+      }
+      return { success: true };
+    }
+
+    set({ loading: true, error: null });
+
+    try {
+      // Check if moment exists and has available seats
+      const moment = get().moments.find((m) => m.id === momentId);
+      if (!moment) {
+        throw new Error("Moment not found");
+      }
+      if (moment.seats_taken >= moment.seats_total) {
+        throw new Error("This moment is full");
+      }
+      if (moment.host_id === userId) {
+        throw new Error("You can't join your own moment");
+      }
+
+      // Create connection
+      const { error: connectionError } = await db
+        .from("connections")
+        .insert({
+          moment_id: momentId,
+          user_id: userId,
+          status: "confirmed",
+        });
+
+      if (connectionError) {
+        // Check if it's a duplicate
+        if (connectionError.code === "23505") {
+          throw new Error("You've already joined this moment");
+        }
+        throw connectionError;
+      }
+
+      // Increment seats_taken
+      const newSeatsTaken = moment.seats_taken + 1;
+      const newStatus = newSeatsTaken >= moment.seats_total ? "full" : "active";
+
+      const { error: updateError } = await db
+        .from("moments")
+        .update({
+          seats_taken: newSeatsTaken,
+          status: newStatus
+        })
+        .eq("id", momentId);
+
+      if (updateError) throw updateError;
+
+      // Update local state
+      get().updateMoment(momentId, {
+        seats_taken: newSeatsTaken,
+        status: newStatus as "active" | "full" | "completed" | "cancelled"
+      });
+
+      set({ loading: false });
+      return { success: true };
+    } catch (err) {
+      console.error("Error joining moment:", err);
+      set({ error: (err as Error).message, loading: false });
+      return { success: false, error: (err as Error).message };
+    }
+  },
+
+  // Leave a moment - cancel connection and decrement seats_taken
+  leaveMoment: async (momentId: string, userId: string) => {
+    // In DEV_MODE, just update local state
+    if (DEV_MODE || !isSupabaseConfigured()) {
+      console.log("[DEV MODE] Leaving moment locally");
+      const moment = get().moments.find((m) => m.id === momentId);
+      if (moment && moment.seats_taken > 0) {
+        get().updateMoment(momentId, {
+          seats_taken: moment.seats_taken - 1,
+          status: "active"
+        });
+      }
+      return { success: true };
+    }
+
+    set({ loading: true, error: null });
+
+    try {
+      // Update connection status to cancelled
+      const { error: connectionError } = await db
+        .from("connections")
+        .update({
+          status: "cancelled",
+          cancelled_at: new Date().toISOString()
+        })
+        .eq("moment_id", momentId)
+        .eq("user_id", userId);
+
+      if (connectionError) throw connectionError;
+
+      // Decrement seats_taken
+      const moment = get().moments.find((m) => m.id === momentId);
+      if (moment && moment.seats_taken > 0) {
+        const newSeatsTaken = moment.seats_taken - 1;
+
+        const { error: updateError } = await db
+          .from("moments")
+          .update({
+            seats_taken: newSeatsTaken,
+            status: "active" // Reopen if was full
+          })
+          .eq("id", momentId);
+
+        if (updateError) throw updateError;
+
+        // Update local state
+        get().updateMoment(momentId, {
+          seats_taken: newSeatsTaken,
+          status: "active"
+        });
+      }
+
+      set({ loading: false });
+      return { success: true };
+    } catch (err) {
+      console.error("Error leaving moment:", err);
+      set({ error: (err as Error).message, loading: false });
+      return { success: false, error: (err as Error).message };
     }
   },
 
