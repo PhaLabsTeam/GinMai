@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useEffect } from "react";
 import * as Location from "expo-location";
 import { useMomentStore } from "../src/stores/momentStore";
+import { useAuthStore } from "../src/stores/authStore";
 import type { MomentLocal } from "../src/types";
 
 type TimeOption = "now" | "30min" | "1hr" | "custom";
@@ -20,6 +21,18 @@ export default function CreateMomentScreen() {
   const router = useRouter();
   const createMomentInDb = useMomentStore((state) => state.createMomentInDb);
   const loading = useMomentStore((state) => state.loading);
+
+  // Auth state - require login to create moments
+  const user = useAuthStore((state) => state.user);
+  const authInitialized = useAuthStore((state) => state.initialized);
+
+  // Redirect to sign-up if not authenticated
+  useEffect(() => {
+    if (authInitialized && !user) {
+      // Redirect to sign-up with return path
+      router.replace("/sign-up?returnTo=/create-moment");
+    }
+  }, [authInitialized, user, router]);
 
   // Step management
   const [step, setStep] = useState(1);
@@ -182,14 +195,20 @@ export default function CreateMomentScreen() {
   const handleMakeVisible = async () => {
     if (!coordinates || loading) return;
 
+    // Require authentication
+    if (!user) {
+      router.replace("/sign-up?returnTo=/create-moment");
+      return;
+    }
+
     const startsAt = getSelectedTime();
     const durationHours = duration === "quick" ? 0.5 : duration === "normal" ? 1 : 2;
     const expiresAt = new Date(startsAt.getTime() + (durationHours + 1) * 60 * 60000);
 
-    // M1: Anonymous user - no auth required
+    // M2: Link moment to authenticated user
     const momentData: Omit<MomentLocal, "id" | "created_at"> = {
-      host_id: "anonymous",
-      host_name: "Someone",
+      host_id: user.id,
+      host_name: user.first_name,
       starts_at: startsAt.toISOString(),
       duration,
       location: {
@@ -294,6 +313,25 @@ export default function CreateMomentScreen() {
       </Text>
     </Pressable>
   );
+
+  // Show loading while checking auth
+  if (!authInitialized) {
+    return (
+      <SafeAreaView className="flex-1 bg-[#FAFAF9] items-center justify-center">
+        <ActivityIndicator size="large" color="#1C1917" />
+      </SafeAreaView>
+    );
+  }
+
+  // Don't render if user is not authenticated (will redirect)
+  if (!user) {
+    return (
+      <SafeAreaView className="flex-1 bg-[#FAFAF9] items-center justify-center">
+        <ActivityIndicator size="large" color="#1C1917" />
+        <Text className="text-[#78716C] mt-4">Redirecting to sign up...</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-[#FAFAF9]">
