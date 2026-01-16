@@ -1,8 +1,9 @@
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, ActivityIndicator } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
 import { useMomentStore } from "../src/stores/momentStore";
+import { useAuthStore } from "../src/stores/authStore";
 
 type FeedbackOption = "great" | "okay" | "nope" | null;
 
@@ -11,25 +12,65 @@ export default function FeedbackScreen() {
   const params = useLocalSearchParams<{ momentId: string; hostName: string }>();
   const hostName = params.hostName || "them";
 
+  const moments = useMomentStore((state) => state.moments);
+  const submitFeedback = useMomentStore((state) => state.submitFeedback);
+  const markConnectionCompleted = useMomentStore((state) => state.markConnectionCompleted);
+  const user = useAuthStore((state) => state.user);
+
+  const moment = moments.find((m) => m.id === params.momentId);
+  const hostId = moment?.host_id || "";
+
   const [step, setStep] = useState(1);
   const [feedback, setFeedback] = useState<FeedbackOption>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleFeedback = (option: FeedbackOption) => {
+  const handleFeedback = async (option: FeedbackOption) => {
     setFeedback(option);
     if (option === "great" || option === "okay") {
       setStep(2);
+    } else if (option === "nope") {
+      // For "nope", save feedback and finish
+      await saveFeedback(option, false);
+    }
+  };
+
+  const saveFeedback = async (rating: "great" | "okay" | "nope", eatAgain?: boolean) => {
+    if (!user || !params.momentId) {
+      router.replace("/map");
+      return;
+    }
+
+    setSubmitting(true);
+
+    // Submit feedback
+    await submitFeedback({
+      momentId: params.momentId,
+      fromUserId: user.id,
+      aboutUserId: hostId,
+      rating,
+      eatAgain,
+    });
+
+    // Mark connection as completed
+    await markConnectionCompleted(params.momentId, user.id);
+
+    setSubmitting(false);
+    router.replace("/map");
+  };
+
+  const handleEatAgain = async (wantsToEatAgain: boolean) => {
+    if (feedback) {
+      await saveFeedback(feedback as "great" | "okay", wantsToEatAgain);
     } else {
-      // For "nope", could show a different follow-up or just finish
       router.replace("/map");
     }
   };
 
-  const handleEatAgain = (wantsToEatAgain: boolean) => {
-    // In a real app, this would save the preference
-    router.replace("/map");
-  };
-
-  const handleSkip = () => {
+  const handleSkip = async () => {
+    if (user && params.momentId) {
+      // Still mark connection as completed even if skipping feedback
+      await markConnectionCompleted(params.momentId, user.id);
+    }
     router.replace("/map");
   };
 
@@ -96,12 +137,19 @@ export default function FeedbackScreen() {
   }) => (
     <Pressable
       onPress={() => handleFeedback(option)}
+      disabled={submitting}
       className={`flex-1 items-center py-5 rounded-xl border ${
         feedback === option ? "border-[#1C1917] bg-[#F9FAFB]" : "border-[#E5E7EB]"
       } mx-1.5 active:bg-[#F9FAFB]`}
     >
-      <Face />
-      <Text className="text-[15px] text-[#1C1917] mt-2">{label}</Text>
+      {submitting && feedback === option ? (
+        <ActivityIndicator size="small" color="#1C1917" />
+      ) : (
+        <>
+          <Face />
+          <Text className="text-[15px] text-[#1C1917] mt-2">{label}</Text>
+        </>
+      )}
     </Pressable>
   );
 
@@ -147,20 +195,30 @@ export default function FeedbackScreen() {
             <View className="mt-10">
               <Pressable
                 onPress={() => handleEatAgain(true)}
+                disabled={submitting}
                 className="bg-[#1C1917] py-4 rounded-xl items-center active:opacity-80 mb-3"
               >
-                <Text className="text-white text-[17px] font-medium">
-                  Yes, I'd eat with them again
-                </Text>
+                {submitting ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text className="text-white text-[17px] font-medium">
+                    Yes, I'd eat with them again
+                  </Text>
+                )}
               </Pressable>
 
               <Pressable
                 onPress={() => handleEatAgain(false)}
+                disabled={submitting}
                 className="border border-[#E5E7EB] py-4 rounded-xl items-center active:bg-[#F9FAFB]"
               >
-                <Text className="text-[17px] text-[#1C1917]">
-                  No thanks
-                </Text>
+                {submitting ? (
+                  <ActivityIndicator size="small" color="#1C1917" />
+                ) : (
+                  <Text className="text-[17px] text-[#1C1917]">
+                    No thanks
+                  </Text>
+                )}
               </Pressable>
             </View>
 

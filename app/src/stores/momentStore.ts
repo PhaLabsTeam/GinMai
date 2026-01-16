@@ -108,6 +108,16 @@ interface MomentState {
   fetchMomentGuests: (momentId: string) => Promise<MomentGuest[]>;
   getMomentGuests: (momentId: string) => MomentGuest[];
   subscribeToMomentConnections: (momentId: string, onGuestEvent?: GuestEventCallback) => () => void;
+
+  // Feedback
+  submitFeedback: (data: {
+    momentId: string;
+    fromUserId: string;
+    aboutUserId: string;
+    rating: "great" | "okay" | "nope";
+    eatAgain?: boolean;
+  }) => Promise<{ success: boolean; error?: string }>;
+  markConnectionCompleted: (momentId: string, userId: string) => Promise<void>;
 }
 
 export const useMomentStore = create<MomentState>((set, get) => ({
@@ -725,5 +735,74 @@ export const useMomentStore = create<MomentState>((set, get) => ({
       channel.unsubscribe();
       set({ connectionSubscription: null });
     };
+  },
+
+  // Submit feedback for a moment
+  submitFeedback: async ({ momentId, fromUserId, aboutUserId, rating, eatAgain }) => {
+    // In DEV_MODE, just log
+    if (DEV_MODE || !isSupabaseConfigured()) {
+      console.log("[DEV MODE] Submitting feedback:", { momentId, rating, eatAgain });
+      return { success: true };
+    }
+
+    try {
+      const { error } = await db
+        .from("feedback")
+        .insert({
+          moment_id: momentId,
+          from_user: fromUserId,
+          about_user: aboutUserId,
+          rating,
+          eat_again: eatAgain ?? null,
+        });
+
+      if (error) throw error;
+
+      // If both users said eat_again, create a relationship (handled by DB function)
+      if (eatAgain) {
+        await db.rpc("maybe_create_relationship", {
+          p_moment_id: momentId,
+          p_from_user: fromUserId,
+          p_about_user: aboutUserId,
+          p_eat_again: eatAgain,
+        });
+      }
+
+      return { success: true };
+    } catch (err) {
+      console.error("Error submitting feedback:", err);
+      return { success: false, error: (err as Error).message };
+    }
+  },
+
+  // Mark user's connection to moment as completed
+  markConnectionCompleted: async (momentId: string, userId: string) => {
+    // In DEV_MODE, just update local state
+    if (DEV_MODE || !isSupabaseConfigured()) {
+      console.log("[DEV MODE] Marking connection completed");
+      set((state) => ({
+        userConnections: state.userConnections.map((c) =>
+          c.momentId === momentId ? { ...c, status: "completed" as const } : c
+        ),
+      }));
+      return;
+    }
+
+    try {
+      await db
+        .from("connections")
+        .update({ status: "completed" })
+        .eq("moment_id", momentId)
+        .eq("user_id", userId);
+
+      // Update local state
+      set((state) => ({
+        userConnections: state.userConnections.map((c) =>
+          c.momentId === momentId ? { ...c, status: "completed" as const } : c
+        ),
+      }));
+    } catch (err) {
+      console.error("Error marking connection completed:", err);
+    }
   },
 }));
