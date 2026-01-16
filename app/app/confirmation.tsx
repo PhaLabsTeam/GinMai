@@ -1,4 +1,4 @@
-import { View, Text, Pressable, Alert, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, Alert, ActivityIndicator, Platform } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useEffect } from "react";
@@ -37,28 +37,33 @@ export default function ConfirmationScreen() {
     return () => clearInterval(interval);
   }, [moment]);
 
-  const handleCancel = () => {
-    Alert.alert(
-      "Can't make it?",
-      `${moment?.host_name} is counting on you. But things happen.`,
-      [
-        { text: "Stay", style: "cancel" },
-        {
-          text: "Leave",
-          style: "destructive",
-          onPress: async () => {
-            if (!user || !moment) {
-              router.replace("/map");
-              return;
-            }
-            setLeaving(true);
-            await leaveMoment(moment.id, user.id);
-            setLeaving(false);
-            router.replace("/map");
-          }
-        }
-      ]
-    );
+  const handleCancel = async () => {
+    // Use window.confirm on web as Alert.alert doesn't work properly
+    const message = `${moment?.host_name} is counting on you. But things happen.\n\nAre you sure you want to leave?`;
+
+    const confirmed = Platform.OS === 'web'
+      ? window.confirm(message)
+      : await new Promise<boolean>((resolve) => {
+          Alert.alert(
+            "Can't make it?",
+            `${moment?.host_name} is counting on you. But things happen.`,
+            [
+              { text: "Stay", style: "cancel", onPress: () => resolve(false) },
+              { text: "Leave", style: "destructive", onPress: () => resolve(true) }
+            ]
+          );
+        });
+
+    if (confirmed) {
+      if (!user || !moment) {
+        router.replace("/map");
+        return;
+      }
+      setLeaving(true);
+      await leaveMoment(moment.id, user.id);
+      setLeaving(false);
+      router.replace("/map");
+    }
   };
 
   if (!moment) {

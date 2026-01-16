@@ -61,9 +61,23 @@ interface UserConnection {
   joinedAt: string;
 }
 
+// Guest info for a moment (from host's perspective)
+export interface MomentGuest {
+  id: string;
+  userId: string;
+  firstName: string;
+  joinedAt: string;
+  status: "confirmed" | "cancelled" | "no_show" | "completed";
+}
+
+// Callback type for guest events
+type GuestEventCallback = (event: "joined" | "cancelled", guest: MomentGuest) => void;
+
 interface MomentState {
   moments: MomentLocal[];
   userConnections: UserConnection[];
+  momentGuests: Map<string, MomentGuest[]>; // momentId -> guests
+  connectionSubscription: RealtimeChannel | null;
   loading: boolean;
   error: string | null;
   subscription: RealtimeChannel | null;
@@ -87,11 +101,18 @@ interface MomentState {
   joinMoment: (momentId: string, userId: string) => Promise<{ success: boolean; error?: string }>;
   leaveMoment: (momentId: string, userId: string) => Promise<{ success: boolean; error?: string }>;
   subscribeToMoments: () => () => void;
+
+  // Host guest management
+  fetchMomentGuests: (momentId: string) => Promise<MomentGuest[]>;
+  getMomentGuests: (momentId: string) => MomentGuest[];
+  subscribeToMomentConnections: (momentId: string, onGuestEvent?: GuestEventCallback) => () => void;
 }
 
 export const useMomentStore = create<MomentState>((set, get) => ({
   moments: [],
   userConnections: [],
+  momentGuests: new Map(),
+  connectionSubscription: null,
   loading: false,
   error: null,
   subscription: null,
@@ -456,6 +477,169 @@ export const useMomentStore = create<MomentState>((set, get) => ({
     return () => {
       channel.unsubscribe();
       set({ subscription: null });
+    };
+  },
+
+  // Fetch guests for a specific moment (for hosts)
+  fetchMomentGuests: async (momentId: string) => {
+    // In DEV_MODE, return mock data
+    if (DEV_MODE || !isSupabaseConfigured()) {
+      console.log("[DEV MODE] Returning mock guests");
+      const mockGuests: MomentGuest[] = [];
+      const moment = get().moments.find((m) => m.id === momentId);
+      if (moment && moment.seats_taken > 0) {
+        // Create mock guests based on seats_taken
+        for (let i = 0; i < moment.seats_taken; i++) {
+          mockGuests.push({
+            id: `mock-connection-${i}`,
+            userId: `mock-user-${i}`,
+            firstName: `Guest ${i + 1}`,
+            joinedAt: new Date().toISOString(),
+            status: "confirmed",
+          });
+        }
+      }
+      set((state) => {
+        const newMap = new Map(state.momentGuests);
+        newMap.set(momentId, mockGuests);
+        return { momentGuests: newMap };
+      });
+      return mockGuests;
+    }
+
+    try {
+      // Fetch connections with user info
+      const { data, error } = await db
+        .from("connections")
+        .select(`
+          id,
+          user_id,
+          joined_at,
+          status,
+          users!connections_user_id_fkey (
+            first_name
+          )
+        `)
+        .eq("moment_id", momentId)
+        .eq("status", "confirmed");
+
+      if (error) throw error;
+
+      const guests: MomentGuest[] = (data || []).map((c: any) => ({
+        id: c.id,
+        userId: c.user_id,
+        firstName: c.users?.first_name || "Guest",
+        joinedAt: c.joined_at,
+        status: c.status,
+      }));
+
+      set((state) => {
+        const newMap = new Map(state.momentGuests);
+        newMap.set(momentId, guests);
+        return { momentGuests: newMap };
+      });
+
+      return guests;
+    } catch (err) {
+      console.error("Error fetching moment guests:", err);
+      return [];
+    }
+  },
+
+  // Get cached guests for a moment
+  getMomentGuests: (momentId: string) => {
+    return get().momentGuests.get(momentId) || [];
+  },
+
+  // Subscribe to real-time connection updates for a moment
+  subscribeToMomentConnections: (momentId: string, onGuestEvent?: GuestEventCallback) => {
+    if (!isSupabaseConfigured()) {
+      console.log("Supabase not configured, skipping connection subscription");
+      return () => {};
+    }
+
+    // Unsubscribe from existing connection subscription if any
+    const existingSub = get().connectionSubscription;
+    if (existingSub) {
+      existingSub.unsubscribe();
+    }
+
+    const channel = db
+      .channel(`connections-${momentId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "connections",
+          filter: `moment_id=eq.${momentId}`,
+        },
+        async (payload: any) => {
+          const { eventType, new: newRecord, old: oldRecord } = payload;
+
+          if (eventType === "INSERT" && newRecord.status === "confirmed") {
+            // New guest joined - fetch their info
+            const { data: userData } = await db
+              .from("users")
+              .select("first_name")
+              .eq("id", newRecord.user_id)
+              .single();
+
+            const newGuest: MomentGuest = {
+              id: newRecord.id,
+              userId: newRecord.user_id,
+              firstName: userData?.first_name || "Guest",
+              joinedAt: newRecord.joined_at,
+              status: "confirmed",
+            };
+
+            // Update local guests list
+            set((state) => {
+              const newMap = new Map(state.momentGuests);
+              const currentGuests = newMap.get(momentId) || [];
+              // Avoid duplicates
+              if (!currentGuests.some((g) => g.id === newGuest.id)) {
+                newMap.set(momentId, [...currentGuests, newGuest]);
+              }
+              return { momentGuests: newMap };
+            });
+
+            // Notify callback
+            if (onGuestEvent) {
+              onGuestEvent("joined", newGuest);
+            }
+          } else if (eventType === "UPDATE" && newRecord.status === "cancelled") {
+            // Guest cancelled
+            const cancelledGuest = get().momentGuests.get(momentId)?.find(
+              (g) => g.userId === newRecord.user_id
+            );
+
+            // Remove from local guests list
+            set((state) => {
+              const newMap = new Map(state.momentGuests);
+              const currentGuests = newMap.get(momentId) || [];
+              newMap.set(
+                momentId,
+                currentGuests.filter((g) => g.userId !== newRecord.user_id)
+              );
+              return { momentGuests: newMap };
+            });
+
+            // Notify callback
+            if (onGuestEvent && cancelledGuest) {
+              onGuestEvent("cancelled", { ...cancelledGuest, status: "cancelled" });
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    set({ connectionSubscription: channel });
+
+    // Return unsubscribe function
+    return () => {
+      channel.unsubscribe();
+      set({ connectionSubscription: null });
     };
   },
 }));

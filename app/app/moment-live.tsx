@@ -1,21 +1,81 @@
-import { View, Text, Pressable, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, ActivityIndicator, ScrollView } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useState, useEffect } from "react";
-import { useMomentStore } from "../src/stores/momentStore";
+import { useState, useEffect, useCallback } from "react";
+import { useMomentStore, MomentGuest } from "../src/stores/momentStore";
+import { useNotificationStore } from "../src/stores/notificationStore";
 import { MapComponent } from "../src/components/MapComponent";
+import { InAppToast } from "../src/components/InAppToast";
 
 export default function MomentLiveScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ momentId: string }>();
   const moments = useMomentStore((state) => state.moments);
   const cancelMomentInDb = useMomentStore((state) => state.cancelMomentInDb);
+  const fetchMomentGuests = useMomentStore((state) => state.fetchMomentGuests);
+  const getMomentGuests = useMomentStore((state) => state.getMomentGuests);
+  const subscribeToMomentConnections = useMomentStore((state) => state.subscribeToMomentConnections);
+  const addNotification = useNotificationStore((state) => state.addNotification);
+
   const [cancelling, setCancelling] = useState(false);
+  const [guests, setGuests] = useState<MomentGuest[]>([]);
 
   const moment = moments.find((m) => m.id === params.momentId);
 
   const [countdown, setCountdown] = useState("");
-  const [viewers] = useState(0); // Would come from real-time subscriptions
+
+  // Handle guest events (joins/cancellations)
+  const handleGuestEvent = useCallback((event: "joined" | "cancelled", guest: MomentGuest) => {
+    if (event === "joined") {
+      addNotification({
+        type: "guest_joined",
+        title: "New guest!",
+        message: `${guest.firstName} wants to join your lunch`,
+        momentId: params.momentId,
+        guestName: guest.firstName,
+      });
+      // Update local guest list
+      setGuests((prev) => {
+        if (prev.some((g) => g.id === guest.id)) return prev;
+        return [...prev, guest];
+      });
+    } else if (event === "cancelled") {
+      addNotification({
+        type: "guest_cancelled",
+        title: "Guest cancelled",
+        message: `${guest.firstName} can't make it anymore`,
+        momentId: params.momentId,
+        guestName: guest.firstName,
+      });
+      // Update local guest list
+      setGuests((prev) => prev.filter((g) => g.userId !== guest.userId));
+    }
+  }, [params.momentId, addNotification]);
+
+  // Fetch guests and subscribe to real-time updates
+  useEffect(() => {
+    if (!params.momentId) return;
+
+    // Fetch initial guests
+    fetchMomentGuests(params.momentId).then((fetchedGuests) => {
+      setGuests(fetchedGuests);
+    });
+
+    // Subscribe to real-time connection updates
+    const unsubscribe = subscribeToMomentConnections(params.momentId, handleGuestEvent);
+
+    return () => {
+      unsubscribe();
+    };
+  }, [params.momentId, fetchMomentGuests, subscribeToMomentConnections, handleGuestEvent]);
+
+  // Sync guests from store when they change
+  useEffect(() => {
+    const storeGuests = getMomentGuests(params.momentId || "");
+    if (storeGuests.length > 0) {
+      setGuests(storeGuests);
+    }
+  }, [params.momentId, getMomentGuests]);
 
   useEffect(() => {
     if (!moment) return;
@@ -78,7 +138,10 @@ export default function MomentLiveScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-[#FAFAF9]">
-      <View className="flex-1 px-6">
+      {/* In-app notification toast */}
+      <InAppToast />
+
+      <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
         {/* Header text */}
         <View className="pt-8">
           <Text className="text-center text-[32px] font-normal text-[#1C1917]">
@@ -146,10 +209,50 @@ export default function MomentLiveScreen() {
           </Text>
         )}
 
-        {/* Viewers count */}
-        <Text className="text-center text-[15px] text-[#9CA3AF] mt-6">
-          {viewers} {viewers === 1 ? "person" : "people"} looking
-        </Text>
+        {/* Guest count and list */}
+        <View className="mt-6">
+          {guests.length > 0 ? (
+            <>
+              {/* Joining count */}
+              <Text className="text-center text-[15px] text-[#22C55E] font-medium mb-3">
+                {guests.length} {guests.length === 1 ? "person" : "people"} joining
+              </Text>
+
+              {/* Guest list */}
+              <View className="bg-white rounded-2xl px-4 py-3 shadow-sm">
+                {guests.map((guest, index) => (
+                  <View
+                    key={guest.id}
+                    className={`flex-row items-center py-2 ${
+                      index < guests.length - 1 ? "border-b border-[#F3F4F6]" : ""
+                    }`}
+                  >
+                    {/* Avatar circle */}
+                    <View className="w-9 h-9 rounded-full bg-[#F3F4F6] items-center justify-center mr-3">
+                      <Text className="text-[#6B7280] text-[14px] font-medium">
+                        {guest.firstName.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                    {/* Name */}
+                    <Text className="text-[15px] text-[#1C1917] flex-1">
+                      {guest.firstName}
+                    </Text>
+                    {/* Confirmed badge */}
+                    <View className="bg-[#ECFDF5] px-2 py-1 rounded-full">
+                      <Text className="text-[12px] text-[#22C55E] font-medium">
+                        Confirmed
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </>
+          ) : (
+            <Text className="text-center text-[15px] text-[#9CA3AF]">
+              Waiting for guests...
+            </Text>
+          )}
+        </View>
 
         {/* Cancel link */}
         <Pressable onPress={handleCancel} disabled={cancelling} className="mt-4">
@@ -173,7 +276,10 @@ export default function MomentLiveScreen() {
             </Text>
           </Pressable>
         </View>
-      </View>
+
+        {/* Bottom padding for FAB */}
+        <View className="h-20" />
+      </ScrollView>
 
       {/* Floating action button */}
       <View className="absolute bottom-8 right-6">
