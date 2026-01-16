@@ -71,7 +71,7 @@ export interface MomentGuest {
 }
 
 // Callback type for guest events
-type GuestEventCallback = (event: "joined" | "cancelled", guest: MomentGuest) => void;
+type GuestEventCallback = (event: "joined" | "cancelled" | "arrived" | "running_late", guest: MomentGuest) => void;
 
 interface MomentState {
   moments: MomentLocal[];
@@ -100,6 +100,8 @@ interface MomentState {
   cancelMomentInDb: (id: string) => Promise<boolean>;
   joinMoment: (momentId: string, userId: string) => Promise<{ success: boolean; error?: string }>;
   leaveMoment: (momentId: string, userId: string) => Promise<{ success: boolean; error?: string }>;
+  markArrived: (momentId: string, userId: string) => Promise<{ success: boolean; error?: string }>;
+  notifyHostRunningLate: (momentId: string, userId: string, guestName: string) => Promise<void>;
   subscribeToMoments: () => () => void;
 
   // Host guest management
@@ -420,6 +422,77 @@ export const useMomentStore = create<MomentState>((set, get) => ({
     }
   },
 
+  // Mark guest as arrived at the moment
+  markArrived: async (momentId: string, userId: string) => {
+    // In DEV_MODE, just update local state
+    if (DEV_MODE || !isSupabaseConfigured()) {
+      console.log("[DEV MODE] Marking arrived locally");
+      // Update user connection status locally
+      set((state) => ({
+        userConnections: state.userConnections.map((c) =>
+          c.momentId === momentId ? { ...c, status: "completed" as const } : c
+        ),
+      }));
+      return { success: true };
+    }
+
+    try {
+      // Update connection status to 'arrived' (we'll use 'completed' to indicate arrived for now)
+      const { error } = await db
+        .from("connections")
+        .update({
+          status: "arrived",
+          arrived_at: new Date().toISOString(),
+        })
+        .eq("moment_id", momentId)
+        .eq("user_id", userId);
+
+      if (error) throw error;
+
+      // Update local user connections
+      set((state) => ({
+        userConnections: state.userConnections.map((c) =>
+          c.momentId === momentId ? { ...c, status: "completed" as const } : c
+        ),
+      }));
+
+      return { success: true };
+    } catch (err) {
+      console.error("Error marking arrived:", err);
+      return { success: false, error: (err as Error).message };
+    }
+  },
+
+  // Notify host that guest is running late (this is a placeholder - real implementation would use push notifications)
+  notifyHostRunningLate: async (momentId: string, userId: string, guestName: string) => {
+    // In DEV_MODE, just log
+    if (DEV_MODE || !isSupabaseConfigured()) {
+      console.log("[DEV MODE] Notifying host about running late:", guestName);
+      return;
+    }
+
+    try {
+      // Insert a notification record for the host
+      // The real-time subscription will pick this up and show it to the host
+      const moment = get().moments.find((m) => m.id === momentId);
+      if (!moment || !moment.host_id) return;
+
+      // Update connection with running_late flag
+      await db
+        .from("connections")
+        .update({
+          running_late: true,
+          running_late_at: new Date().toISOString(),
+        })
+        .eq("moment_id", momentId)
+        .eq("user_id", userId);
+
+      console.log("Host notified about guest running late");
+    } catch (err) {
+      console.error("Error notifying host:", err);
+    }
+  },
+
   // Subscribe to real-time moment updates
   subscribeToMoments: () => {
     if (!isSupabaseConfigured()) {
@@ -608,26 +681,37 @@ export const useMomentStore = create<MomentState>((set, get) => ({
             if (onGuestEvent) {
               onGuestEvent("joined", newGuest);
             }
-          } else if (eventType === "UPDATE" && newRecord.status === "cancelled") {
-            // Guest cancelled
-            const cancelledGuest = get().momentGuests.get(momentId)?.find(
+          } else if (eventType === "UPDATE") {
+            const existingGuest = get().momentGuests.get(momentId)?.find(
               (g) => g.userId === newRecord.user_id
             );
 
-            // Remove from local guests list
-            set((state) => {
-              const newMap = new Map(state.momentGuests);
-              const currentGuests = newMap.get(momentId) || [];
-              newMap.set(
-                momentId,
-                currentGuests.filter((g) => g.userId !== newRecord.user_id)
-              );
-              return { momentGuests: newMap };
-            });
+            if (newRecord.status === "cancelled") {
+              // Guest cancelled - remove from local guests list
+              set((state) => {
+                const newMap = new Map(state.momentGuests);
+                const currentGuests = newMap.get(momentId) || [];
+                newMap.set(
+                  momentId,
+                  currentGuests.filter((g) => g.userId !== newRecord.user_id)
+                );
+                return { momentGuests: newMap };
+              });
 
-            // Notify callback
-            if (onGuestEvent && cancelledGuest) {
-              onGuestEvent("cancelled", { ...cancelledGuest, status: "cancelled" });
+              // Notify callback
+              if (onGuestEvent && existingGuest) {
+                onGuestEvent("cancelled", { ...existingGuest, status: "cancelled" });
+              }
+            } else if (newRecord.status === "arrived") {
+              // Guest arrived - notify host
+              if (onGuestEvent && existingGuest) {
+                onGuestEvent("arrived", { ...existingGuest, status: "completed" });
+              }
+            } else if (newRecord.running_late && !oldRecord?.running_late) {
+              // Guest is running late - notify host
+              if (onGuestEvent && existingGuest) {
+                onGuestEvent("running_late", existingGuest);
+              }
             }
           }
         }

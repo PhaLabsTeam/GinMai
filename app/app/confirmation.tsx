@@ -1,7 +1,7 @@
 import { View, Text, Pressable, Alert, ActivityIndicator, Platform } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useMomentStore } from "../src/stores/momentStore";
 import { useAuthStore } from "../src/stores/authStore";
 
@@ -10,12 +10,14 @@ export default function ConfirmationScreen() {
   const params = useLocalSearchParams<{ momentId: string }>();
   const moments = useMomentStore((state) => state.moments);
   const leaveMoment = useMomentStore((state) => state.leaveMoment);
+  const markArrived = useMomentStore((state) => state.markArrived);
   const user = useAuthStore((state) => state.user);
 
   const moment = moments.find((m) => m.id === params.momentId);
 
   const [countdown, setCountdown] = useState({ hours: 0, minutes: 0, seconds: 0 });
   const [leaving, setLeaving] = useState(false);
+  const [arriving, setArriving] = useState(false);
 
   useEffect(() => {
     if (!moment) return;
@@ -36,6 +38,15 @@ export default function ConfirmationScreen() {
     const interval = setInterval(updateCountdown, 1000);
     return () => clearInterval(interval);
   }, [moment]);
+
+  const handleArrival = useCallback(async () => {
+    if (!user || !moment || arriving) return;
+
+    setArriving(true);
+    await markArrived(moment.id, user.id);
+    setArriving(false);
+    router.push(`/arrival?momentId=${params.momentId}`);
+  }, [user, moment, arriving, markArrived, router, params.momentId]);
 
   const handleCancel = async () => {
     // Use window.confirm on web as Alert.alert doesn't work properly
@@ -151,12 +162,17 @@ export default function ConfirmationScreen() {
         {/* I'm here button */}
         <View className="mt-10">
           <Pressable
-            onPress={() => router.push(`/arrival?momentId=${params.momentId}`)}
+            onPress={handleArrival}
+            disabled={arriving}
             className="bg-[#1C1917] py-4 rounded-2xl items-center active:opacity-80"
           >
-            <Text className="text-white text-[17px] font-medium">
-              I'm here
-            </Text>
+            {arriving ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text className="text-white text-[17px] font-medium">
+                I'm here
+              </Text>
+            )}
           </Pressable>
         </View>
 
@@ -175,10 +191,15 @@ export default function ConfirmationScreen() {
       {/* Floating action button */}
       <View className="absolute bottom-8 right-6">
         <Pressable
-          onPress={() => router.push(`/arrival?momentId=${params.momentId}`)}
+          onPress={handleArrival}
+          disabled={arriving}
           className="w-14 h-14 bg-[#1F2937] rounded-full items-center justify-center active:opacity-80 shadow-lg"
         >
-          <Text className="text-white text-2xl font-light">›</Text>
+          {arriving ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text className="text-white text-2xl font-light">›</Text>
+          )}
         </Pressable>
       </View>
     </SafeAreaView>

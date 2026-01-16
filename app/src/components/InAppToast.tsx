@@ -76,6 +76,10 @@ function ToastItem({ notification, onDismiss }: ToastItemProps) {
         return "+1";
       case "guest_cancelled":
         return "-1";
+      case "guest_arrived":
+        return "✓";
+      case "guest_running_late":
+        return "⏰";
       default:
         return "i";
     }
@@ -87,6 +91,10 @@ function ToastItem({ notification, onDismiss }: ToastItemProps) {
         return "#22C55E"; // success green
       case "guest_cancelled":
         return "#F97316"; // orange
+      case "guest_arrived":
+        return "#3B82F6"; // blue
+      case "guest_running_late":
+        return "#EAB308"; // yellow
       default:
         return "#1C1917"; // dark
     }

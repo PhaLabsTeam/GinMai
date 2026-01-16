@@ -2,7 +2,7 @@ import { create } from "zustand";
 
 export interface InAppNotification {
   id: string;
-  type: "guest_joined" | "guest_cancelled" | "info";
+  type: "guest_joined" | "guest_cancelled" | "guest_arrived" | "guest_running_late" | "info";
   title: string;
   message: string;
   momentId?: string;

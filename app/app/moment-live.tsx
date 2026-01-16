@@ -24,8 +24,8 @@ export default function MomentLiveScreen() {
 
   const [countdown, setCountdown] = useState("");
 
-  // Handle guest events (joins/cancellations)
-  const handleGuestEvent = useCallback((event: "joined" | "cancelled", guest: MomentGuest) => {
+  // Handle guest events (joins/cancellations/arrivals)
+  const handleGuestEvent = useCallback((event: "joined" | "cancelled" | "arrived" | "running_late", guest: MomentGuest) => {
     if (event === "joined") {
       addNotification({
         type: "guest_joined",
@@ -49,6 +49,22 @@ export default function MomentLiveScreen() {
       });
       // Update local guest list
       setGuests((prev) => prev.filter((g) => g.userId !== guest.userId));
+    } else if (event === "arrived") {
+      addNotification({
+        type: "guest_arrived",
+        title: "Guest arrived!",
+        message: `${guest.firstName} is here`,
+        momentId: params.momentId,
+        guestName: guest.firstName,
+      });
+    } else if (event === "running_late") {
+      addNotification({
+        type: "guest_running_late",
+        title: "Running late",
+        message: `${guest.firstName} is running a few minutes late`,
+        momentId: params.momentId,
+        guestName: guest.firstName,
+      });
     }
   }, [params.momentId, addNotification]);
 

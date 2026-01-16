@@ -1,12 +1,18 @@
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, ActivityIndicator, Platform, Alert } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useState } from "react";
 import { useMomentStore } from "../src/stores/momentStore";
+import { useAuthStore } from "../src/stores/authStore";
 
 export default function ArrivalScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ momentId: string }>();
   const moments = useMomentStore((state) => state.moments);
+  const notifyHostRunningLate = useMomentStore((state) => state.notifyHostRunningLate);
+  const user = useAuthStore((state) => state.user);
+
+  const [notifying, setNotifying] = useState(false);
 
   const moment = moments.find((m) => m.id === params.momentId);
   const hostName = moment?.host_name || "them";
@@ -16,10 +22,21 @@ export default function ArrivalScreen() {
     router.replace(`/feedback?momentId=${params.momentId}&hostName=${encodeURIComponent(hostName)}`);
   };
 
-  const handleRunningLate = () => {
-    // In a real app, this would notify the host
-    // For now, just go back
-    router.back();
+  const handleRunningLate = async () => {
+    if (!user || !moment || notifying) return;
+
+    setNotifying(true);
+    const guestName = user.first_name || "Guest";
+    await notifyHostRunningLate(moment.id, user.id, guestName);
+    setNotifying(false);
+
+    // Show confirmation
+    const message = `${hostName} has been notified that you're running a few minutes late.`;
+    if (Platform.OS === "web") {
+      window.alert(message);
+    } else {
+      Alert.alert("Host notified", message);
+    }
   };
 
   const handleCantFind = () => {
@@ -71,11 +88,16 @@ export default function ArrivalScreen() {
           {/* Running late button */}
           <Pressable
             onPress={handleRunningLate}
+            disabled={notifying}
             className="border border-[#E5E7EB] py-4 rounded-xl items-center active:bg-[#F9FAFB] mb-3"
           >
-            <Text className="text-[16px] text-[#1C1917]">
-              Running a few minutes late →
-            </Text>
+            {notifying ? (
+              <ActivityIndicator size="small" color="#1C1917" />
+            ) : (
+              <Text className="text-[16px] text-[#1C1917]">
+                Running a few minutes late →
+              </Text>
+            )}
           </Pressable>
 
           {/* Can't find them button */}

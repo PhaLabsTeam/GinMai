@@ -117,28 +117,34 @@ export interface Database {
           id: string;
           moment_id: string;
           user_id: string;
-          status: "confirmed" | "cancelled" | "no_show" | "completed";
+          status: "confirmed" | "cancelled" | "no_show" | "completed" | "arrived";
           joined_at: string;
           arrived_at: string | null;
           cancelled_at: string | null;
+          running_late: boolean;
+          running_late_at: string | null;
         };
         Insert: {
           id?: string;
           moment_id: string;
           user_id: string;
-          status?: "confirmed" | "cancelled" | "no_show" | "completed";
+          status?: "confirmed" | "cancelled" | "no_show" | "completed" | "arrived";
           joined_at?: string;
           arrived_at?: string | null;
           cancelled_at?: string | null;
+          running_late?: boolean;
+          running_late_at?: string | null;
         };
         Update: {
           id?: string;
           moment_id?: string;
           user_id?: string;
-          status?: "confirmed" | "cancelled" | "no_show" | "completed";
+          status?: "confirmed" | "cancelled" | "no_show" | "completed" | "arrived";
           joined_at?: string;
           arrived_at?: string | null;
           cancelled_at?: string | null;
+          running_late?: boolean;
+          running_late_at?: string | null;
         };
       };
       relationships: {
