@@ -1,4 +1,4 @@
-import { View, Text, Pressable, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, ActivityIndicator, Alert, Platform } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
@@ -42,20 +42,34 @@ export default function FeedbackScreen() {
 
     setSubmitting(true);
 
-    // Submit feedback
-    await submitFeedback({
-      momentId: params.momentId,
-      fromUserId: user.id,
-      aboutUserId: hostId,
-      rating,
-      eatAgain,
-    });
+    try {
+      // Submit feedback
+      const feedbackResult = await submitFeedback({
+        momentId: params.momentId,
+        fromUserId: user.id,
+        aboutUserId: hostId,
+        rating,
+        eatAgain,
+      });
 
-    // Mark connection as completed
-    await markConnectionCompleted(params.momentId, user.id);
+      if (!feedbackResult.success) {
+        throw new Error(feedbackResult.error || "Failed to submit feedback");
+      }
 
-    setSubmitting(false);
-    router.replace("/map");
+      // Mark connection as completed
+      await markConnectionCompleted(params.momentId, user.id);
+
+      setSubmitting(false);
+      router.replace("/map");
+    } catch (err) {
+      setSubmitting(false);
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      if (Platform.OS === "web") {
+        window.alert(message);
+      } else {
+        Alert.alert("Error", message);
+      }
+    }
   };
 
   const handleEatAgain = async (wantsToEatAgain: boolean) => {

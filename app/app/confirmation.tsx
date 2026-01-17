@@ -90,8 +90,8 @@ export default function ConfirmationScreen() {
 
   const formatNumber = (num: number) => num.toString().padStart(2, "0");
 
-  // Simulated walking distance
-  const walkingDistance = "8 min walk";
+  // Show area name or generic "nearby" instead of hardcoded distance
+  const locationHint = moment.location.area_name || "Nearby";
 
   return (
     <SafeAreaView className="flex-1 bg-[#FAFAF9]">
@@ -144,9 +144,9 @@ export default function ConfirmationScreen() {
           {moment.location.place_name || moment.location.area_name || "Your destination"}
         </Text>
 
-        {/* Walking distance */}
+        {/* Location hint */}
         <Text className="text-center text-[15px] text-[#6B7280] mt-1">
-          {walkingDistance}
+          {locationHint}
         </Text>
 
         {/* Host info */}

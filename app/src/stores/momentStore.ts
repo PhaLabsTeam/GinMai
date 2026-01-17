@@ -57,7 +57,7 @@ const localMomentToDbInsert = (local: Omit<MomentLocal, "id" | "created_at">): M
 // User's connection to a moment
 interface UserConnection {
   momentId: string;
-  status: "confirmed" | "cancelled" | "no_show" | "completed";
+  status: "confirmed" | "cancelled" | "no_show" | "completed" | "arrived";
   joinedAt: string;
 }
 
@@ -67,7 +67,7 @@ export interface MomentGuest {
   userId: string;
   firstName: string;
   joinedAt: string;
-  status: "confirmed" | "cancelled" | "no_show" | "completed";
+  status: "confirmed" | "cancelled" | "no_show" | "completed" | "arrived";
 }
 
 // Callback type for guest events
@@ -440,7 +440,7 @@ export const useMomentStore = create<MomentState>((set, get) => ({
       // Update user connection status locally
       set((state) => ({
         userConnections: state.userConnections.map((c) =>
-          c.momentId === momentId ? { ...c, status: "completed" as const } : c
+          c.momentId === momentId ? { ...c, status: "arrived" as const } : c
         ),
       }));
       return { success: true };
@@ -462,7 +462,7 @@ export const useMomentStore = create<MomentState>((set, get) => ({
       // Update local user connections
       set((state) => ({
         userConnections: state.userConnections.map((c) =>
-          c.momentId === momentId ? { ...c, status: "completed" as const } : c
+          c.momentId === momentId ? { ...c, status: "arrived" as const } : c
         ),
       }));
 
