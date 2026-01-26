@@ -25,7 +25,7 @@ export default function WelcomeScreen() {
   // Show loading while checking auth state
   if (!initialized) {
     return (
-      <SafeAreaView className="flex-1 bg-[#FAFAF9] items-center justify-center">
+      <SafeAreaView testID="welcome-loading" className="flex-1 bg-[#FAFAF9] items-center justify-center">
         <Text className="text-center text-[56px] font-bold text-[#1C1917] leading-tight">
           กินไหม
         </Text>
@@ -47,23 +47,24 @@ export default function WelcomeScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-[#FAFAF9]">
+    <SafeAreaView testID="welcome-screen" className="flex-1 bg-[#FAFAF9]">
       <View className="flex-1 px-8">
         {/* Main content - positioned in upper portion */}
         <View className="pt-16">
           {/* Thai title */}
-          <Text className="text-center text-[56px] font-bold text-[#1C1917] leading-tight">
+          <Text testID="welcome-title" className="text-center text-[56px] font-bold text-[#1C1917] leading-tight">
             กินไหม
           </Text>
 
           {/* English subtitle */}
-          <Text className="text-center text-[22px] text-[#9CA3AF] mt-1">
+          <Text testID="welcome-subtitle" className="text-center text-[22px] text-[#9CA3AF] mt-1">
             Wanna eat?
           </Text>
 
           {/* Let's go button */}
           <View className="items-center mt-12">
             <Pressable
+              testID="welcome-lets-go-button"
               onPress={handleLetsGo}
               className="bg-[#1C1917] px-14 py-4 rounded-full active:opacity-80"
             >
@@ -77,6 +78,7 @@ export default function WelcomeScreen() {
         {/* Floating action button */}
         <View className="absolute bottom-8 right-0">
           <Pressable
+            testID="welcome-fab"
             onPress={handleLetsGo}
             className="w-14 h-14 bg-[#1F2937] rounded-full items-center justify-center active:opacity-80"
           >

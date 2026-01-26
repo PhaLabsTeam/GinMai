@@ -4,12 +4,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useEffect, useCallback } from "react";
 import { useMomentStore, MomentGuest } from "../src/stores/momentStore";
 import { useNotificationStore } from "../src/stores/notificationStore";
-import { MapComponent } from "../src/components/MapComponent";
 import { InAppToast } from "../src/components/InAppToast";
 
 export default function MomentLiveScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ momentId: string }>();
+
   const moments = useMomentStore((state) => state.moments);
   const cancelMomentInDb = useMomentStore((state) => state.cancelMomentInDb);
   const fetchMomentGuests = useMomentStore((state) => state.fetchMomentGuests);
@@ -19,8 +19,24 @@ export default function MomentLiveScreen() {
 
   const [cancelling, setCancelling] = useState(false);
   const [guests, setGuests] = useState<MomentGuest[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const moment = moments.find((m) => m.id === params.momentId);
+
+  // Handle race condition: wait for moment to appear in store
+  useEffect(() => {
+    if (moment) {
+      setIsLoading(false);
+      return;
+    }
+
+    // If moment not found, wait a bit for store to sync
+    const timeout = setTimeout(() => {
+      setIsLoading(false);
+    }, 500);
+
+    return () => clearTimeout(timeout);
+  }, [moment]);
 
   const [countdown, setCountdown] = useState("");
 
@@ -70,12 +86,16 @@ export default function MomentLiveScreen() {
 
   // Fetch guests and subscribe to real-time updates
   useEffect(() => {
-    if (!params.momentId) return;
+    if (!params.momentId || !moment) return;
 
     // Fetch initial guests
-    fetchMomentGuests(params.momentId).then((fetchedGuests) => {
-      setGuests(fetchedGuests);
-    });
+    fetchMomentGuests(params.momentId)
+      .then((fetchedGuests) => {
+        setGuests(fetchedGuests);
+      })
+      .catch((err) => {
+        console.error("Error fetching guests:", err);
+      });
 
     // Subscribe to real-time connection updates
     const unsubscribe = subscribeToMomentConnections(params.momentId, handleGuestEvent);
@@ -83,7 +103,7 @@ export default function MomentLiveScreen() {
     return () => {
       unsubscribe();
     };
-  }, [params.momentId, fetchMomentGuests, subscribeToMomentConnections, handleGuestEvent]);
+  }, [params.momentId, moment, fetchMomentGuests, subscribeToMomentConnections, handleGuestEvent]);
 
   // Sync guests from store when they change
   useEffect(() => {
@@ -133,6 +153,16 @@ export default function MomentLiveScreen() {
     router.push("/table-sign");
   };
 
+  // Show loading while waiting for moment to appear in store
+  if (isLoading && !moment) {
+    return (
+      <SafeAreaView className="flex-1 bg-[#FAFAF9] items-center justify-center">
+        <ActivityIndicator size="large" color="#1C1917" />
+        <Text className="text-[#78716C] mt-4">Loading your moment...</Text>
+      </SafeAreaView>
+    );
+  }
+
   if (!moment) {
     return (
       <SafeAreaView className="flex-1 bg-[#FAFAF9] items-center justify-center">
@@ -168,44 +198,17 @@ export default function MomentLiveScreen() {
           </Text>
         </View>
 
-        {/* Map showing moment location */}
-        <View className="mt-8 rounded-2xl h-52 overflow-hidden">
-          <MapComponent
-            region={{
-              latitude: moment.location.lat,
-              longitude: moment.location.lng,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
-            }}
-            markers={[{
-              id: moment.id,
-              latitude: moment.location.lat,
-              longitude: moment.location.lng,
-            }]}
-            scrollEnabled={false}
-            zoomEnabled={false}
-            style={{ flex: 1 }}
-            fallback={
-              <View className="flex-1 bg-[#F3F4F6] items-center justify-center">
-                <View className="w-12 h-12 items-center justify-center">
-                  <View className="w-8 h-10 bg-[#4B5563] rounded-full rounded-b-none items-center pt-1.5">
-                    <View className="w-3 h-3 bg-[#F3F4F6] rounded-full" />
-                  </View>
-                  <View
-                    style={{
-                      borderLeftWidth: 8,
-                      borderRightWidth: 8,
-                      borderTopWidth: 10,
-                      borderLeftColor: "transparent",
-                      borderRightColor: "transparent",
-                      borderTopColor: "#4B5563",
-                      marginTop: -1,
-                    }}
-                  />
-                </View>
+        {/* Location display - static to avoid native map crash during navigation */}
+        <View className="mt-8 rounded-2xl h-40 overflow-hidden bg-[#F3F4F6]">
+          <View className="flex-1 items-center justify-center">
+            {/* Location pin icon */}
+            <View className="w-16 h-16 rounded-full bg-[#F97316]/20 items-center justify-center mb-2">
+              <View className="w-10 h-10 rounded-full bg-[#F97316]/30 items-center justify-center">
+                <Text className="text-2xl">📍</Text>
               </View>
-            }
-          />
+            </View>
+            <Text className="text-[#6B7280] text-sm">Your location is visible</Text>
+          </View>
         </View>
 
         {/* Place name */}

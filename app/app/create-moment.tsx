@@ -201,36 +201,45 @@ export default function CreateMomentScreen() {
       return;
     }
 
-    const startsAt = getSelectedTime();
-    const durationHours = duration === "quick" ? 0.5 : duration === "normal" ? 1 : 2;
-    const expiresAt = new Date(startsAt.getTime() + (durationHours + 1) * 60 * 60000);
+    try {
+      const startsAt = getSelectedTime();
+      const durationHours = duration === "quick" ? 0.5 : duration === "normal" ? 1 : 2;
+      const expiresAt = new Date(startsAt.getTime() + (durationHours + 1) * 60 * 60000);
 
-    // M2: Link moment to authenticated user
-    const momentData: Omit<MomentLocal, "id" | "created_at"> = {
-      host_id: user.id,
-      host_name: user.first_name,
-      starts_at: startsAt.toISOString(),
-      duration,
-      location: {
-        lat: coordinates.lat,
-        lng: coordinates.lng,
-        place_name: !useCurrentLocation ? locationName : undefined,
-        area_name: useCurrentLocation ? locationName : undefined,
-      },
-      seats_total: seats,
-      seats_taken: 0,
-      note: note || undefined,
-      status: "active",
-      expires_at: expiresAt.toISOString(),
-    };
+      // M2: Link moment to authenticated user
+      const momentData: Omit<MomentLocal, "id" | "created_at"> = {
+        host_id: user.id,
+        host_name: user.first_name,
+        starts_at: startsAt.toISOString(),
+        duration,
+        location: {
+          lat: coordinates.lat,
+          lng: coordinates.lng,
+          place_name: !useCurrentLocation ? locationName : undefined,
+          area_name: useCurrentLocation ? locationName : undefined,
+        },
+        seats_total: seats,
+        seats_taken: 0,
+        note: note || undefined,
+        status: "active",
+        expires_at: expiresAt.toISOString(),
+      };
 
-    const createdMoment = await createMomentInDb(momentData);
+      const createdMoment = await createMomentInDb(momentData);
 
-    if (createdMoment) {
-      router.replace(`/moment-live?momentId=${createdMoment.id}`);
-    } else {
+      if (createdMoment) {
+        router.replace(`/moment-live?momentId=${createdMoment.id}`);
+      } else {
+        Alert.alert(
+          "Couldn't create moment",
+          "Something went wrong. Please try again.",
+          [{ text: "OK" }]
+        );
+      }
+    } catch (error) {
+      console.error("Error creating moment:", error);
       Alert.alert(
-        "Couldn't create moment",
+        "Error",
         "Something went wrong. Please try again.",
         [{ text: "OK" }]
       );

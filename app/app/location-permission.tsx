@@ -18,7 +18,7 @@ export default function LocationPermissionScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#FAFAF9]">
+    <SafeAreaView testID="location-permission-screen" className="flex-1 bg-[#FAFAF9]">
       <View className="flex-1 px-6">
         {/* Main content - positioned in upper portion */}
         <View className="pt-10">
@@ -35,6 +35,7 @@ export default function LocationPermissionScreen() {
           {/* Share location button */}
           <View className="mt-10">
             <Pressable
+              testID="location-allow-button"
               onPress={handleShareLocation}
               className="bg-[#1C1917] py-4 rounded-2xl items-center active:opacity-80"
             >
@@ -45,7 +46,7 @@ export default function LocationPermissionScreen() {
           </View>
 
           {/* Not now link */}
-          <Pressable onPress={handleNotNow} className="mt-4">
+          <Pressable testID="location-skip-button" onPress={handleNotNow} className="mt-4">
             <Text className="text-center text-[16px] text-[#78716C]">
               Not now
             </Text>
