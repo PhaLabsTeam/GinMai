@@ -150,33 +150,25 @@ export default function ProfileScreen() {
         {/* Divider */}
         <View className="h-px bg-[#F3F4F6] mx-6" />
 
-        {/* People I'd eat with again */}
+        {/* Connections */}
         <View className="px-6 py-5">
-          <Text className="text-[15px] text-[#6B7280] mb-4">
-            People I'd eat with again
-          </Text>
-          {mockConnections.length > 0 ? (
-            <View className="flex-row">
-              {mockConnections.map((connection) => (
-                <View key={connection.id} className="items-center mr-6">
-                  {/* Avatar placeholder */}
-                  <View className="w-14 h-14 rounded-full bg-[#E5E7EB]" />
-                  <View className="flex-row items-center mt-2">
-                    <Text className="text-[14px] text-[#1C1917]">
-                      {connection.name}
-                    </Text>
-                    {connection.verified && (
-                      <Text className="text-[12px] text-[#22C55E] ml-1">✓</Text>
-                    )}
-                  </View>
-                </View>
-              ))}
+          <Pressable
+            onPress={() => router.push("/connections")}
+            className="bg-white rounded-2xl p-4 shadow-sm flex-row items-center justify-between active:opacity-80"
+          >
+            <View className="flex-row items-center">
+              <Text className="text-[32px] mr-3">🤝</Text>
+              <View>
+                <Text className="text-[17px] font-semibold text-[#1C1917]">
+                  Connections
+                </Text>
+                <Text className="text-[14px] text-[#6B7280] mt-0.5">
+                  People you'd eat with again
+                </Text>
+              </View>
             </View>
-          ) : (
-            <Text className="text-[14px] text-[#9CA3AF]">
-              Share a meal and connect with someone new.
-            </Text>
-          )}
+            <Text className="text-[24px] text-[#9CA3AF]">›</Text>
+          </Pressable>
         </View>
 
         {/* Divider */}

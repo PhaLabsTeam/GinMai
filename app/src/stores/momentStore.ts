@@ -796,6 +796,13 @@ export const useMomentStore = create<MomentState>((set, get) => ({
           p_about_user: aboutUserId,
           p_eat_again: eatAgain,
         });
+
+        // Check for mutual "eat again" match (M4 feature)
+        // This will create a match record and send notifications if both users selected "eat again"
+        const { checkForMatch } = await import("./matchStore");
+        checkForMatch(momentId, fromUserId, aboutUserId).catch((err) => {
+          console.error("Error checking for match:", err);
+        });
       }
 
       return { success: true };

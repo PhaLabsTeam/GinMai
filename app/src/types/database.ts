@@ -222,6 +222,29 @@ export interface Database {
           created_at?: string;
         };
       };
+      eat_again_matches: {
+        Row: {
+          id: string;
+          user_a_id: string;
+          user_b_id: string;
+          moment_id: string;
+          matched_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_a_id: string;
+          user_b_id: string;
+          moment_id: string;
+          matched_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_a_id?: string;
+          user_b_id?: string;
+          moment_id?: string;
+          matched_at?: string;
+        };
+      };
     };
     Functions: {
       nearby_moments: {
@@ -302,3 +325,6 @@ export type FeedbackInsert = Database["public"]["Tables"]["feedback"]["Insert"];
 
 export type BlockedUser = Database["public"]["Tables"]["blocked_users"]["Row"];
 export type BlockedUserInsert = Database["public"]["Tables"]["blocked_users"]["Insert"];
+
+export type EatAgainMatch = Database["public"]["Tables"]["eat_again_matches"]["Row"];
+export type EatAgainMatchInsert = Database["public"]["Tables"]["eat_again_matches"]["Insert"];
