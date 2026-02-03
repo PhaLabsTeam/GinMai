@@ -98,9 +98,9 @@ export function getReliabilityDescription(label: ReliabilityStats['reliabilityLa
     case 'Good':
       return 'Generally reliable';
     case 'Fair':
-      return 'Sometimes doesn't show up';
+      return 'Sometimes does not show up';
     case 'Warning':
-      return 'Often doesn't show up';
+      return 'Often does not show up';
     case 'New':
     default:
       return 'New to GinMai';
