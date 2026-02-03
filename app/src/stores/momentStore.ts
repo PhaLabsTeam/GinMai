@@ -101,6 +101,7 @@ interface MomentState {
   joinMoment: (momentId: string, userId: string) => Promise<{ success: boolean; error?: string }>;
   leaveMoment: (momentId: string, userId: string) => Promise<{ success: boolean; error?: string }>;
   markArrived: (momentId: string, userId: string) => Promise<{ success: boolean; error?: string }>;
+  markRunningLate: (momentId: string, userId: string) => Promise<{ success: boolean; error?: string }>;
   notifyHostRunningLate: (momentId: string, userId: string, guestName: string) => Promise<void>;
   subscribeToMoments: () => () => void;
 
@@ -469,6 +470,35 @@ export const useMomentStore = create<MomentState>((set, get) => ({
       return { success: true };
     } catch (err) {
       console.error("Error marking arrived:", err);
+      return { success: false, error: (err as Error).message };
+    }
+  },
+
+  // Mark user as running late for a moment
+  markRunningLate: async (momentId: string, userId: string) => {
+    // In DEV_MODE, just update local state
+    if (DEV_MODE || !isSupabaseConfigured()) {
+      console.log("[DEV MODE] Marking user as running late");
+      return { success: true };
+    }
+
+    try {
+      // Update connection with running_late flag
+      const { error } = await db
+        .from("connections")
+        .update({
+          running_late: true,
+          running_late_at: new Date().toISOString(),
+        })
+        .eq("moment_id", momentId)
+        .eq("user_id", userId);
+
+      if (error) throw error;
+
+      console.log("✅ User marked as running late");
+      return { success: true };
+    } catch (err) {
+      console.error("❌ Error marking running late:", err);
       return { success: false, error: (err as Error).message };
     }
   },

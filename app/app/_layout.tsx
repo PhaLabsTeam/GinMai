@@ -4,6 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { useAuthStore } from "../src/stores/authStore";
 import { useNotifications } from "../src/hooks/useNotifications";
+import { useMomentReminders } from "../src/hooks/useMomentReminders";
 
 export default function RootLayout() {
   const initialize = useAuthStore((state) => state.initialize);
@@ -12,6 +13,9 @@ export default function RootLayout() {
 
   // Initialize push notifications
   const { expoPushToken } = useNotifications();
+
+  // Schedule running late reminders for user's moments
+  useMomentReminders();
 
   // Initialize auth on app launch to restore persisted session
   useEffect(() => {
