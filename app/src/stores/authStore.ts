@@ -21,6 +21,7 @@ interface AuthState {
   sendOtp: (phone: string) => Promise<{ success: boolean; error?: string }>;
   verifyOtp: (phone: string, code: string, firstName: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
+  updatePushToken: (token: string) => Promise<void>;
   clearError: () => void;
 }
 
@@ -328,6 +329,57 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (error) {
       console.error("Sign out error:", error);
       set({ loading: false, error: (error as Error).message });
+    }
+  },
+
+  // Update push notification token
+  updatePushToken: async (token: string) => {
+    const { user } = get();
+
+    if (!user) {
+      console.warn("Cannot update push token: no user logged in");
+      return;
+    }
+
+    // In DEV_MODE, just update local state without database call
+    if (DEV_MODE) {
+      console.log("[DEV MODE] Push token would be saved:", token);
+      set({
+        user: {
+          ...user,
+          push_token: token,
+        },
+      });
+      return;
+    }
+
+    if (!isSupabaseConfigured()) {
+      console.log("Supabase not configured, skipping push token update");
+      return;
+    }
+
+    try {
+      const { error } = await db
+        .from("users")
+        .update({ push_token: token })
+        .eq("id", user.id);
+
+      if (error) {
+        console.error("Error updating push token:", error);
+        return;
+      }
+
+      console.log("✅ Push token saved to database");
+
+      // Update local state
+      set({
+        user: {
+          ...user,
+          push_token: token,
+        },
+      });
+    } catch (error) {
+      console.error("Error updating push token:", error);
     }
   },
 
