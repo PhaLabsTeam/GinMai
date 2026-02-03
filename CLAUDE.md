@@ -32,14 +32,15 @@ Read these before writing any code:
 
 ---
 
-## Current Status: M3 Complete, Starting M4
+## Current Status: M4 Complete! ✅
 
 **Milestones Completed:**
 - ✅ **M1 - The First Moment**: Map, moment creation, moment visibility
 - ✅ **M2 - Identity**: Phone auth with OTP, user profiles, verification badges
 - ✅ **M3 - The Loop**: Join moments, host notifications, arrival flow, post-meal feedback
+- ✅ **M4 - Push Notifications & Reliability**: Push notifications, running late reminders, reliability signals, enhanced matching
 
-**Current Focus: Testing & M4 Features**
+**Current Focus: Manual Testing**
 
 ### What Works Now
 - Users can sign up with phone verification
@@ -48,13 +49,17 @@ Read these before writing any code:
 - Real-time host notifications (guests join, arrive, cancel, running late)
 - Guest arrival flow with "Found them!" confirmation
 - Post-meal feedback with "eat again" matching
-- In-app notification system for all events
+- **NEW:** Push notifications (background & foreground)
+- **NEW:** Running late reminders (10 min before meal)
+- **NEW:** Reliability scores and badges on profiles
+- **NEW:** Connections screen showing matched users
+- **NEW:** Mutual "eat again" match notifications
 
-### Next: M4 - Push Notifications & Reliability
-- Push notifications (currently in-app only)
-- Running late reminders 10 min before meal
-- Connection reliability signals
-- Enhanced "eat again" matching logic
+### Next: Manual Testing & Bug Fixes
+- Test all M4 features on physical device
+- Fix any issues found during testing
+- Polish UX based on feedback
+- Then: M5 planning or feature refinement
 
 ---
 
