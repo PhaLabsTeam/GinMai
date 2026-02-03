@@ -106,7 +106,9 @@ export async function scheduleLocalNotification(
         sound: 'default',
       },
       trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
         seconds: triggerSeconds,
+        repeats: false,
       },
     });
 

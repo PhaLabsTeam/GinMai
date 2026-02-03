@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
+import { router } from 'expo-router';
 
 // Configure how notifications are handled when app is in foreground
 Notifications.setNotificationHandler({
@@ -41,9 +42,15 @@ export function useNotifications() {
     // Listener for when user taps on notification
     responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
       console.log('👆 Notification tapped:', response);
-      // TODO: Handle navigation based on notification data
-      const data = response.notification.request.content.data;
+      const data = response.notification.request.content.data as any;
       console.log('Notification data:', data);
+
+      // Handle navigation based on notification type
+      if (data?.type === 'running_late_reminder' && data?.momentId) {
+        console.log('🚀 Navigating to running-late screen for moment:', data.momentId);
+        router.push(`/running-late?momentId=${data.momentId}`);
+      }
+      // Add more notification type handlers here as needed
     });
 
     return () => {

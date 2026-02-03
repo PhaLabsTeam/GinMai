@@ -18,6 +18,32 @@ export function useMomentReminders() {
     // Schedule reminders for all upcoming moments user is connected to
     const scheduledReminders: string[] = [];
 
+    // 1. Schedule reminders for moments the user is HOSTING
+    const hostedMoments = moments.filter((m) => m.host_id === user.id);
+    hostedMoments.forEach((moment) => {
+      // Check if moment is in the future and active
+      if (moment.status !== 'active') return;
+
+      const momentTime = new Date(moment.starts_at);
+      const now = new Date();
+
+      if (momentTime > now) {
+        const location = moment.location.place_name || moment.location.area_name || 'your location';
+
+        scheduleRunningLateReminder(moment.id, momentTime, location)
+          .then((scheduled) => {
+            if (scheduled) {
+              scheduledReminders.push(moment.id);
+              console.log(`⏰ Scheduled reminder for hosted moment: ${moment.id}`);
+            }
+          })
+          .catch((err) => {
+            console.error('Error scheduling reminder:', err);
+          });
+      }
+    });
+
+    // 2. Schedule reminders for moments the user has JOINED
     userConnections.forEach((connection) => {
       // Only schedule for confirmed connections (not cancelled or completed)
       if (connection.status !== 'confirmed') return;
@@ -36,7 +62,7 @@ export function useMomentReminders() {
           .then((scheduled) => {
             if (scheduled) {
               scheduledReminders.push(moment.id);
-              console.log(`⏰ Scheduled reminder for moment: ${moment.id}`);
+              console.log(`⏰ Scheduled reminder for joined moment: ${moment.id}`);
             }
           })
           .catch((err) => {
