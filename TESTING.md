@@ -1,5 +1,34 @@
 # Testing Infrastructure for GinMai
 
+## ⚠️ Important: Manual Testing Required
+
+**Status:** Testing infrastructure added but **NOT manually tested in the app yet**.
+
+### Safe Revert Point
+
+If anything breaks during manual testing, you can safely revert to the last confirmed working commit:
+
+```bash
+# Revert to last known working state (before testing infrastructure)
+git reset --hard 0af95e8
+
+# Or create a new branch from the safe commit
+git checkout -b safe-working-state 0af95e8
+```
+
+**Timeline:**
+- ✅ **Commit `0af95e8` and earlier** - Confirmed working (M3 complete)
+- ⚠️ **Commit `ffb1037` and later** - Testing infrastructure added, needs manual verification
+
+### Before Merging to Production
+
+1. ✅ Run unit tests: `npm test` (28/28 passing)
+2. ⏳ Manual testing of all M1-M3 features
+3. ⏳ Run Maestro E2E tests on actual device
+4. ⏳ Verify no regressions introduced
+
+---
+
 ## Overview
 
 This document describes the testing strategy and setup for GinMai, including both E2E (Maestro) and unit tests (Jest).
