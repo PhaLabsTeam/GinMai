@@ -1,0 +1,27 @@
+appId: com.ginmai.app
+---
+- launchApp
+- assertVisible: "Welcome to GinMai"
+
+# Accept location permission
+- tapOn: "Allow While Using App"
+
+# Start signup
+- tapOn: "Get started"
+
+# Enter phone number
+- tapOn: "Phone number"
+- inputText: "+66812345678"
+- tapOn: "Continue"
+
+# Enter OTP (DEV_MODE uses mock verification)
+- tapOn: "Verification code"
+- inputText: "1234"
+
+# Enter first name
+- tapOn: "First name"
+- inputText: "Test User"
+- tapOn: "Continue"
+
+# Verify landing on map
+- assertVisible: "Map"

@@ -1,0 +1,39 @@
+appId: com.ginmai.app
+---
+# Prerequisite: user logged in
+- runFlow: 01-auth-signup.yaml
+
+# Start create flow
+- tapOn: "Share where you're eating"
+- assertVisible: "Share your lunch"
+
+# Select time: Now
+- tapOn: "Now"
+- tapOn: "Next"
+
+# Select location: Current location
+- tapOn: "Use current location"
+- tapOn: "Next"
+
+# Select seats: 2
+- tapOn:
+    text: "2"
+    index: 0
+
+# Select duration: Normal (1 hour)
+- tapOn: "Normal"
+
+# Add optional note
+- tapOn: "Note (optional)"
+- inputText: "Testing moment creation"
+
+# Create moment
+- tapOn: "Make visible"
+
+# Verify redirect to live screen
+- assertVisible: "Lunch visible."
+- assertVisible: "You're just eating as planned."
+
+# Verify moment shows on map
+- tapOn: "View on map"
+- assertVisible: "Test User"

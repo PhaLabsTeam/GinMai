@@ -32,29 +32,29 @@ Read these before writing any code:
 
 ---
 
-## Current Milestone: M1 — The First Moment
+## Current Status: M3 Complete, Starting M4
 
-**Goal:** A user can create a Moment and see it appear on the map.
+**Milestones Completed:**
+- ✅ **M1 - The First Moment**: Map, moment creation, moment visibility
+- ✅ **M2 - Identity**: Phone auth with OTP, user profiles, verification badges
+- ✅ **M3 - The Loop**: Join moments, host notifications, arrival flow, post-meal feedback
 
-### Acceptance Criteria
+**Current Focus: Testing & M4 Features**
 
-- [ ] App opens to a map centered on user's location
-- [ ] Empty state shows "Nothing here yet" message with CTA
-- [ ] User can tap "Share where you're eating"
-- [ ] Three-tap creation: Time → Place → Seats
-- [ ] Moment appears as a pulse on the map
-- [ ] Moment card shows: time, location, host name, seats
-- [ ] Moment expires after scheduled time + 1 hour
+### What Works Now
+- Users can sign up with phone verification
+- Create moments (time, place, seats, duration, note)
+- Browse and join moments from map
+- Real-time host notifications (guests join, arrive, cancel, running late)
+- Guest arrival flow with "Found them!" confirmation
+- Post-meal feedback with "eat again" matching
+- In-app notification system for all events
 
-### Not In This Milestone
-
-- User accounts / authentication
-- Joining moments
-- Push notifications
-- Post-meal feedback
-- Safety features
-
-We're proving one thing: _Can a Moment exist?_
+### Next: M4 - Push Notifications & Reliability
+- Push notifications (currently in-app only)
+- Running late reminders 10 min before meal
+- Connection reliability signals
+- Enhanced "eat again" matching logic
 
 ---
 
@@ -205,6 +205,46 @@ supabase gen types typescript --local > ../app/src/types/database.ts
 
 ---
 
+## Testing
+
+### E2E Testing with Maestro
+```bash
+# Install Maestro
+curl -Ls "https://get.maestro.mobile.dev" | bash
+
+# Run all E2E tests
+maestro test .maestro/flows/
+
+# Run specific flow
+maestro test .maestro/flows/02-create-moment.yaml
+
+# Visual test recorder
+maestro studio
+```
+
+### Unit Testing with Jest
+```bash
+cd app
+
+# Run all tests
+npm test
+
+# Watch mode
+npm run test:watch
+
+# Coverage report
+npm run test:coverage
+```
+
+### Critical Test Flows
+- Authentication signup with OTP
+- Create moment (3-step flow)
+- Join moment with seat tracking
+- Arrival flow and host notifications
+- Post-meal feedback submission
+
+---
+
 ## Git Workflow
 
 ### Rules
@@ -239,8 +279,11 @@ For full context, see:
 
 ## Current Focus
 
-**Right now, we are building Milestone 1.**
+**We've completed M1-M3. The core loop works.**
 
-The only question that matters: _Can a user create a Moment and see it on the map?_
+Now focusing on:
+1. **Testing infrastructure** — E2E and unit tests for reliability
+2. **Manual testing** — Validate all flows work end-to-end
+3. **M4 features** — Push notifications and reliability signals
 
-Everything else waits.
+The app is functional. Time to make it solid.

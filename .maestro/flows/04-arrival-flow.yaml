@@ -1,0 +1,17 @@
+appId: com.ginmai.app
+---
+# Prerequisite: user joined moment
+- runFlow: 03-join-moment.yaml
+
+# Navigate to arrival screen (appears when meal time approaches)
+- tapOn: "I'm here"
+
+# Verify arrival confirmation
+- assertVisible: "You're here"
+- assertVisible: "Look for the GinMai table sign"
+
+# Mark found
+- tapOn: "Found them!"
+
+# Verify redirect to feedback
+- assertVisible: "How was lunch?"

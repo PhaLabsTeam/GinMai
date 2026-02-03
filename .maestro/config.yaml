@@ -1,0 +1,3 @@
+appId: com.ginmai.app
+env:
+  DEV_MODE: true

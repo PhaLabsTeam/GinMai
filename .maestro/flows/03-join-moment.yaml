@@ -1,0 +1,30 @@
+appId: com.ginmai.app
+---
+# Prerequisite: moment exists on map
+- runFlow: 02-create-moment.yaml
+
+# Logout and create new user to join moment
+- tapOn: "Profile"
+- tapOn: "Settings"
+- tapOn: "Log out"
+- tapOn: "Log out"
+
+# Sign up as second user
+- tapOn: "Get started"
+- tapOn: "Phone number"
+- inputText: "+66823456789"
+- tapOn: "Continue"
+- inputText: "5678"
+- tapOn: "First name"
+- inputText: "Guest User"
+- tapOn: "Continue"
+
+# Find and join moment
+- tapOn: "Test User"
+- assertVisible: "Moment Details"
+- assertVisible: "2 seats"
+- tapOn: "Join"
+
+# Verify confirmation screen
+- assertVisible: "You're in!"
+- assertVisible: "Say hi when you arrive"

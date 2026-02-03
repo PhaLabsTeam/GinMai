@@ -1,0 +1,16 @@
+appId: com.ginmai.app
+---
+# Prerequisite: arrival complete
+- runFlow: 04-arrival-flow.yaml
+
+# Rate meal: Great
+- tapOn: "Great"
+
+# Eat again: Yes
+- tapOn: "Yes, let's eat again"
+
+# Submit feedback
+- tapOn: "Submit"
+
+# Verify completion
+- assertVisible: "Thanks for sharing!"
