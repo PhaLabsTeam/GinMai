@@ -2,6 +2,7 @@ import { View, Text, Pressable, ScrollView, ActivityIndicator } from "react-nati
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore } from "../src/stores/authStore";
+import { ReliabilityScore } from "../src/components/ReliabilityBadge";
 
 // Mock connections - would come from database in real app
 const mockConnections = [
@@ -132,6 +133,18 @@ export default function ProfileScreen() {
               <Text className="text-[14px] text-[#6B7280]">Joined</Text>
             </View>
           </View>
+        </View>
+
+        {/* Divider */}
+        <View className="h-px bg-[#F3F4F6] mx-6" />
+
+        {/* Reliability Score */}
+        <View className="px-6 py-5">
+          <ReliabilityScore
+            mealsHosted={user.meals_hosted}
+            mealsJoined={user.meals_joined}
+            noShows={user.no_shows}
+          />
         </View>
 
         {/* Divider */}
