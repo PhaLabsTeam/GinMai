@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { AppState } from "react-native";
+import { sendPushNotification, NotificationTemplates } from "../utils/sendPushNotification";
 
 export interface InAppNotification {
   id: string;
@@ -16,7 +18,13 @@ interface NotificationState {
   unreadCount: number;
 
   // Actions
-  addNotification: (notification: Omit<InAppNotification, "id" | "createdAt" | "read">) => void;
+  addNotification: (
+    notification: Omit<InAppNotification, "id" | "createdAt" | "read">,
+    options?: {
+      pushToken?: string; // Send push notification to this token
+      sendPush?: boolean; // Force send push notification
+    }
+  ) => void;
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
   removeNotification: (id: string) => void;
@@ -27,7 +35,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   notifications: [],
   unreadCount: 0,
 
-  addNotification: (notification) => {
+  addNotification: (notification, options = {}) => {
     const newNotification: InAppNotification = {
       ...notification,
       id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -35,15 +43,35 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
       read: false,
     };
 
+    // Check if app is in foreground or background
+    const appState = AppState.currentState;
+    const isAppInForeground = appState === 'active';
+
+    // Add to in-app notification list (always do this)
     set((state) => ({
       notifications: [newNotification, ...state.notifications].slice(0, 50), // Keep last 50
       unreadCount: state.unreadCount + 1,
     }));
 
-    // Auto-dismiss after 5 seconds for toast-style notifications
-    setTimeout(() => {
-      get().removeNotification(newNotification.id);
-    }, 5000);
+    // Send push notification if:
+    // 1. Push token is provided AND (app is in background OR sendPush is forced)
+    if (options.pushToken && (!isAppInForeground || options.sendPush)) {
+      sendPushNotificationForEvent(
+        notification.type,
+        notification.title,
+        notification.message,
+        options.pushToken,
+        notification.momentId,
+        notification.guestName
+      );
+    }
+
+    // Auto-dismiss after 5 seconds for toast-style notifications (only if in foreground)
+    if (isAppInForeground) {
+      setTimeout(() => {
+        get().removeNotification(newNotification.id);
+      }, 5000);
+    }
   },
 
   markAsRead: (id) => {
@@ -81,3 +109,62 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
 
   clearNotifications: () => set({ notifications: [], unreadCount: 0 }),
 }));
+
+/**
+ * Helper function to send push notifications based on event type
+ */
+async function sendPushNotificationForEvent(
+  type: InAppNotification['type'],
+  title: string,
+  message: string,
+  pushToken: string,
+  momentId?: string,
+  guestName?: string
+) {
+  try {
+    let payload;
+
+    switch (type) {
+      case 'guest_joined':
+        if (momentId && guestName) {
+          payload = NotificationTemplates.guestJoined(pushToken, guestName, momentId);
+        }
+        break;
+
+      case 'guest_arrived':
+        if (momentId && guestName) {
+          payload = NotificationTemplates.guestArrived(pushToken, guestName, momentId);
+        }
+        break;
+
+      case 'guest_cancelled':
+        if (momentId && guestName) {
+          payload = NotificationTemplates.guestCancelled(pushToken, guestName, momentId);
+        }
+        break;
+
+      case 'guest_running_late':
+        if (momentId && guestName) {
+          payload = NotificationTemplates.guestRunningLate(pushToken, guestName, momentId);
+        }
+        break;
+
+      case 'info':
+      default:
+        // Generic notification
+        payload = {
+          to: pushToken,
+          title,
+          body: message,
+          data: { type, momentId },
+        };
+        break;
+    }
+
+    if (payload) {
+      await sendPushNotification(payload);
+    }
+  } catch (error) {
+    console.error('Error sending push notification:', error);
+  }
+}
