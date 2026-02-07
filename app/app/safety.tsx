@@ -145,6 +145,27 @@ export default function SafetyScreen() {
           ))}
         </View>
 
+        {/* Blocked Users Link */}
+        <View className="px-6 mb-4">
+          <Pressable
+            onPress={() => router.push("/blocked-users")}
+            className="bg-white rounded-xl p-4 border border-[#E7E5E4] flex-row items-center justify-between active:opacity-70"
+          >
+            <View className="flex-row items-center">
+              <Text className="text-2xl mr-3">🚫</Text>
+              <View>
+                <Text className="text-[#1C1917] font-semibold">
+                  Blocked Users
+                </Text>
+                <Text className="text-[#78716C] text-sm">
+                  Manage who you've blocked
+                </Text>
+              </View>
+            </View>
+            <Text className="text-[#9CA3AF] text-xl">›</Text>
+          </Pressable>
+        </View>
+
         {/* Safety Tips */}
         <View className="mx-6 mb-6 bg-white rounded-xl p-4 border border-[#E7E5E4]">
           <Text className="text-[#1C1917] font-semibold mb-3">

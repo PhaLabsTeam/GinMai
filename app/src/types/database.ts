@@ -286,6 +286,26 @@ export interface Database {
           created_at?: string;
         };
       };
+      blocks: {
+        Row: {
+          id: string;
+          blocker_id: string;
+          blocked_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          blocker_id: string;
+          blocked_id: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          blocker_id?: string;
+          blocked_id?: string;
+          created_at?: string;
+        };
+      };
     };
     Functions: {
       nearby_moments: {
@@ -372,4 +392,8 @@ export type EatAgainMatch = Database["public"]["Tables"]["eat_again_matches"]["R
 export type Report = Database["public"]["Tables"]["reports"]["Row"];
 export type ReportInsert = Database["public"]["Tables"]["reports"]["Insert"];
 export type ReportUpdate = Database["public"]["Tables"]["reports"]["Update"];
+
+export type Block = Database["public"]["Tables"]["blocks"]["Row"];
+export type BlockInsert = Database["public"]["Tables"]["blocks"]["Insert"];
+export type BlockUpdate = Database["public"]["Tables"]["blocks"]["Update"];
 export type EatAgainMatchInsert = Database["public"]["Tables"]["eat_again_matches"]["Insert"];
