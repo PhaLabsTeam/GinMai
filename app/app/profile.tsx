@@ -174,6 +174,30 @@ export default function ProfileScreen() {
         {/* Divider */}
         <View className="h-px bg-[#F3F4F6] mx-6" />
 
+        {/* Safety & Privacy */}
+        <View className="px-6 py-5">
+          <Pressable
+            onPress={() => router.push("/safety")}
+            className="bg-white rounded-2xl p-4 shadow-sm flex-row items-center justify-between active:opacity-80"
+          >
+            <View className="flex-row items-center">
+              <Text className="text-[32px] mr-3">🔒</Text>
+              <View>
+                <Text className="text-[17px] font-semibold text-[#1C1917]">
+                  Safety & Privacy
+                </Text>
+                <Text className="text-[14px] text-[#6B7280] mt-0.5">
+                  Emergency contacts & reporting
+                </Text>
+              </View>
+            </View>
+            <Text className="text-[24px] text-[#9CA3AF]">›</Text>
+          </Pressable>
+        </View>
+
+        {/* Divider */}
+        <View className="h-px bg-[#F3F4F6] mx-6" />
+
         {/* Settings link */}
         <Pressable
           onPress={handleSettings}

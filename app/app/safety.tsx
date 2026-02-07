@@ -168,6 +168,21 @@ export default function SafetyScreen() {
             </Text>
           </View>
         </View>
+
+        {/* Report Inappropriate Behavior */}
+        <View className="mx-6 mb-8">
+          <Pressable
+            onPress={() => router.push("/report-user?userId=test-user&userName=Test User")}
+            className="bg-[#F97316] rounded-xl py-4 active:opacity-80"
+          >
+            <Text className="text-white text-center font-semibold">
+              Report Inappropriate Behavior
+            </Text>
+          </Pressable>
+          <Text className="text-[#78716C] text-xs text-center mt-2">
+            For testing - in production, this appears on user profiles
+          </Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
