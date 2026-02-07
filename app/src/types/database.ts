@@ -245,6 +245,47 @@ export interface Database {
           matched_at?: string;
         };
       };
+      reports: {
+        Row: {
+          id: string;
+          reporter_id: string;
+          reported_user_id: string;
+          moment_id: string | null;
+          category: "no_show" | "inappropriate_behavior" | "harassment" | "fake_profile" | "safety_concern" | "other";
+          description: string | null;
+          status: "pending" | "reviewing" | "resolved" | "dismissed";
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+          admin_notes: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          reporter_id: string;
+          reported_user_id: string;
+          moment_id?: string | null;
+          category: "no_show" | "inappropriate_behavior" | "harassment" | "fake_profile" | "safety_concern" | "other";
+          description?: string | null;
+          status?: "pending" | "reviewing" | "resolved" | "dismissed";
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          admin_notes?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          reporter_id?: string;
+          reported_user_id?: string;
+          moment_id?: string | null;
+          category?: "no_show" | "inappropriate_behavior" | "harassment" | "fake_profile" | "safety_concern" | "other";
+          description?: string | null;
+          status?: "pending" | "reviewing" | "resolved" | "dismissed";
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          admin_notes?: string | null;
+          created_at?: string;
+        };
+      };
     };
     Functions: {
       nearby_moments: {
@@ -327,4 +368,8 @@ export type BlockedUser = Database["public"]["Tables"]["blocked_users"]["Row"];
 export type BlockedUserInsert = Database["public"]["Tables"]["blocked_users"]["Insert"];
 
 export type EatAgainMatch = Database["public"]["Tables"]["eat_again_matches"]["Row"];
+
+export type Report = Database["public"]["Tables"]["reports"]["Row"];
+export type ReportInsert = Database["public"]["Tables"]["reports"]["Insert"];
+export type ReportUpdate = Database["public"]["Tables"]["reports"]["Update"];
 export type EatAgainMatchInsert = Database["public"]["Tables"]["eat_again_matches"]["Insert"];
