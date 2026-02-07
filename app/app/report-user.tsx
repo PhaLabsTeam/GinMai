@@ -103,9 +103,16 @@ export default function ReportUserScreen() {
           },
         ]
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error submitting report:", error);
-      Alert.alert("Error", "Could not submit report. Please try again.");
+
+      // Handle specific errors
+      let errorMessage = "Could not submit report. Please try again.";
+      if (error?.code === "23503") {
+        errorMessage = "Test user doesn't exist. This works in production with real users.";
+      }
+
+      Alert.alert("Error", errorMessage);
     } finally {
       setSubmitting(false);
     }

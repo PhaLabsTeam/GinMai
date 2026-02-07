@@ -172,7 +172,11 @@ export default function SafetyScreen() {
         {/* Report Inappropriate Behavior */}
         <View className="mx-6 mb-8">
           <Pressable
-            onPress={() => router.push("/report-user?userId=test-user&userName=Test User")}
+            onPress={() => {
+              // Use a valid UUID format for testing
+              const testUserId = "99999999-9999-9999-9999-999999999999";
+              router.push(`/report-user?userId=${testUserId}&userName=Test User`);
+            }}
             className="bg-[#F97316] rounded-xl py-4 active:opacity-80"
           >
             <Text className="text-white text-center font-semibold">
