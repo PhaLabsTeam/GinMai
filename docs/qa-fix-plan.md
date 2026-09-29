@@ -21,6 +21,7 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 |---|---|---|---|---|
 | 0 | Baseline: SDK 57, iOS 27 scene fix, this doc | `fix/expo-sdk-57` | 📦 | — |
 | 1 | Auth & data correctness | `fix/auth-and-data` | 📦 awaiting review | — |
+| 1.5 | expo-notifications 57 API (#40) | `fix/notifications-sdk57` | 📦 awaiting review | — |
 | 2 | Host flow & navigation | `fix/host-flow` | ⬜ | — |
 | 3 | Create & sign-in inputs | `fix/create-flow` | ⬜ | — |
 | 4 | Settings, safety, App Store readiness | `fix/app-store-readiness` | ⬜ | — |
@@ -138,8 +139,17 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | # | Issue | Status | Commit |
 |---|---|---|---|
 | 39 | `create-moment` calls `getCurrentPositionAsync` without a catch, so an unavailable location causes an unhandled promise rejection | ⬜ | |
-| 40 | expo-notifications 57 API changes: `removeNotificationSubscription` was removed (still called in `useNotifications.ts` cleanup), the handler needs `shouldShowBanner`/`shouldShowList`, and triggers need a `type` | ⬜ | |
-| 41 | `tsc` fails: TypeScript 6 rejects `baseUrl` in `tsconfig.json`, and the test files have no Jest type definitions | ⬜ | |
+| 40 | expo-notifications 57 API changes: `removeNotificationSubscription` was removed (still called in `useNotifications.ts` cleanup), the handler needs `shouldShowBanner`/`shouldShowList`, and triggers need a `type` | 📦 ✅ | `4a8a2e2` |
+| 41 | `tsc` fails: TypeScript 6 rejects `baseUrl` in `tsconfig.json`, and the test files have no Jest type definitions. Also `notificationStore.ts` builds an `"info"` payload that isn't in `PushNotificationData`'s type union (type-only; sending works) | ⬜ | |
+
+## Phase 1.5: expo-notifications 57 (#40)
+
+Done ahead of Phase 2 because it was a runtime regression from the SDK upgrade.
+
+**Verified:**
+- **Jest:** new `useNotifications.test.tsx` checks that listeners are removed without the removed API, that the handler uses banner/list, and that triggers are typed. All 3 tests fail against the old code. The full suite passes: 44 tests in 7 suites.
+- **Simulator:** with the old code, each fast refresh logged `TypeError: undefined is not a function` from the listener cleanup. With the fix, two fast refreshes logged 0 errors.
+- **Simulator:** a foreground push sent with `xcrun simctl push` shows a banner, and the app logs "Notification received".
 
 ## Phase 7: Two-user E2E
 
