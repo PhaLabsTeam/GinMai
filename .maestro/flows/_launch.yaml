@@ -10,7 +10,7 @@ appId: com.ginmai.app
 - launchApp:
     clearState: true
     permissions:
-      location: inuse
+      location: ${LOCATION || "inuse"}
       notifications: allow
 - runFlow:
     when:

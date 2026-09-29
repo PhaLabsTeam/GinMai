@@ -1,0 +1,16 @@
+# Without location, create-moment explains itself and offers search instead of
+# spinning on "Loading..." or silently pinning the city centre (#39).
+appId: com.ginmai.app
+---
+- runFlow:
+    file: 01-auth-signup.yaml
+    env:
+      LOCATION: never
+
+- extendedWaitUntil:
+    visible: ".*Couldn't find you.*"
+    timeout: 15000
+- tapOn: "Next"
+- assertVisible: "Where are you eating\\?"
+- tapOn: "OK"
+- assertVisible: "Share your .*"

@@ -1,4 +1,4 @@
-# Returning user sign-in (#2, #8, #31).
+# Returning user sign-in (#2, #8, #15, #31).
 # Needs the Supabase test number 66999999999 / 123456, whose profile already has
 # a name. Returning users must not be asked for a name, and should land back on
 # the screen that asked them to sign in.
@@ -23,13 +23,8 @@ appId: com.ginmai.app
 - extendedWaitUntil:
     visible: "We sent a code to \\+66 999 999 999"
     timeout: 15000
-# One digit per command: the per-box inputs drop fast input until Phase 3 (#15)
-- inputText: "1"
-- inputText: "2"
-- inputText: "3"
-- inputText: "4"
-- inputText: "5"
-- inputText: "6"
+# The whole code in one fast burst, like paste or SMS autofill (#15)
+- inputText: "123456"
 
 # Returning user: no name step, back where sign-in started (#8)
 - extendedWaitUntil:
