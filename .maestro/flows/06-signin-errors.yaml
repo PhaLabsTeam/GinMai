@@ -23,6 +23,7 @@ appId: com.ginmai.app
 - extendedWaitUntil:
     visible: "Invalid code"
     timeout: 15000
+# The alert shows friendly copy. (Don't assert the raw error is absent from the
+# whole screen: in dev builds React Native's error toast echoes console.error.)
 - assertVisible: "That code didn't work.*"
-- assertNotVisible: ".*[Tt]oken.*"
 - tapOn: "OK"
