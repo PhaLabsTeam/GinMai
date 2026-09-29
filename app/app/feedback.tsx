@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useMoment } from "../src/hooks/useMoment";
 import { useMomentStore } from "../src/stores/momentStore";
 import { useAuthStore } from "../src/stores/authStore";
+import { mealWord, capitalize } from "../src/utils/mealWord";
 
 type FeedbackOption = "great" | "okay" | "nope" | null;
 
@@ -172,10 +173,10 @@ export default function FeedbackScreen() {
       <View className="flex-1 px-6">
         {step === 1 ? (
           <>
-            {/* Step 1: How was lunch? */}
+            {/* Step 1: How was the meal? */}
             <View className="pt-8">
               <Text className="text-center text-[32px] font-normal text-[#1C1917]">
-                How was lunch?
+                How was {mealWord(moment?.starts_at ?? new Date())}?
               </Text>
             </View>
 

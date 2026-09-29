@@ -131,7 +131,7 @@ export const NotificationTemplates = {
   guestJoined: (pushToken: string, guestName: string, momentId: string): PushNotificationPayload => ({
     to: pushToken,
     title: 'New guest! 🎉',
-    body: `${guestName} wants to join your lunch`,
+    body: `${guestName} wants to join your table`,
     data: {
       type: 'guest_joined',
       momentId,
@@ -174,7 +174,7 @@ export const NotificationTemplates = {
 
   runningLateReminder: (pushToken: string, timeUntilMeal: string): PushNotificationPayload => ({
     to: pushToken,
-    title: 'Your lunch starts soon',
+    title: 'Your meal starts soon',
     body: `Your meal starts in ${timeUntilMeal}. Running late?`,
     data: {
       type: 'running_late_reminder',

@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from "react";
 import * as Location from "expo-location";
 import { useMomentStore } from "../src/stores/momentStore";
 import { MapComponent, mapsAvailable } from "../src/components/MapComponent";
+import { mealWord, capitalize } from "../src/utils/mealWord";
 
 // Default to Chiang Mai center
 const CHIANG_MAI = {
@@ -182,7 +183,7 @@ export default function MapScreen() {
                 Nothing here yet.
               </Text>
               <Text className="text-center text-[14px] text-[#9CA3AF] mt-3 leading-5">
-                Chiang Mai is full of people eating lunch.{"\n"}Someone just needs to make the first seat visible.
+                Chiang Mai is full of people eating {mealWord()}.{"\n"}Someone just needs to make the first seat visible.
               </Text>
             </View>
           ) : (

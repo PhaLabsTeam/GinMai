@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useMoment } from "../src/hooks/useMoment";
 import { useMomentStore } from "../src/stores/momentStore";
 import { useAuthStore } from "../src/stores/authStore";
+import { mealWord, capitalize } from "../src/utils/mealWord";
 
 export default function ConfirmationScreen() {
   const router = useRouter();
@@ -120,7 +121,7 @@ export default function ConfirmationScreen() {
             {formatNumber(countdown.hours)}:{formatNumber(countdown.minutes)}:{formatNumber(countdown.seconds)}
           </Text>
           <Text className="text-center text-[16px] text-[#9CA3AF] mt-1">
-            until lunch
+            until {mealWord(moment.starts_at)}
           </Text>
         </View>
 

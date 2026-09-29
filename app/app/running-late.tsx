@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useMoment } from "../src/hooks/useMoment";
 import { useMomentStore } from "../src/stores/momentStore";
 import { useAuthStore } from "../src/stores/authStore";
+import { mealWord, capitalize } from "../src/utils/mealWord";
 
 export default function RunningLateScreen() {
   const router = useRouter();
@@ -83,7 +84,7 @@ export default function RunningLateScreen() {
         <View className="items-center mb-8">
           <Text className="text-[48px] mb-4">⏰</Text>
           <Text className="text-center text-[28px] font-semibold text-[#1C1917] mb-2">
-            Your lunch starts soon
+            Your {mealWord(moment.starts_at)} starts soon
           </Text>
           <Text className="text-center text-[17px] text-[#6B7280]">
             at {moment.location.place_name || moment.location.area_name || 'your location'}
