@@ -210,25 +210,6 @@ export default function MomentDetailScreen() {
           </Pressable>
         )}
       </View>
-
-      {/* Floating action button - hide if host or full (but show if already joined) */}
-      {!isHost && (!isFull || hasJoined) && (
-        <View className="absolute bottom-24 right-6">
-          <Pressable
-            onPress={handleJoin}
-            disabled={joining}
-            className={`w-14 h-14 rounded-full items-center justify-center shadow-lg ${
-              hasJoined ? "bg-[#22C55E]" : "bg-[#1F2937]"
-            } ${joining ? "opacity-60" : "active:opacity-80"}`}
-          >
-            {joining ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <Text className="text-white text-2xl font-light">›</Text>
-            )}
-          </Pressable>
-        </View>
-      )}
     </SafeAreaView>
   );
 }

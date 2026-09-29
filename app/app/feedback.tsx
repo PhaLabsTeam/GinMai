@@ -245,16 +245,6 @@ export default function FeedbackScreen() {
           </>
         )}
       </View>
-
-      {/* Floating action button */}
-      <View className="absolute bottom-8 right-6">
-        <Pressable
-          onPress={handleSkip}
-          className="w-14 h-14 bg-[#1F2937] rounded-full items-center justify-center active:opacity-80 shadow-lg"
-        >
-          <Text className="text-white text-2xl font-light">›</Text>
-        </Pressable>
-      </View>
     </SafeAreaView>
   );
 }

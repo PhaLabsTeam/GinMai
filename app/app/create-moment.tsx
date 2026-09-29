@@ -535,16 +535,6 @@ export default function CreateMomentScreen() {
           )}
         </Pressable>
       </View>
-
-      {/* Floating action button */}
-      <View className="absolute bottom-24 right-6">
-        <Pressable
-          onPress={step === 1 ? handleNext : handleMakeVisible}
-          className="w-14 h-14 bg-[#1F2937] rounded-full items-center justify-center active:opacity-80 shadow-lg"
-        >
-          <Text className="text-white text-2xl font-light">›</Text>
-        </Pressable>
-      </View>
     </SafeAreaView>
   );
 }

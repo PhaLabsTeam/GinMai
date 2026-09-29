@@ -415,25 +415,6 @@ export default function SignUpScreen() {
         )}
       </View>
 
-      {/* Floating action button */}
-      {step !== 3 && <View className="absolute bottom-8 right-6">
-        <Pressable
-          onPress={step === 1 ? handleContinue : () => handleVerifyOtp(otp.join(""))}
-          disabled={loading || (step === 1 ? !isStep1Valid : !isOtpComplete)}
-          className={`w-14 h-14 rounded-full items-center justify-center shadow-lg ${
-            !loading && (step === 1 ? isStep1Valid : isOtpComplete)
-              ? "bg-[#1F2937] active:opacity-80"
-              : "bg-[#9CA3AF]"
-          }`}
-        >
-          {loading ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
-          ) : (
-            <Text className="text-white text-2xl font-light">›</Text>
-          )}
-        </Pressable>
-      </View>}
-
       {/* Country Code Picker Modal */}
       <Modal
         visible={showCountryPicker}
