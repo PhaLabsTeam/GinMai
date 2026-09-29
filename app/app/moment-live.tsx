@@ -5,7 +5,9 @@ import { useState, useEffect, useCallback } from "react";
 import { useMoment } from "../src/hooks/useMoment";
 import { useMomentStore, MomentGuest } from "../src/stores/momentStore";
 import { useNotificationStore } from "../src/stores/notificationStore";
+import { useAuthStore } from "../src/stores/authStore";
 import { InAppToast } from "../src/components/InAppToast";
+import { openSafetyActions } from "../src/utils/safetyActions";
 import { mealWord, capitalize } from "../src/utils/mealWord";
 
 export default function MomentLiveScreen() {
@@ -17,6 +19,8 @@ export default function MomentLiveScreen() {
   const getMomentGuests = useMomentStore((state) => state.getMomentGuests);
   const subscribeToMomentConnections = useMomentStore((state) => state.subscribeToMomentConnections);
   const addNotification = useNotificationStore((state) => state.addNotification);
+  // Settings > "Someone wants to join"
+  const joinAlertsOn = useAuthStore((state) => state.user?.notify_joins !== false);
 
   const [cancelling, setCancelling] = useState(false);
   const [guests, setGuests] = useState<MomentGuest[]>([]);
@@ -28,7 +32,8 @@ export default function MomentLiveScreen() {
   // Handle guest events (joins/cancellations/arrivals)
   const handleGuestEvent = useCallback((event: "joined" | "cancelled" | "arrived" | "running_late", guest: MomentGuest) => {
     if (event === "joined") {
-      addNotification({
+      // The guest list still updates; only the alert follows the Settings switch
+      if (joinAlertsOn) addNotification({
         type: "guest_joined",
         title: "New guest!",
         message: `${guest.firstName} wants to join your table`,
@@ -67,7 +72,7 @@ export default function MomentLiveScreen() {
         guestName: guest.firstName,
       });
     }
-  }, [params.momentId, addNotification]);
+  }, [params.momentId, addNotification, joinAlertsOn]);
 
   // Fetch guests and subscribe to real-time updates
   useEffect(() => {
@@ -266,9 +271,13 @@ export default function MomentLiveScreen() {
               {/* Guest list */}
               <View className="bg-white rounded-2xl px-4 py-3 shadow-sm">
                 {guests.map((guest, index) => (
-                  <View
+                  <Pressable
                     key={guest.id}
-                    className={`flex-row items-center py-2 ${
+                    onPress={() =>
+                      openSafetyActions(router, { userId: guest.userId, name: guest.firstName, momentId: moment.id })
+                    }
+                    accessibilityHint="Report or block"
+                    className={`flex-row items-center py-2 active:opacity-70 ${
                       index < guests.length - 1 ? "border-b border-[#F3F4F6]" : ""
                     }`}
                   >
@@ -288,7 +297,7 @@ export default function MomentLiveScreen() {
                         Confirmed
                       </Text>
                     </View>
-                  </View>
+                  </Pressable>
                 ))}
               </View>
             </>

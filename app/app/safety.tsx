@@ -9,7 +9,14 @@ interface EmergencyContact {
   icon: string;
 }
 
+// Tourist Police first: English-speaking, and for visitors, which most users are
 const EMERGENCY_CONTACTS: EmergencyContact[] = [
+  {
+    name: "Tourist Police",
+    number: "1155",
+    description: "English-speaking help for visitors",
+    icon: "👮",
+  },
   {
     name: "Emergency Services",
     number: "191",
@@ -33,18 +40,6 @@ const EMERGENCY_CONTACTS: EmergencyContact[] = [
     number: "+66 53 920 300",
     description: "24-hour Emergency",
     icon: "🏥",
-  },
-  {
-    name: "US Embassy",
-    number: "+66 2 205 4000",
-    description: "American Citizen Services",
-    icon: "🇺🇸",
-  },
-  {
-    name: "Tourist Police",
-    number: "1155",
-    description: "Tourism-related assistance",
-    icon: "👮",
   },
 ];
 
@@ -101,7 +96,7 @@ export default function SafetyScreen() {
           </Text>
           <Text className="text-[#92400E] text-sm">
             If you feel unsafe, trust your instincts. Use these contacts to get
-            help immediately. You can also share your location with a trusted contact.
+            help right away.
           </Text>
         </View>
 
@@ -143,6 +138,11 @@ export default function SafetyScreen() {
               </View>
             </View>
           ))}
+
+          {/* Users come from everywhere, so no single embassy is right to list */}
+          <Text className="text-[#78716C] text-sm leading-5 mt-1">
+            Visiting from abroad? Save your embassy's number in Bangkok before you need it.
+          </Text>
         </View>
 
         {/* Blocked Users Link */}
@@ -190,24 +190,6 @@ export default function SafetyScreen() {
           </View>
         </View>
 
-        {/* Report Inappropriate Behavior */}
-        <View className="mx-6 mb-8">
-          <Pressable
-            onPress={() => {
-              // Use a valid UUID format for testing
-              const testUserId = "99999999-9999-9999-9999-999999999999";
-              router.push(`/report-user?userId=${testUserId}&userName=Test User`);
-            }}
-            className="bg-[#F97316] rounded-xl py-4 active:opacity-80"
-          >
-            <Text className="text-white text-center font-semibold">
-              Report Inappropriate Behavior
-            </Text>
-          </Pressable>
-          <Text className="text-[#78716C] text-xs text-center mt-2">
-            For testing - in production, this appears on user profiles
-          </Text>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );

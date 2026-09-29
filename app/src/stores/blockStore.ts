@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { supabase } from "../config/supabase";
 import type { Block, BlockInsert } from "../types/database";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { useMomentStore } from "./momentStore";
 
 // Type-safe Supabase client helper
 const db = supabase as SupabaseClient<any>;
@@ -72,6 +73,7 @@ export const useBlockStore = create<BlockState>((set, get) => ({
       }
 
       console.log("✅ User blocked:", blockedUserId);
+      useMomentStore.getState().hideUser(blockedUserId);
 
       // Add to local state
       set((state) => ({
@@ -122,6 +124,9 @@ export const useBlockStore = create<BlockState>((set, get) => ({
         blockedUsers: state.blockedUsers.filter((u) => u.blocked_id !== blockedUserId),
         loading: false,
       }));
+
+      // They may still have blocked us, so ask the server rather than just un-hiding
+      useMomentStore.getState().refreshHiddenUsers();
 
       return true;
     } catch (error: any) {

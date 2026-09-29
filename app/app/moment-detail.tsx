@@ -5,8 +5,10 @@ import { useState, useEffect } from "react";
 import { useMoment } from "../src/hooks/useMoment";
 import { useMomentStore } from "../src/stores/momentStore";
 import { useAuthStore } from "../src/stores/authStore";
+import { openSafetyActions } from "../src/utils/safetyActions";
 import * as Location from "expo-location";
 import { distanceMeters, formatWalk } from "../src/utils/distance";
+import { maybeAskForPushPermission } from "../src/services/pushPermission";
 
 export default function MomentDetailScreen() {
   const router = useRouter();
@@ -117,6 +119,7 @@ export default function MomentDetailScreen() {
 
     if (result.success) {
       router.push(`/confirmation?momentId=${moment.id}`);
+      maybeAskForPushPermission("joined");
     } else {
       Alert.alert("Couldn't join", result.error || "Something went wrong. Please try again.");
     }
@@ -199,6 +202,17 @@ export default function MomentDetailScreen() {
             <Text className="text-[15px] text-[#22C55E] ml-1">✓</Text>
           )}
         </View>
+        {user && !isHost && moment.host_id !== "anonymous" && (
+          <Pressable
+            onPress={() =>
+              openSafetyActions(router, { userId: moment.host_id, name: moment.host_name, momentId: moment.id })
+            }
+            hitSlop={8}
+            className="self-start mt-2"
+          >
+            <Text className="text-[13px] text-[#78716C]">Report or block</Text>
+          </Pressable>
+        )}
 
         {/* Note */}
         {moment.note && (

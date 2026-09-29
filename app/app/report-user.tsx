@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
 import { useReportStore } from "../src/stores/reportStore";
 import { useAuthStore } from "../src/stores/authStore";
+import { confirmBlock } from "../src/utils/safetyActions";
 
 interface ReportCategory {
   id: string;
@@ -89,12 +90,12 @@ export default function ReportUserScreen() {
         "Thank you. We'll review this report within 24 hours.",
         [
           {
-            text: "Block User",
-            onPress: () => {
-              // Navigate to block confirmation
-              router.back();
-              // TODO: Trigger block flow
-            },
+            text: params.userName ? `Block ${params.userName}` : "Block",
+            onPress: () =>
+              confirmBlock(
+                { userId: params.userId, name: params.userName || "this person" },
+                () => router.back()
+              ),
           },
           {
             text: "Done",
