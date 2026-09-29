@@ -1,7 +1,8 @@
-import { View, Text, Pressable, ActivityIndicator, ScrollView } from "react-native";
+import { View, Text, Pressable, ActivityIndicator, ScrollView, Alert } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useEffect, useCallback } from "react";
+import { useMoment } from "../src/hooks/useMoment";
 import { useMomentStore, MomentGuest } from "../src/stores/momentStore";
 import { useNotificationStore } from "../src/stores/notificationStore";
 import { InAppToast } from "../src/components/InAppToast";
@@ -10,7 +11,6 @@ export default function MomentLiveScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ momentId: string }>();
 
-  const moments = useMomentStore((state) => state.moments);
   const cancelMomentInDb = useMomentStore((state) => state.cancelMomentInDb);
   const fetchMomentGuests = useMomentStore((state) => state.fetchMomentGuests);
   const getMomentGuests = useMomentStore((state) => state.getMomentGuests);
@@ -19,24 +19,8 @@ export default function MomentLiveScreen() {
 
   const [cancelling, setCancelling] = useState(false);
   const [guests, setGuests] = useState<MomentGuest[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  const moment = moments.find((m) => m.id === params.momentId);
-
-  // Handle race condition: wait for moment to appear in store
-  useEffect(() => {
-    if (moment) {
-      setIsLoading(false);
-      return;
-    }
-
-    // If moment not found, wait a bit for store to sync
-    const timeout = setTimeout(() => {
-      setIsLoading(false);
-    }, 500);
-
-    return () => clearTimeout(timeout);
-  }, [moment]);
+  const { moment, loading: momentLoading } = useMoment(params.momentId);
 
   const [countdown, setCountdown] = useState("");
 
@@ -141,12 +125,42 @@ export default function MomentLiveScreen() {
     return () => clearInterval(interval);
   }, [moment]);
 
-  const handleCancel = async () => {
+  const handleBack = () => {
+    // Arriving from create-moment replaced the stack entry, so there may be nothing to go back to
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/map");
+    }
+  };
+
+  const cancelMoment = async () => {
     if (!moment || cancelling) return;
 
     setCancelling(true);
-    await cancelMomentInDb(moment.id);
-    router.replace("/map");
+    const cancelled = await cancelMomentInDb(moment.id);
+    if (cancelled) {
+      router.replace("/map");
+    } else {
+      setCancelling(false);
+      Alert.alert("Couldn't cancel", "Something went wrong. Please try again.");
+    }
+  };
+
+  const handleCancel = () => {
+    if (!moment || cancelling) return;
+
+    const guestCount = guests.length;
+    Alert.alert(
+      "Cancel this meal?",
+      guestCount > 0
+        ? `${guestCount === 1 ? "Your guest" : `Your ${guestCount} guests`} will be told it's off.`
+        : "It will disappear from the map.",
+      [
+        { text: "Keep it", style: "cancel" },
+        { text: "Cancel meal", style: "destructive", onPress: cancelMoment },
+      ]
+    );
   };
 
   const handleShowTableSign = () => {
@@ -154,7 +168,7 @@ export default function MomentLiveScreen() {
   };
 
   // Show loading while waiting for moment to appear in store
-  if (isLoading && !moment) {
+  if (!moment && momentLoading) {
     return (
       <SafeAreaView className="flex-1 bg-[#FAFAF9] items-center justify-center">
         <ActivityIndicator size="large" color="#1C1917" />
@@ -187,9 +201,20 @@ export default function MomentLiveScreen() {
       {/* In-app notification toast */}
       <InAppToast />
 
+      {/* Header with back button */}
+      <View className="flex-row items-center px-5 py-3">
+        <Pressable
+          onPress={handleBack}
+          accessibilityLabel="Back"
+          className="w-10 h-10 items-center justify-center"
+        >
+          <Text className="text-[24px] text-[#1C1917]">←</Text>
+        </Pressable>
+      </View>
+
       <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
         {/* Header text */}
-        <View className="pt-8">
+        <View className="pt-2">
           <Text className="text-center text-[32px] font-normal text-[#1C1917]">
             Lunch visible.
           </Text>

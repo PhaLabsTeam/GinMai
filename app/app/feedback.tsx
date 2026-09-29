@@ -2,6 +2,7 @@ import { View, Text, Pressable, ActivityIndicator, Alert, Platform } from "react
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
+import { useMoment } from "../src/hooks/useMoment";
 import { useMomentStore } from "../src/stores/momentStore";
 import { useAuthStore } from "../src/stores/authStore";
 
@@ -12,12 +13,11 @@ export default function FeedbackScreen() {
   const params = useLocalSearchParams<{ momentId: string; hostName: string }>();
   const hostName = params.hostName || "them";
 
-  const moments = useMomentStore((state) => state.moments);
   const submitFeedback = useMomentStore((state) => state.submitFeedback);
   const markConnectionCompleted = useMomentStore((state) => state.markConnectionCompleted);
   const user = useAuthStore((state) => state.user);
 
-  const moment = moments.find((m) => m.id === params.momentId);
+  const { moment, loading: momentLoading } = useMoment(params.momentId);
   const hostId = moment?.host_id || "";
 
   const [step, setStep] = useState(1);

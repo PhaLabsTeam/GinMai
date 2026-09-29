@@ -2,18 +2,18 @@ import { View, Text, Pressable, Alert, ActivityIndicator, Platform } from "react
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useEffect, useCallback } from "react";
+import { useMoment } from "../src/hooks/useMoment";
 import { useMomentStore } from "../src/stores/momentStore";
 import { useAuthStore } from "../src/stores/authStore";
 
 export default function ConfirmationScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ momentId: string }>();
-  const moments = useMomentStore((state) => state.moments);
   const leaveMoment = useMomentStore((state) => state.leaveMoment);
   const markArrived = useMomentStore((state) => state.markArrived);
   const user = useAuthStore((state) => state.user);
 
-  const moment = moments.find((m) => m.id === params.momentId);
+  const { moment, loading: momentLoading } = useMoment(params.momentId);
 
   const [countdown, setCountdown] = useState({ hours: 0, minutes: 0, seconds: 0 });
   const [leaving, setLeaving] = useState(false);
@@ -76,6 +76,14 @@ export default function ConfirmationScreen() {
       router.replace("/map");
     }
   };
+
+  if (!moment && momentLoading) {
+    return (
+      <SafeAreaView className="flex-1 bg-[#FAFAF9] items-center justify-center">
+        <ActivityIndicator size="large" color="#1C1917" />
+      </SafeAreaView>
+    );
+  }
 
   if (!moment) {
     return (
