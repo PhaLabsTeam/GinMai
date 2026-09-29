@@ -19,6 +19,8 @@ const COUNTRY_CODES = [
   { code: "+31", country: "Netherlands", flag: "🇳🇱" },
 ];
 
+const OTP_LENGTH = 6;
+
 // "+66999999999" -> "+66 999 999 999" (country code from the picker list)
 function formatPhoneForDisplay(e164: string): string {
   const country = COUNTRY_CODES.find((c) => e164.startsWith(c.code));
@@ -44,9 +46,9 @@ export default function SignUpScreen() {
   const [showCountryPicker, setShowCountryPicker] = useState(false);
 
   // Step 2: OTP (6 digits for Supabase)
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [otp, setOtp] = useState("");
   const [resendTimer, setResendTimer] = useState(30);
-  const otpRefs = useRef<(TextInput | null)[]>([]);
+  const otpInputRef = useRef<TextInput>(null);
 
   // Step 3: Name (new users only)
   const [firstName, setFirstName] = useState("");
@@ -82,7 +84,7 @@ export default function SignUpScreen() {
 
   const isStep1Valid = phoneNumber.trim().length >= 9;
   const isNameValid = firstName.trim().length > 0;
-  const isOtpComplete = otp.every((digit) => digit !== "");
+  const isOtpComplete = otp.length === OTP_LENGTH;
 
   const handleContinue = async () => {
     if (!isStep1Valid || loading) return;
@@ -96,7 +98,7 @@ export default function SignUpScreen() {
       setStep(2);
       setResendTimer(30);
       // Focus first OTP input
-      setTimeout(() => otpRefs.current[0]?.focus(), 100);
+      setTimeout(() => otpInputRef.current?.focus(), 100);
     } else {
       Alert.alert("Couldn't send code", friendlyAuthError("send", result.error), [{ text: "OK" }]);
     }
@@ -107,32 +109,13 @@ export default function SignUpScreen() {
     router.replace(destination as any);
   };
 
-  const handleOtpChange = (value: string, index: number) => {
-    if (value.length > 1) {
-      value = value[value.length - 1];
-    }
-
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-
-    // Auto-advance to next input
-    if (value && index < 5) {
-      otpRefs.current[index + 1]?.focus();
-    }
-
-    // Auto-submit when complete (6 digits)
-    if (index === 5 && value) {
-      const fullOtp = newOtp.join("");
-      if (fullOtp.length === 6) {
-        handleVerifyOtp(fullOtp);
-      }
-    }
-  };
-
-  const handleOtpKeyPress = (e: any, index: number) => {
-    if (e.nativeEvent.key === "Backspace" && !otp[index] && index > 0) {
-      otpRefs.current[index - 1]?.focus();
+  // One input holds the whole code: typing fast, pasting and SMS autofill all
+  // arrive as a single change, which six separate inputs couldn't handle
+  const handleOtpChange = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, OTP_LENGTH);
+    setOtp(digits);
+    if (digits.length === OTP_LENGTH) {
+      handleVerifyOtp(digits);
     }
   };
 
@@ -152,8 +135,8 @@ export default function SignUpScreen() {
     } else {
       Alert.alert("Invalid code", friendlyAuthError("verify", result.error), [{ text: "OK" }]);
       // Clear OTP and refocus
-      setOtp(["", "", "", "", "", ""]);
-      otpRefs.current[0]?.focus();
+      setOtp("");
+      otpInputRef.current?.focus();
     }
   };
 
@@ -164,8 +147,8 @@ export default function SignUpScreen() {
 
     if (result.success) {
       setResendTimer(30);
-      setOtp(["", "", "", "", "", ""]);
-      otpRefs.current[0]?.focus();
+      setOtp("");
+      otpInputRef.current?.focus();
     } else {
       Alert.alert("Couldn't resend code", friendlyAuthError("send", result.error), [{ text: "OK" }]);
     }
@@ -189,11 +172,11 @@ export default function SignUpScreen() {
       // Verified but no profile yet: leaving means starting over
       await signOut();
       setFirstName("");
-      setOtp(["", "", "", "", "", ""]);
+      setOtp("");
       setStep(1);
     } else if (step === 2) {
       setStep(1);
-      setOtp(["", "", "", "", "", ""]);
+      setOtp("");
     } else {
       router.back();
     }
@@ -300,25 +283,38 @@ export default function SignUpScreen() {
               </Text>
             </View>
 
-            {/* OTP input boxes (6 digits for Supabase) */}
-            <View className="flex-row justify-center mt-10">
-              {[0, 1, 2, 3, 4, 5].map((index) => (
-                <TextInput
+            {/* OTP: six boxes drawn over one hidden input (6 digits for Supabase) */}
+            <Pressable
+              onPress={() => otpInputRef.current?.focus()}
+              accessible={false}
+              className="flex-row justify-center mt-10"
+            >
+              {Array.from({ length: OTP_LENGTH }, (_, index) => (
+                <View
                   key={index}
-                  ref={(ref) => { otpRefs.current[index] = ref; }}
-                  value={otp[index]}
-                  onChangeText={(value) => handleOtpChange(value, index)}
-                  onKeyPress={(e) => handleOtpKeyPress(e, index)}
-                  keyboardType="number-pad"
-                  maxLength={1}
-                  selectTextOnFocus
-                  editable={!loading}
-                  className={`w-12 h-14 mx-1 text-center text-[24px] font-medium text-[#1C1917] rounded-xl border-2 ${
-                    otp[index] ? "border-[#1C1917]" : "border-[#E5E7EB]"
+                  className={`w-12 h-14 mx-1 items-center justify-center rounded-xl border-2 ${
+                    otp[index] || index === otp.length ? "border-[#1C1917]" : "border-[#E5E7EB]"
                   } bg-white`}
-                />
+                >
+                  <Text className="text-[24px] font-medium text-[#1C1917]">{otp[index] ?? ""}</Text>
+                </View>
               ))}
-            </View>
+              <TextInput
+                ref={otpInputRef}
+                testID="otp-input"
+                accessibilityLabel="Verification code"
+                value={otp}
+                onChangeText={handleOtpChange}
+                keyboardType="number-pad"
+                textContentType="oneTimeCode"
+                autoComplete="sms-otp"
+                maxLength={OTP_LENGTH}
+                editable={!loading}
+                caretHidden
+                // Covers the boxes so a tap anywhere focuses it; invisible
+                style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, opacity: 0.02, color: "transparent" }}
+              />
+            </Pressable>
 
             {/* Resend code */}
             <View className="mt-8">
@@ -338,7 +334,7 @@ export default function SignUpScreen() {
             {/* Verify button (optional, since auto-submit works) */}
             <View className="mt-8">
               <Pressable
-                onPress={() => handleVerifyOtp(otp.join(""))}
+                onPress={() => handleVerifyOtp(otp)}
                 disabled={!isOtpComplete || loading}
                 className={`py-4 rounded-xl items-center ${
                   isOtpComplete && !loading
