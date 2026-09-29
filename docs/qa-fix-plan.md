@@ -23,7 +23,7 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | 1 | Auth & data correctness | `fix/auth-and-data` | 📦 awaiting review | — |
 | 1.5 | expo-notifications 57 API (#40) | `fix/notifications-sdk57` | 📦 awaiting review | — |
 | 2 | Host flow & navigation | `fix/host-flow` | 📦 awaiting review | — |
-| 3 | Create & sign-in inputs | `fix/create-flow` | ⬜ | — |
+| 3 | Create & sign-in inputs (+#39) | `fix/create-flow` | 🔧 in progress, #13 waiting on the Places key | — |
 | 4 | Settings, safety, App Store readiness | `fix/app-store-readiness` | ⬜ | — |
 | 5 | Map & product-feel UX | `fix/ux-polish` | ⬜ | — |
 | 6 | Visual consistency | `refactor/design-consistency` | ⬜ | — |
@@ -103,12 +103,25 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 
 | # | Issue | Status | Commit |
 |---|---|---|---|
-| 12 | "Pick a time…" has no time picker and silently uses "now" | ⬜ | |
-| 13 | Place search uses the address geocoder and can't find restaurants; switch to Google Places | ⬜ | |
-| 14 | The keyboard covers the place search input and results | ⬜ | |
-| 15 | One-time code: fast typing drops digits, paste breaks, no SMS autofill | ⬜ | |
-| 24 | "Lunch" is hard-coded at every time of day | ⬜ | |
-| 32 | No obvious way to close the keyboard on the note field | ⬜ | |
+| 12 | "Pick a time…" has no time picker and silently uses "now" | 📦 ✅ | `6a34bb5` |
+| 13 | Place search uses the address geocoder and can't find restaurants; switch to Google Places | ⬜ waiting on Google Places API key | |
+| 14 | The keyboard covers the place search input and results | 📦 ✅ | `6a34bb5` |
+| 15 | One-time code: fast typing drops digits, paste breaks, no SMS autofill | 📦 ✅ | `2fc008d` |
+| 24 | "Lunch" is hard-coded at every time of day | 📦 ✅ | `05ae86a` |
+| 32 | No obvious way to close the keyboard on the note field | 📦 ✅ | `6a34bb5` |
+
+**Verified so far (everything except #13):**
+- **Jest:** `npm test` passes 73 tests in 12 suites. New tests: `pickTime.test.ts` (past time means tomorrow, over 12 h is rejected, the current minute stays today) and `mealWord.test.ts`.
+- **Maestro:** `01-auth-signup` enters the whole code in one burst (#15).
+- **Maestro:** `08-create-inputs` passes: meal-aware title, picker shown with "At HH:MM", Next goes to step 2, the note's Return key works.
+- **Maestro:** `09-location-unavailable` passes: with location denied, "Couldn't find you. Tap to retry, or search for a place." appears, and Next shows "Where are you eating?".
+- **Maestro:** `06` and `07` still pass.
+- **Manual:** the search box and Next button stay above the keyboard (#14); after Return the keyboard closes and the note stays on one line (#32); the title reads "Share your dinner" for 16:50 (#24).
+
+**Notes:**
+- #39 also covered a bug found while fixing it: with location denied, the Moment was silently placed at the centre of Chiang Mai.
+- The inline iOS time spinner pushes "Search for a place" below the fold on step 1; it's reachable by scrolling. This could be revisited in Phase 6.
+- The time picker is native (`@react-native-community/datetimepicker` 9.1.0), so the app needs a rebuild.
 
 ## Phase 4: Settings, safety, App Store readiness
 
@@ -151,7 +164,7 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 
 | # | Issue | Status | Commit |
 |---|---|---|---|
-| 39 | **Higher priority than it looked:** `create-moment` calls `getCurrentPositionAsync` without a catch. When location is unavailable it stays on "Loading…" and "Make visible" silently does nothing | ⬜ | |
+| 39 | **Higher priority than it looked:** `create-moment` calls `getCurrentPositionAsync` without a catch. When location is unavailable it stays on "Loading…" and "Make visible" silently does nothing | 📦 ✅ | `6a34bb5` |
 | 40 | expo-notifications 57 API changes: `removeNotificationSubscription` was removed (still called in `useNotifications.ts` cleanup), the handler needs `shouldShowBanner`/`shouldShowList`, and triggers need a `type` | 📦 ✅ | `4a8a2e2` |
 | 42 | Screens about one Moment (live, confirmation, arrival, running-late, feedback, detail) looked it up in the active-only map list, so they showed "not found" once it filled up or ended; leaving a full Moment never gave the seat back; running-late never reached the host of a full Moment | 📦 ✅ | `bc6945c` `b0d9896` |
 | 43 | `submitFeedback` destructures `checkForMatch` from the `matchStore` module, but it's a store method, so "eat again" feedback probably throws (and reports failure) and mutual-match notifications never fire. Needs confirming in Phase 7. | ⬜ | |
