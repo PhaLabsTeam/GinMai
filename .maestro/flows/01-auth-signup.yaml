@@ -1,27 +1,38 @@
+# Returning user sign-in (#2, #8, #31).
+# Needs the Supabase test number 66999999999 / 123456, whose profile already has
+# a name. Returning users must not be asked for a name, and should land back on
+# the screen that asked them to sign in.
 appId: com.ginmai.app
 ---
-- launchApp
-- assertVisible: "Welcome to GinMai"
+- runFlow: _launch.yaml
+- tapOn: "Let's go"
+- tapOn: "Share location"
+- extendedWaitUntil:
+    visible: "Share where you're eating.*"
+    timeout: 15000
+- tapOn: "Share where you're eating.*"
 
-# Accept location permission
-- tapOn: "Allow While Using App"
-
-# Start signup
-- tapOn: "Get started"
-
-# Enter phone number
+# Step 1: phone only
+- assertVisible: "Just a phone number."
+- assertNotVisible: "First name"
 - tapOn: "Phone number"
-- inputText: "+66812345678"
+- inputText: "999999999"
 - tapOn: "Continue"
 
-# Enter OTP (DEV_MODE uses mock verification)
-- tapOn: "Verification code"
-- inputText: "1234"
+# Step 2: code, shown with the country code (#31)
+- extendedWaitUntil:
+    visible: "We sent a code to \\+66 999 999 999"
+    timeout: 15000
+# One digit per command: the per-box inputs drop fast input until Phase 3 (#15)
+- inputText: "1"
+- inputText: "2"
+- inputText: "3"
+- inputText: "4"
+- inputText: "5"
+- inputText: "6"
 
-# Enter first name
-- tapOn: "First name"
-- inputText: "Test User"
-- tapOn: "Continue"
-
-# Verify landing on map
-- assertVisible: "Map"
+# Returning user: no name step, back where sign-in started (#8)
+- extendedWaitUntil:
+    visible: "Share your .*"
+    timeout: 15000
+- assertNotVisible: "What should people call you?"

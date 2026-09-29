@@ -1,0 +1,36 @@
+# Shared: fresh, signed-out launch with location granted.
+# In a dev build, clearing state also forgets the Metro URL, so reconnect to
+# Metro and dismiss the dev-menu intro. Both steps no-op in a release build.
+appId: com.ginmai.app
+---
+- launchApp:
+    clearState: true
+    permissions:
+      location: inuse
+      notifications: allow
+- runFlow:
+    when:
+      notVisible: "Wanna eat?"
+    commands:
+      - openLink: "exp+ginmai://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081"
+      - tapOn:
+          text: "Open"
+          optional: true
+- extendedWaitUntil:
+    visible: "Wanna eat?"
+    timeout: 60000
+- tapOn:
+    text: "Continue"
+    optional: true
+# Dev menu sheet (its close button has no label)
+- runFlow:
+    when:
+      visible: "Toggle element inspector"
+    commands:
+      # Hide the floating Tools button; it sits over the profile icon
+      - scrollUntilVisible:
+          element: "Tools button"
+      - tapOn: "Tools button"
+      - tapOn:
+          point: "91%,11%"
+- assertVisible: "Let's go"

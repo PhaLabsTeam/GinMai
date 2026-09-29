@@ -1,0 +1,28 @@
+# A wrong code shows a friendly message, never the raw provider error (#10).
+appId: com.ginmai.app
+---
+- runFlow: _launch.yaml
+- tapOn: "Let's go"
+- tapOn: "Share location"
+- extendedWaitUntil:
+    visible: "Share where you're eating.*"
+    timeout: 15000
+- tapOn: "Share where you're eating.*"
+- tapOn: "Phone number"
+- inputText: "999999999"
+- tapOn: "Continue"
+- extendedWaitUntil:
+    visible: "Enter code"
+    timeout: 15000
+- inputText: "0"
+- inputText: "0"
+- inputText: "0"
+- inputText: "0"
+- inputText: "0"
+- inputText: "0"
+- extendedWaitUntil:
+    visible: "Invalid code"
+    timeout: 15000
+- assertVisible: "That code didn't work.*"
+- assertNotVisible: ".*[Tt]oken.*"
+- tapOn: "OK"
