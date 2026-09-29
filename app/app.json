@@ -30,6 +30,12 @@
     "plugins": [
       "expo-router",
       [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "GinMai shows meals happening near you. That's all we use it for."
+        }
+      ],
+      [
         "expo-notifications",
         {
           "icon": "./assets/icon.png",

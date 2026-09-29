@@ -9,6 +9,7 @@ import { useMomentStore } from "../src/stores/momentStore";
 import { useAuthStore } from "../src/stores/authStore";
 import type { MomentLocal } from "../src/types";
 import { mealWord, capitalize } from "../src/utils/mealWord";
+import { maybeAskForPushPermission } from "../src/services/pushPermission";
 
 type TimeOption = "now" | "30min" | "1hr" | "custom";
 type Duration = "quick" | "normal" | "long";
@@ -280,6 +281,7 @@ export default function CreateMomentScreen() {
 
       if (createdMoment) {
         router.replace(`/moment-live?momentId=${createdMoment.id}`);
+        maybeAskForPushPermission("hosting");
       } else {
         Alert.alert(
           "Couldn't create moment",

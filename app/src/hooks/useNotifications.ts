@@ -63,14 +63,14 @@ export function useNotifications() {
   };
 }
 
-async function registerForPushNotificationsAsync(): Promise<string | null> {
+/**
+ * Returns an Expo push token when notifications are allowed. Only shows the
+ * system prompt when `askIfNeeded` is set: at launch we never ask, because a
+ * prompt before the user knows what it's for gets reflexively declined and
+ * iOS only shows it once (#20). See maybeAskForPushPermission.
+ */
+export async function registerForPushNotificationsAsync(askIfNeeded = false): Promise<string | null> {
   let token: string | null = null;
-
-  // Check if running on physical device (required for push notifications)
-  if (!Constants.isDevice) {
-    console.warn('⚠️ Push notifications require a physical device');
-    // Still proceed for testing purposes
-  }
 
   try {
     // Configure Android notification channel
@@ -88,14 +88,12 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
 
-    // Request permissions if not already granted
-    if (existingStatus !== 'granted') {
+    if (existingStatus !== 'granted' && askIfNeeded) {
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
     }
 
     if (finalStatus !== 'granted') {
-      console.warn('⚠️ Permission to receive push notifications was denied');
       return null;
     }
 
