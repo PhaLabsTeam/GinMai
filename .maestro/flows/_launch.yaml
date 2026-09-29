@@ -11,7 +11,7 @@ appId: com.ginmai.app
     clearState: true
     permissions:
       location: ${LOCATION || "inuse"}
-      notifications: allow
+      notifications: ${NOTIFICATIONS || "allow"}
 - runFlow:
     when:
       notVisible: "Wanna eat?"

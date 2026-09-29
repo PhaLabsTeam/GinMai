@@ -1,0 +1,40 @@
+# Notification settings are saved to the profile (#6).
+appId: com.ginmai.app
+---
+- runFlow: 01-auth-signup.yaml
+- tapOn: "Back"
+- tapOn:
+    point: "9%,10%"
+- tapOn: "Settings"
+- assertNotVisible: "Auto-accept guests"
+
+# Turn "Meal reminders" off
+- tapOn:
+    id: "toggle-meal-reminders"
+- waitForAnimationToEnd
+
+# Restart the app (keeps the session): the switch must still be off
+- stopApp
+- launchApp
+- runFlow:
+    when:
+      notVisible: "Chiang Mai"
+    commands:
+      - openLink: "exp+ginmai://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081"
+- extendedWaitUntil:
+    visible: "Chiang Mai"
+    timeout: 60000
+- tapOn:
+    point: "9%,10%"
+- tapOn: "Settings"
+- assertVisible:
+    id: "toggle-meal-reminders"
+    checked: false
+
+# Put it back
+- tapOn:
+    id: "toggle-meal-reminders"
+- waitForAnimationToEnd
+- assertVisible:
+    id: "toggle-meal-reminders"
+    checked: true

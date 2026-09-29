@@ -1,0 +1,29 @@
+# Safety screen and entry points (#18, #19, #28a, #46).
+appId: com.ginmai.app
+---
+# Signed in (lands on create-moment), then back to the map
+- runFlow: 01-auth-signup.yaml
+- tapOn: "Back"
+
+# Menu > Safety: Tourist Police listed, no US-only embassy, no promises of
+# location sharing, no test report button
+- tapOn:
+    point: "9%,10%"
+- tapOn: "Safety"
+- assertVisible: "Tourist Police"
+- assertVisible: "English-speaking help for visitors"
+- assertNotVisible: "US Embassy"
+- assertNotVisible: ".*trusted contact.*"
+- scrollUntilVisible:
+    element: "Safety Tips"
+- assertNotVisible: "Report Inappropriate Behavior"
+- assertNotVisible: ".*For testing.*"
+- assertVisible: ".*Save your embassy's number.*"
+
+# Settings > Blocked users opens the list (#46)
+- swipe:
+    start: "1%,50%"
+    end: "80%,50%"
+- tapOn: "Settings"
+- tapOn: ".*Blocked users.*"
+- assertVisible: "Blocked Users"
