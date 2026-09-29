@@ -22,7 +22,7 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | 0 | Baseline: SDK 57, iOS 27 scene fix, this doc | `fix/expo-sdk-57` | 📦 | — |
 | 1 | Auth & data correctness | `fix/auth-and-data` | 📦 awaiting review | — |
 | 1.5 | expo-notifications 57 API (#40) | `fix/notifications-sdk57` | 📦 awaiting review | — |
-| 2 | Host flow & navigation | `fix/host-flow` | ⬜ | — |
+| 2 | Host flow & navigation | `fix/host-flow` | 📦 awaiting review | — |
 | 3 | Create & sign-in inputs | `fix/create-flow` | ⬜ | — |
 | 4 | Settings, safety, App Store readiness | `fix/app-store-readiness` | ⬜ | — |
 | 5 | Map & product-feel UX | `fix/ux-polish` | ⬜ | — |
@@ -80,11 +80,24 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 
 | # | Issue | Status | Commit |
 |---|---|---|---|
-| 3 | A host can't get back to their live Moment: no back button, "Your moment" is disabled, My Moments is a dead end | ⬜ | |
-| 4 | "Cancel this meal" cancels on one tap with no confirmation | ⬜ | |
-| 5 | Hard-coded "8 min walk" and "~฿150" on moment detail | ⬜ | |
-| 11 | Unlabeled floating `›` button on 13 screens with different actions (join, skip, duplicate submit, stacked maps) | ⬜ | |
-| 16 | Menu → Safety only closes the menu | ⬜ | |
+| 3 | A host can't get back to their live Moment: no back button, "Your moment" is disabled, My Moments is a dead end | 📦 ✅ | `b0d9896` |
+| 4 | "Cancel this meal" cancels on one tap with no confirmation | 📦 ✅ | `b0d9896` |
+| 5 | Hard-coded "8 min walk" and "~฿150" on moment detail | 📦 ✅ | `b0d9896` |
+| 11 | Unlabeled floating `›` button on 13 screens with different actions (join, skip, duplicate submit, stacked maps) | 📦 ✅ | `e930d18` |
+| 16 | Menu → Safety only closes the menu | 📦 ✅ | `b0d9896` |
+
+**Verified:**
+- **Jest:** `npm test` passes 57 tests in 10 suites. New tests:
+  - `momentStore.lookup.test.ts`: a full Moment can be fetched and found; updates reach cached Moments; leaving a full Moment gives the seat back (this test fails on the old lookup); `fetchMyActiveMoment` finds hosted and joined Moments, and returns nothing when none exist
+  - `useMoment.test.tsx`: shows a spinner rather than "not found", then fetches Moments that aren't on the map
+  - `distance.test.ts`
+- **Maestro:** `07-host-manage.yaml` passes from a clean install: create → Back → reopen from the list ("N min walk", no ฿ price) → "Manage your moment" → My Moments → Cancel shows a confirmation → "Keep it" → Cancel meal → map empty → My Moments says "Nothing planned right now." → Menu > Safety
+- **Maestro:** `01-auth-signup` and `06-signin-errors` still pass
+- **Manual:** no floating `›` buttons remain; the only remaining `›` characters are list-row chevrons
+
+**Notes:**
+- The "table fills up while the host watches" case for #42 needs a second user; it's covered by unit tests and added to Phase 7.
+- The `_launch.yaml` flow sets a GPS position. Without one, create-moment is stuck on "Loading…" and "Make visible" does nothing (#39).
 
 ## Phase 3: Create & sign-in inputs
 
@@ -138,8 +151,11 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 
 | # | Issue | Status | Commit |
 |---|---|---|---|
-| 39 | `create-moment` calls `getCurrentPositionAsync` without a catch, so an unavailable location causes an unhandled promise rejection | ⬜ | |
+| 39 | **Higher priority than it looked:** `create-moment` calls `getCurrentPositionAsync` without a catch. When location is unavailable it stays on "Loading…" and "Make visible" silently does nothing | ⬜ | |
 | 40 | expo-notifications 57 API changes: `removeNotificationSubscription` was removed (still called in `useNotifications.ts` cleanup), the handler needs `shouldShowBanner`/`shouldShowList`, and triggers need a `type` | 📦 ✅ | `4a8a2e2` |
+| 42 | Screens about one Moment (live, confirmation, arrival, running-late, feedback, detail) looked it up in the active-only map list, so they showed "not found" once it filled up or ended; leaving a full Moment never gave the seat back; running-late never reached the host of a full Moment | 📦 ✅ | `bc6945c` `b0d9896` |
+| 43 | `submitFeedback` destructures `checkForMatch` from the `matchStore` module, but it's a store method, so "eat again" feedback probably throws (and reports failure) and mutual-match notifications never fire. Needs confirming in Phase 7. | ⬜ | |
+| 44 | Dev only: Metro crashes (`Cannot read properties of undefined (reading 'addedFiles')`) when NativeWind 4.2.1's Tailwind watcher fires under SDK 57's Metro. NativeWind 4.2.7 may fix it. | ⬜ | |
 | 41 | `tsc` fails: TypeScript 6 rejects `baseUrl` in `tsconfig.json`, and the test files have no Jest type definitions. Also `notificationStore.ts` builds an `"info"` payload that isn't in `PushNotificationData`'s type union (type-only; sending works) | ⬜ | |
 
 ## Phase 1.5: expo-notifications 57 (#40)
@@ -160,6 +176,8 @@ Done ahead of Phase 2 because it was a runtime regression from the SDK upgrade.
 | Running late | ⬜ | |
 | Feedback / "eat again" match | ⬜ | |
 | Guest moment-detail view | ⬜ | |
+| Host's live screen stays up when the table fills (#42) | ⬜ | |
+| "Eat again" feedback and mutual match (#43) | ⬜ | |
 | Block / report a real user | ⬜ | |
 | Profile Edit | ⬜ | |
 | Real push delivery (physical device) | ⬜ | |
