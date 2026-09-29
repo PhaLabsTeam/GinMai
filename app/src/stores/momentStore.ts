@@ -73,8 +73,18 @@ export interface MomentGuest {
 // Callback type for guest events
 type GuestEventCallback = (event: "joined" | "cancelled" | "arrived" | "running_late", guest: MomentGuest) => void;
 
+export type MyActiveMoment = { moment: MomentLocal; role: "host" | "guest" };
+
+// `moments` is the map list: active only, and realtime drops a Moment the moment
+// it fills up or ends. Screens about one specific Moment (live, confirmation,
+// feedback...) must still find it, so they also look in `momentsById`, a cache of
+// Moments fetched by id regardless of status.
+const findMoment = (state: MomentState, id: string): MomentLocal | undefined =>
+  state.moments.find((m) => m.id === id) ?? state.momentsById[id];
+
 interface MomentState {
   moments: MomentLocal[];
+  momentsById: Record<string, MomentLocal>;
   userConnections: UserConnection[];
   momentGuests: Map<string, MomentGuest[]>; // momentId -> guests
   connectionSubscription: RealtimeChannel | null;
@@ -88,6 +98,9 @@ interface MomentState {
   updateMoment: (id: string, updates: Partial<MomentLocal>) => void;
   removeMoment: (id: string) => void;
   clearMoments: () => void;
+  findMoment: (id: string) => MomentLocal | undefined;
+  fetchMomentById: (id: string) => Promise<MomentLocal | null>;
+  fetchMyActiveMoment: (userId: string) => Promise<MyActiveMoment | null>;
 
   // User connections
   fetchUserConnections: (userId: string) => Promise<void>;
@@ -123,6 +136,7 @@ interface MomentState {
 
 export const useMomentStore = create<MomentState>((set, get) => ({
   moments: [],
+  momentsById: {},
   userConnections: [],
   momentGuests: new Map(),
   connectionSubscription: null,
@@ -139,10 +153,77 @@ export const useMomentStore = create<MomentState>((set, get) => ({
       moments: state.moments.map((m) =>
         m.id === id ? { ...m, ...updates } : m
       ),
+      momentsById: state.momentsById[id]
+        ? { ...state.momentsById, [id]: { ...state.momentsById[id], ...updates } }
+        : state.momentsById,
     })),
   removeMoment: (id) =>
     set((state) => ({ moments: state.moments.filter((m) => m.id !== id) })),
   clearMoments: () => set({ moments: [] }),
+
+  findMoment: (id) => findMoment(get(), id),
+
+  fetchMomentById: async (id) => {
+    if (DEV_MODE || !isSupabaseConfigured()) return get().findMoment(id) ?? null;
+
+    const { data, error } = await db.from("moments").select("*").eq("id", id).maybeSingle();
+    if (error) {
+      console.error("Error fetching moment:", error);
+      return null;
+    }
+    if (!data) return null;
+
+    const moment = dbMomentToLocal(data as Moment);
+    set((state) => ({ momentsById: { ...state.momentsById, [id]: moment } }));
+    return moment;
+  },
+
+  // The user's next Moment that hasn't ended: hosting first, then one they joined
+  fetchMyActiveMoment: async (userId) => {
+    if (DEV_MODE || !isSupabaseConfigured()) return null;
+
+    const now = new Date().toISOString();
+    const live = ["active", "full"];
+
+    const cacheAndReturn = (row: Moment, role: MyActiveMoment["role"]): MyActiveMoment => {
+      const moment = dbMomentToLocal(row);
+      set((state) => ({ momentsById: { ...state.momentsById, [moment.id]: moment } }));
+      return { moment, role };
+    };
+
+    const { data: hosted, error: hostedError } = await db
+      .from("moments")
+      .select("*")
+      .eq("host_id", userId)
+      .in("status", live)
+      .gte("expires_at", now)
+      .order("starts_at", { ascending: true })
+      .limit(1);
+    if (hostedError) console.error("Error fetching hosted moment:", hostedError);
+    if (hosted?.length) return cacheAndReturn(hosted[0] as Moment, "host");
+
+    const { data: connections, error: connectionsError } = await db
+      .from("connections")
+      .select("moment_id")
+      .eq("user_id", userId)
+      .eq("status", "confirmed");
+    if (connectionsError) console.error("Error fetching joined moments:", connectionsError);
+    const joinedIds = (connections || []).map((c: any) => c.moment_id);
+    if (!joinedIds.length) return null;
+
+    const { data: joined, error: joinedError } = await db
+      .from("moments")
+      .select("*")
+      .in("id", joinedIds)
+      .in("status", live)
+      .gte("expires_at", now)
+      .order("starts_at", { ascending: true })
+      .limit(1);
+    if (joinedError) console.error("Error fetching joined moment:", joinedError);
+    if (joined?.length) return cacheAndReturn(joined[0] as Moment, "guest");
+
+    return null;
+  },
 
   // User connections
   fetchUserConnections: async (userId: string) => {
@@ -275,7 +356,7 @@ export const useMomentStore = create<MomentState>((set, get) => ({
     // In DEV_MODE, just update local state
     if (DEV_MODE || !isSupabaseConfigured()) {
       console.log("[DEV MODE] Joining moment locally");
-      const moment = get().moments.find((m) => m.id === momentId);
+      const moment = findMoment(get(), momentId);
       if (moment) {
         const newSeatsTaken = moment.seats_taken + 1;
         const newStatus = newSeatsTaken >= moment.seats_total ? "full" : "active";
@@ -298,7 +379,7 @@ export const useMomentStore = create<MomentState>((set, get) => ({
 
     try {
       // Check if moment exists and has available seats
-      const moment = get().moments.find((m) => m.id === momentId);
+      const moment = findMoment(get(), momentId);
       if (!moment) {
         throw new Error("Moment not found");
       }
@@ -368,7 +449,7 @@ export const useMomentStore = create<MomentState>((set, get) => ({
     // In DEV_MODE, just update local state
     if (DEV_MODE || !isSupabaseConfigured()) {
       console.log("[DEV MODE] Leaving moment locally");
-      const moment = get().moments.find((m) => m.id === momentId);
+      const moment = findMoment(get(), momentId);
       if (moment && moment.seats_taken > 0) {
         get().updateMoment(momentId, {
           seats_taken: moment.seats_taken - 1,
@@ -398,7 +479,7 @@ export const useMomentStore = create<MomentState>((set, get) => ({
       if (connectionError) throw connectionError;
 
       // Decrement seats_taken
-      const moment = get().moments.find((m) => m.id === momentId);
+      const moment = findMoment(get(), momentId);
       if (moment && moment.seats_taken > 0) {
         const newSeatsTaken = moment.seats_taken - 1;
 
@@ -514,7 +595,7 @@ export const useMomentStore = create<MomentState>((set, get) => ({
     try {
       // Insert a notification record for the host
       // The real-time subscription will pick this up and show it to the host
-      const moment = get().moments.find((m) => m.id === momentId);
+      const moment = findMoment(get(), momentId);
       if (!moment || !moment.host_id) return;
 
       // Update connection with running_late flag
@@ -570,6 +651,11 @@ export const useMomentStore = create<MomentState>((set, get) => ({
             }
           } else if (eventType === "UPDATE") {
             const updatedMoment = newRecord as Moment;
+            if (get().momentsById[updatedMoment.id]) {
+              set((state) => ({
+                momentsById: { ...state.momentsById, [updatedMoment.id]: dbMomentToLocal(updatedMoment) },
+              }));
+            }
             if (updatedMoment.status === "active") {
               get().updateMoment(updatedMoment.id, dbMomentToLocal(updatedMoment));
             } else {
@@ -599,7 +685,7 @@ export const useMomentStore = create<MomentState>((set, get) => ({
     if (DEV_MODE || !isSupabaseConfigured()) {
       console.log("[DEV MODE] Returning mock guests");
       const mockGuests: MomentGuest[] = [];
-      const moment = get().moments.find((m) => m.id === momentId);
+      const moment = findMoment(get(), momentId);
       if (moment && moment.seats_taken > 0) {
         // Create mock guests based on seats_taken
         for (let i = 0; i < moment.seats_taken; i++) {
