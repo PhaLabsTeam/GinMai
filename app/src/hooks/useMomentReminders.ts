@@ -9,20 +9,36 @@ import { scheduleRunningLateReminder, cancelRunningLateReminder } from '../servi
 
 export function useMomentReminders() {
   const moments = useMomentStore((state) => state.moments);
+  const momentsById = useMomentStore((state) => state.momentsById);
+  const findMoment = useMomentStore((state) => state.findMoment);
   const userConnections = useMomentStore((state) => state.userConnections);
   const user = useAuthStore((state) => state.user);
 
+  const remindersOn = user?.notify_reminders !== false;
+
   useEffect(() => {
     if (!user) return;
+
+    // "Meal reminders" off in Settings: clear any already scheduled
+    if (!remindersOn) {
+      userConnections.forEach((c) => cancelRunningLateReminder(c.momentId).catch(() => {}));
+      moments
+        .filter((m) => m.host_id === user.id)
+        .forEach((m) => cancelRunningLateReminder(m.id).catch(() => {}));
+      return;
+    }
 
     // Schedule reminders for all upcoming moments user is connected to
     const scheduledReminders: string[] = [];
 
     // 1. Schedule reminders for moments the user is HOSTING
-    const hostedMoments = moments.filter((m) => m.host_id === user.id);
+    const candidates = [...moments, ...Object.values(momentsById)];
+    const hostedMoments = candidates.filter(
+      (m, i) => m.host_id === user.id && candidates.findIndex((o) => o.id === m.id) === i
+    );
     hostedMoments.forEach((moment) => {
-      // Check if moment is in the future and active
-      if (moment.status !== 'active') return;
+      // A full table still needs its reminder
+      if (moment.status !== 'active' && moment.status !== 'full') return;
 
       const momentTime = new Date(moment.starts_at);
       const now = new Date();
@@ -48,7 +64,7 @@ export function useMomentReminders() {
       // Only schedule for confirmed connections (not cancelled or completed)
       if (connection.status !== 'confirmed') return;
 
-      const moment = moments.find((m) => m.id === connection.momentId);
+      const moment = findMoment(connection.momentId);
       if (!moment) return;
 
       // Check if moment is in the future
@@ -79,7 +95,7 @@ export function useMomentReminders() {
         });
       });
     };
-  }, [moments, userConnections, user]);
+  }, [moments, momentsById, userConnections, user, remindersOn, findMoment]);
 
   return null; // This hook doesn't return anything, it just manages reminders
 }

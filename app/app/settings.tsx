@@ -1,7 +1,6 @@
 import { View, Text, Pressable, ScrollView, Switch, Alert, ActivityIndicator, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useState } from "react";
 import { useAuthStore } from "../src/stores/authStore";
 
 export default function SettingsScreen() {
@@ -11,11 +10,46 @@ export default function SettingsScreen() {
   const user = useAuthStore((state) => state.user);
   const signOut = useAuthStore((state) => state.signOut);
   const loading = useAuthStore((state) => state.loading);
+  const updatePreferences = useAuthStore((state) => state.updatePreferences);
+  const deleteAccount = useAuthStore((state) => state.deleteAccount);
 
-  // Toggle states
-  const [autoAccept, setAutoAccept] = useState(true);
-  const [mealReminders, setMealReminders] = useState(true);
-  const [joinNotifications, setJoinNotifications] = useState(true);
+  const savePreference = async (prefs: Parameters<typeof updatePreferences>[0]) => {
+    const result = await updatePreferences(prefs);
+    if (!result.success) {
+      Alert.alert("Couldn't save", "Check your connection and try again.");
+    }
+  };
+
+  const confirmDeleteAccount = () => {
+    Alert.alert(
+      "Delete your account?",
+      "Your profile, meals and connections will be removed. Any meal you're hosting will be cancelled.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Continue",
+          style: "destructive",
+          onPress: () =>
+            // Second step: this can't be undone
+            Alert.alert("This can't be undone", "Delete your GinMai account for good?", [
+              { text: "Keep my account", style: "cancel" },
+              {
+                text: "Delete account",
+                style: "destructive",
+                onPress: async () => {
+                  const result = await deleteAccount();
+                  if (result.success) {
+                    router.replace("/");
+                  } else {
+                    Alert.alert("Couldn't delete account", "Check your connection and try again.");
+                  }
+                },
+              },
+            ]),
+        },
+      ]
+    );
+  };
 
   const handleBack = () => {
     router.back();
@@ -106,7 +140,9 @@ export default function SettingsScreen() {
     label,
     value,
     onValueChange,
+    testID,
   }: {
+    testID?: string;
     label: string;
     value: boolean;
     onValueChange: (value: boolean) => void;
@@ -114,6 +150,8 @@ export default function SettingsScreen() {
     <View className="flex-row items-center justify-between px-4 py-4 bg-white rounded-xl mb-3">
       <Text className="text-[16px] text-[#1C1917]">{label}</Text>
       <Switch
+        testID={testID}
+        accessibilityLabel={label}
         value={value}
         onValueChange={onValueChange}
         trackColor={{ false: "#E5E7EB", true: "#1C1917" }}
@@ -180,30 +218,28 @@ export default function SettingsScreen() {
           </Pressable>
         )}
 
-        {/* Hosting section */}
-        <SectionHeader title="Hosting" />
-        <ToggleRow
-          label="Auto-accept guests"
-          value={autoAccept}
-          onValueChange={setAutoAccept}
-        />
-
-        {/* Notifications section */}
-        <SectionHeader title="Notifications" />
-        <ToggleRow
-          label="Meal reminders"
-          value={mealReminders}
-          onValueChange={setMealReminders}
-        />
-        <ToggleRow
-          label="Someone wants to join"
-          value={joinNotifications}
-          onValueChange={setJoinNotifications}
-        />
+        {/* Notifications section - saved to the profile, so only when signed in */}
+        {user && (
+          <>
+            <SectionHeader title="Notifications" />
+            <ToggleRow
+              testID="toggle-meal-reminders"
+              label="Meal reminders"
+              value={user.notify_reminders !== false}
+              onValueChange={(value) => savePreference({ notify_reminders: value })}
+            />
+            <ToggleRow
+              testID="toggle-join-alerts"
+              label="Someone wants to join"
+              value={user.notify_joins !== false}
+              onValueChange={(value) => savePreference({ notify_joins: value })}
+            />
+          </>
+        )}
 
         {/* Privacy & Safety section */}
         <SectionHeader title="Privacy & Safety" />
-        <SettingRow label="Blocked users" onPress={() => {}} />
+        <SettingRow label="Blocked users" onPress={() => router.push("/blocked-users")} />
 
         {/* Session section - only show if logged in */}
         {user && (
@@ -225,12 +261,16 @@ export default function SettingsScreen() {
         )}
 
         {/* Danger zone */}
-        <SectionHeader title="Danger zone" />
-        <SettingRow
-          label="Delete account"
-          onPress={() => {}}
-          isDestructive
-        />
+        {user && (
+          <>
+            <SectionHeader title="Danger zone" />
+            <SettingRow
+              label="Delete account"
+              onPress={confirmDeleteAccount}
+              isDestructive
+            />
+          </>
+        )}
 
         {/* Bottom padding */}
         <View className="h-20" />

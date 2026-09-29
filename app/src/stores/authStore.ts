@@ -42,6 +42,10 @@ interface AuthState {
   verifyOtp: (phone: string, code: string) => Promise<{ success: boolean; needsProfile?: boolean; error?: string }>;
   completeProfile: (phone: string, firstName: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
+  updatePreferences: (
+    prefs: Partial<Pick<User, "notify_reminders" | "notify_joins">>
+  ) => Promise<{ success: boolean; error?: string }>;
+  deleteAccount: () => Promise<{ success: boolean; error?: string }>;
   updatePushToken: (token: string) => Promise<void>;
   clearError: () => void;
 }
@@ -224,6 +228,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         meals_joined: 0,
         no_shows: 0,
         push_token: null,
+        notify_reminders: true,
+        notify_joins: true,
         status: "active",
         created_at: now,
         updated_at: now,
@@ -285,6 +291,49 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.error("Sign out error:", error);
       set({ loading: false, error: (error as Error).message });
     }
+  },
+
+  // Optimistic: the switch moves immediately and is put back if the save fails
+  updatePreferences: async (prefs) => {
+    const { user } = get();
+    if (!user) return { success: false, error: "Not signed in" };
+
+    const previous = { notify_reminders: user.notify_reminders, notify_joins: user.notify_joins };
+    set({ user: { ...user, ...prefs } });
+
+    if (DEV_MODE || !isSupabaseConfigured()) return { success: true };
+
+    const { error } = await db.from("users").update(prefs).eq("id", user.id);
+    if (error) {
+      console.error("[AUTH] updatePreferences error:", error);
+      const current = get().user;
+      if (current?.id === user.id) set({ user: { ...current, ...previous } });
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  },
+
+  // Deletes the profile and auth user server-side (delete_my_account), then
+  // clears the local session. The session is gone either way afterwards.
+  deleteAccount: async () => {
+    if (!get().user) return { success: false, error: "Not signed in" };
+    if (DEV_MODE || !isSupabaseConfigured()) {
+      set({ user: null, session: null });
+      return { success: true };
+    }
+
+    set({ loading: true, error: null });
+    const { error } = await db.rpc("delete_my_account");
+    if (error) {
+      console.error("[AUTH] deleteAccount error:", error);
+      set({ loading: false, error: error.message });
+      return { success: false, error: error.message };
+    }
+
+    // The auth user no longer exists, so a server sign-out may fail; clear locally regardless
+    await db.auth.signOut({ scope: "local" }).catch(() => {});
+    set({ user: null, session: null, loading: false });
+    return { success: true };
   },
 
   // Update push notification token
