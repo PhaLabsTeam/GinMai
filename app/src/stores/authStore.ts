@@ -9,6 +9,25 @@ const db = supabase as SupabaseClient<any>;
 // DEV MODE OTP code (any 6-digit code works in dev mode)
 const DEV_OTP_CODE = "123456";
 
+// Registered once; initialize() can run again (e.g. fast refresh) without stacking listeners
+let authSubscription: { unsubscribe: () => void } | null = null;
+
+// While verifyOtp/completeProfile run they own `user`; the auth listener must not
+// overwrite it with a profile fetched mid-sign-in (that race showed stale names).
+// signInCount lets a listener fetch that started before a sign-in drop its result.
+let signingIn = false;
+let signInCount = 0;
+
+async function fetchProfile(userId: string): Promise<User | null> {
+  const { data, error } = await db.from("users").select("*").eq("id", userId).maybeSingle();
+  if (error) {
+    console.error("[AUTH] Error fetching user profile:", error);
+  }
+  return (data as User | null) ?? null;
+}
+
+const hasName = (profile: User | null) => !!profile?.first_name?.trim();
+
 interface AuthState {
   user: User | null;
   session: Session | null;
@@ -19,7 +38,9 @@ interface AuthState {
   // Actions
   initialize: () => Promise<void>;
   sendOtp: (phone: string) => Promise<{ success: boolean; error?: string }>;
-  verifyOtp: (phone: string, code: string, firstName: string) => Promise<{ success: boolean; error?: string }>;
+  // needsProfile: signed in, but no name on file yet; call completeProfile next
+  verifyOtp: (phone: string, code: string) => Promise<{ success: boolean; needsProfile?: boolean; error?: string }>;
+  completeProfile: (phone: string, firstName: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
   updatePushToken: (token: string) => Promise<void>;
   clearError: () => void;
@@ -49,20 +70,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (sessionError) throw sessionError;
 
       if (session?.user) {
-        // Fetch user profile from users table
-        const { data: userData, error: userError } = await db
-          .from("users")
-          .select("*")
-          .eq("id", session.user.id)
-          .single();
-
-        if (userError && userError.code !== "PGRST116") {
-          console.error("Error fetching user profile:", userError);
-        }
+        const profile = await fetchProfile(session.user.id);
 
         set({
           session,
-          user: userData as User | null,
+          // A session without a name means sign-up was abandoned at the name step
+          user: hasName(profile) ? profile : null,
           loading: false,
           initialized: true,
         });
@@ -70,26 +83,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({ loading: false, initialized: true });
       }
 
-      // Listen for auth state changes
-      db.auth.onAuthStateChange(async (event, newSession) => {
-        console.log("Auth state changed:", event);
+      if (!authSubscription) {
+        const { data } = db.auth.onAuthStateChange((event, newSession) => {
+          console.log("Auth state changed:", event);
 
-        if (event === "SIGNED_OUT") {
-          set({ user: null, session: null });
-        } else if (newSession?.user) {
-          // Fetch user profile
-          const { data: userData } = await db
-            .from("users")
-            .select("*")
-            .eq("id", newSession.user.id)
-            .single();
+          if (event === "SIGNED_OUT") {
+            set({ user: null, session: null });
+            return;
+          }
+          if (!newSession?.user) return;
 
-          set({
-            session: newSession,
-            user: userData as User | null,
-          });
-        }
-      });
+          set({ session: newSession });
+
+          const userId = newSession.user.id;
+          if (signingIn || get().user?.id === userId) return;
+
+          const startedAt = signInCount;
+          // supabase-js can deadlock if this callback awaits other Supabase calls
+          setTimeout(async () => {
+            const profile = await fetchProfile(userId);
+            // Drop the result if a sign-in ran or the session changed meanwhile
+            if (signingIn || signInCount !== startedAt || get().session?.user.id !== userId) return;
+            if (hasName(profile)) set({ user: profile });
+          }, 0);
+        });
+        authSubscription = data.subscription;
+      }
     } catch (error) {
       console.error("Auth initialization error:", error);
       set({ loading: false, initialized: true, error: (error as Error).message });
@@ -141,176 +160,112 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  // Verify OTP and create/update user profile
-  verifyOtp: async (phone: string, code: string, firstName: string) => {
-    console.log("[AUTH] verifyOtp called:");
-    console.log("[AUTH]   phone:", phone);
-    console.log("[AUTH]   code:", code);
-    console.log("[AUTH]   firstName:", firstName);
-    console.log("[AUTH]   DEV_MODE:", DEV_MODE);
+  // Verify the OTP. Existing profiles are loaded as-is; the name is only asked
+  // for (via completeProfile) when there's no profile yet.
+  verifyOtp: async (phone: string, code: string) => {
+    console.log("[AUTH] verifyOtp called for:", phone);
 
-    // DEV MODE: Accept any 6-digit code and create user in database
-    if (DEV_MODE) {
-      console.log(`[DEV MODE] Verifying code: ${code} for ${phone}`);
-
+    // DEV MODE / no Supabase: accept any 6-digit code; the name step creates the mock user
+    if (DEV_MODE || !isSupabaseConfigured()) {
       if (code.length !== 6) {
         return { success: false, error: "Code must be 6 digits" };
       }
-
-      set({ loading: true, error: null });
-
-      try {
-        // In DEV_MODE, use a local mock user without hitting the database
-        // This avoids RLS policy issues when there's no real auth session
-        // Generate a valid UUID format for consistency
-        const devUserId = "00000000-0000-0000-0000-000000000001";
-
-        const userData: User = {
-          id: devUserId,
-          phone,
-          first_name: firstName,
-          phone_verified: true,
-          verified_at: new Date().toISOString(),
-          meals_hosted: 0,
-          meals_joined: 0,
-          no_shows: 0,
-          push_token: null,
-          status: "active",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-
-        console.log("[DEV MODE] Using local mock user:", userData.first_name);
-
-        set({ user: userData, loading: false, initialized: true });
-        return { success: true };
-      } catch (error) {
-        console.error("[DEV MODE] Error:", error);
-        set({ loading: false, error: (error as Error).message });
-        return { success: false, error: (error as Error).message };
-      }
+      return { success: true, needsProfile: true };
     }
 
-    if (!isSupabaseConfigured()) {
-      // Mock success for development - create fake user
-      console.log("Supabase not configured, mocking OTP verification");
-      const mockUser: User = {
-        id: "mock-user-id",
-        phone,
-        first_name: firstName,
-        phone_verified: true,
-        verified_at: new Date().toISOString(),
-        meals_hosted: 0,
-        meals_joined: 0,
-        no_shows: 0,
-        push_token: null,
-        status: "active",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      set({ user: mockUser, initialized: true });
-      return { success: true };
-    }
-
+    signingIn = true;
+    signInCount++;
     set({ loading: true, error: null });
 
     try {
-      // Verify the OTP
-      console.log("[AUTH] Calling Supabase verifyOtp...");
       const { data: authData, error: verifyError } = await db.auth.verifyOtp({
         phone,
         token: code,
         type: "sms",
       });
 
-      if (verifyError) {
-        console.error("[AUTH] verifyOtp error:", verifyError);
-        throw verifyError;
-      }
+      if (verifyError) throw verifyError;
+      if (!authData.user) throw new Error("No user returned after verification");
 
-      console.log("[AUTH] OTP verified successfully");
-      console.log("[AUTH] authData.user:", authData.user?.id);
-      console.log("[AUTH] authData.session:", authData.session ? "exists" : "null");
-
-      if (!authData.user) {
-        throw new Error("No user returned after verification");
-      }
-
-      // Try to create user profile first (upsert pattern to avoid RLS issues)
-      // This handles the case where user doesn't exist yet and SELECT fails due to RLS
-      console.log("[AUTH] Creating/updating user profile with upsert...");
-
-      const { data: upsertedUser, error: upsertError } = await db
-        .from("users")
-        .upsert({
-          id: authData.user.id,
-          phone,
-          first_name: firstName,
-          phone_verified: true,
-          verified_at: new Date().toISOString(),
-        }, {
-          onConflict: "id",
-          ignoreDuplicates: false, // Update if exists
-        })
-        .select()
-        .single();
-
-      let userData: User;
-
-      if (upsertError) {
-        console.error("[AUTH] Upsert error:", upsertError);
-        // If upsert fails, try a simple insert (in case upsert isn't supported)
-        console.log("[AUTH] Trying direct insert...");
-        const { data: insertedUser, error: insertError } = await db
-          .from("users")
-          .insert({
-            id: authData.user.id,
-            phone,
-            first_name: firstName,
-            phone_verified: true,
-            verified_at: new Date().toISOString(),
-          })
-          .select()
-          .single();
-
-        if (insertError) {
-          // If insert also fails, it might be a duplicate - try to fetch
-          console.log("[AUTH] Insert failed, trying to fetch existing user...");
-          const { data: existingUser, error: fetchError } = await db
-            .from("users")
-            .select("*")
-            .eq("id", authData.user.id)
-            .single();
-
-          if (fetchError || !existingUser) {
-            console.error("[AUTH] Could not create or fetch user:", insertError);
-            throw insertError;
-          }
-          userData = existingUser as User;
-        } else {
-          console.log("[AUTH] User profile created via insert:", insertedUser);
-          userData = insertedUser as User;
-        }
-      } else {
-        console.log("[AUTH] User profile upserted:", upsertedUser);
-        userData = upsertedUser as User;
-      }
-
-      console.log("[AUTH] Final user data:", userData);
-      console.log("[AUTH] Setting auth state and returning success");
+      const profile = await fetchProfile(authData.user.id);
+      const needsProfile = !hasName(profile);
 
       set({
         session: authData.session,
-        user: userData,
+        user: needsProfile ? null : profile,
         loading: false,
       });
 
-      return { success: true };
+      return { success: true, needsProfile };
     } catch (error) {
       const authError = error as AuthError;
       console.error("[AUTH] OTP verification error:", authError);
       set({ loading: false, error: authError.message });
       return { success: false, error: authError.message };
+    } finally {
+      signingIn = false;
+    }
+  },
+
+  // Create the profile for a newly verified user
+  completeProfile: async (phone: string, firstName: string) => {
+    const name = firstName.trim();
+    if (!name) return { success: false, error: "Name is required" };
+
+    if (DEV_MODE || !isSupabaseConfigured()) {
+      const now = new Date().toISOString();
+      const mockUser: User = {
+        id: "00000000-0000-0000-0000-000000000001",
+        phone,
+        first_name: name,
+        phone_verified: true,
+        verified_at: now,
+        meals_hosted: 0,
+        meals_joined: 0,
+        no_shows: 0,
+        push_token: null,
+        status: "active",
+        created_at: now,
+        updated_at: now,
+      };
+      set({ user: mockUser, initialized: true });
+      return { success: true };
+    }
+
+    const userId = get().session?.user.id;
+    if (!userId) return { success: false, error: "Not signed in" };
+
+    signingIn = true;
+    signInCount++;
+    set({ loading: true, error: null });
+
+    try {
+      const { data, error } = await db
+        .from("users")
+        .upsert(
+          {
+            id: userId,
+            phone,
+            first_name: name,
+            phone_verified: true,
+            verified_at: new Date().toISOString(),
+          },
+          { onConflict: "id" }
+        )
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      set({ user: data as User, loading: false });
+      return { success: true };
+    } catch (error) {
+      const message = (error as Error).message;
+      console.error("[AUTH] completeProfile error:", error);
+      set({ loading: false, error: message });
+      return { success: false, error: message };
+    } finally {
+      signingIn = false;
     }
   },
 
