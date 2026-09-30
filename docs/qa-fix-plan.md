@@ -25,7 +25,7 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | 2 | Host flow & navigation | `fix/host-flow` | 📦 awaiting review | — |
 | 3 | Create & sign-in inputs (+#39) | `fix/create-flow` | 🔧 in progress, #13 waiting on the Places key | — |
 | 4 | Settings, safety, App Store readiness (+#46–#48) | `fix/app-store-readiness` | 📦 awaiting review, #17 waiting on terms URL | — |
-| 5 | Map & product-feel UX | `fix/ux-polish` | ⬜ | — |
+| 5 | Map & product-feel UX | `fix/ux-polish` | 📦 awaiting review, #30 moves to #13 (Places) | — |
 | 6 | Visual consistency | `refactor/design-consistency` | ⬜ | — |
 | 7 | Two-user end-to-end testing | `test/two-user-e2e` | ⬜ | — |
 
@@ -139,7 +139,7 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 **Database:** the three migrations `20260929000000`–`20260929000002` were applied through the SQL editor. The CLI migration history is untouched, by choice. A check query confirmed 2 columns, 3 functions and 1 trigger.
 
 **Verified:**
-- **Jest:** `npm test` passes 84 tests in 17 suites. New tests: `authStore.account` (a saved setting rolls back on failure; deletion clears the session, or keeps it when deletion fails), `pushPermission` (no prompt at launch; the explanation comes before the system prompt; "Not now" never triggers the system prompt), `momentStore.blocks` (blocked hosts are hidden; the map still loads if the blocked list fails)
+- **Jest:** `npm test` passes 84 tests in 15 suites. New tests: `authStore.account` (a saved setting rolls back on failure; deletion clears the session, or keeps it when deletion fails), `pushPermission` (no prompt at launch; the explanation comes before the system prompt; "Not now" never triggers the system prompt), `momentStore.blocks` (blocked hosts are hidden; the map still loads if the blocked list fails)
 - **Maestro:** `10-permissions`: on a fresh install, no notification prompt at launch; the location prompt reads "GinMai shows meals happening near you. That's all we use it for."
 - **Maestro:** `11-safety`: Tourist Police is shown; no US Embassy card, no "trusted contact" promise, no test button; Settings > Blocked users opens
 - **Maestro:** `12-settings`, plus a screenshot: "Meal reminders" stays off after restarting the app
@@ -153,14 +153,33 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 
 | # | Issue | Status | Commit |
 |---|---|---|---|
-| 22 | The map doesn't center on the user; the location dot sometimes disappears | ⬜ | |
-| 23 | The list panel covers the whole map; your own Moment isn't marked | ⬜ | |
-| 25 | The table sign is too quiet: no host name, low contrast, the screen can sleep | ⬜ | |
-| 26 | Reliability shows "100%" for a user with 0 meals | ⬜ | |
-| 27 | "Build your network" / "GinMai story" copy conflicts with the product philosophy | ⬜ | |
-| 28b | The country picker has only 10 countries | ⬜ | |
-| 29 | "Your location is visible" sounds like live tracking | ⬜ | |
-| 30 | Area shows "Suthep" instead of "Nimman" | ⬜ | |
+| 22 | The map doesn't center on the user; the location dot sometimes disappears | 📦 ✅ | `fe42ea8` |
+| 23 | The list panel covers the whole map; your own Moment isn't marked | 📦 ✅ | `fe42ea8` |
+| 25 | The table sign is too quiet: no host name, low contrast, the screen can sleep | 📦 ✅ | `617653d` |
+| 26 | Reliability shows "100%" for a user with 0 meals | 📦 ✅ | `32d56f0` |
+| 27 | "Build your network" / "GinMai story" copy conflicts with the product philosophy | 📦 ✅ | `32d56f0` |
+| 28b | The country picker has only 10 countries | 📦 ✅ | `2dabaa7` |
+| 29 | "Your location is visible" sounds like live tracking | 📦 ✅ | `32d56f0` |
+| 30 | Area shows "Suthep" instead of "Nimman" | ⬜ done with #13: needs Places neighborhood data | |
+
+**Verified:**
+- **Jest:** `npm test` passes 88 tests in 16 suites. New test: `countries.test.ts` (common countries first, word-start search, longest dial-code match).
+- **Maestro:** `13-map-ux` passes end to end:
+  - country search ("viet" → Vietnam, not Germany; "thai" → Thailand)
+  - live screen says "Your table is on the map"
+  - table sign reads "Tester's table"
+  - list shows "You're hosting"
+  - Profile says "New", not "100%"
+  - new Connections wording
+  - the test Moment is cancelled afterwards
+- **Maestro:** `07`, `08` and `12` still pass
+- **Screenshots:** the map is centred on the user; the list is compact and the map shows below it; the table sign is orange with the host's name
+
+**Notes:**
+- #30 (Nimman vs Suthep) needs neighborhood data from Places, so it's done together with #13.
+- Found while testing: without notification permission (#20), reminders logged `UNErrorDomain 2003` for every Moment. They now skip quietly (`d18e02c`).
+- Found while testing: the country picker exposed the whole list to VoiceOver as one element. Fixed in `2dabaa7`.
+- Metro crashed (#44) on almost every file edit during this phase. It's worth scheduling soon.
 
 ## Phase 6: Visual consistency
 
