@@ -5,7 +5,9 @@
  */
 export const TERMS_VERSION = "2026-10-01";
 
-export const TERMS_SECTIONS: Array<{ title: string; body: string[] }> = [
+export type LegalSection = { title: string; body: string[] };
+
+export const TERMS_SECTIONS: LegalSection[] = [
   {
     title: "The short version",
     body: [
@@ -72,7 +74,7 @@ export const TERMS_SECTIONS: Array<{ title: string; body: string[] }> = [
     title: "8. Your privacy",
     body: [
       "We collect only what GinMai needs: your phone number, first name, the Moments you create and join, feedback you give, and your location while you use the app (to show meals nearby). Your exact location is not shown to others; the place of a Moment is.",
-      "We handle personal data under Thailand's Personal Data Protection Act (PDPA). Our Privacy Policy [link] explains what we collect, why, how long we keep it, and your rights.",
+      "We handle personal data under Thailand's Personal Data Protection Act (PDPA). Our Privacy Policy (in the app under Settings) explains what we collect, why, how long we keep it, and your rights.",
     ],
   },
   {
@@ -84,7 +86,7 @@ export const TERMS_SECTIONS: Array<{ title: string; body: string[] }> = [
   {
     title: "10. Ending things",
     body: [
-      "You can delete your account at any time in Settings. We'll delete your profile and cancel any Moments you're hosting. We may keep limited records where the law requires it or to handle safety reports.",
+      "You can delete your account at any time in Settings. We'll delete your profile and cancel any Moments you're hosting. We keep reports about an account for 12 months after it's deleted, as explained in the Privacy Policy.",
       "We may suspend or remove your account if you break these terms, if someone reports a safety concern we believe is credible, or if we need to protect other users.",
     ],
   },

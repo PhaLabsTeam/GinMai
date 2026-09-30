@@ -17,3 +17,14 @@ appId: com.ginmai.app
     element: "14\\. Law and disputes"
 - tapOn: "Back"
 - assertVisible: "Just a phone number\\."
+
+# Privacy policy link next to it
+- tapOn: "privacy policy"
+- extendedWaitUntil:
+    visible: "Privacy Policy"
+    timeout: 5000
+- assertVisible: "The short version"
+- scrollUntilVisible:
+    element: "5\\. Who we share it with"
+- tapOn: "Back"
+- assertVisible: "Just a phone number\\."

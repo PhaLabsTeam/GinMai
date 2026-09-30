@@ -266,6 +266,14 @@ export default function SignUpScreen() {
                 accessibilityRole="link"
               >
                 terms
+              </Text>
+              {" "}and{" "}
+              <Text
+                className="text-ink-secondary underline"
+                onPress={() => router.push("/privacy")}
+                accessibilityRole="link"
+              >
+                privacy policy
               </Text>.
             </Text>
           </>
