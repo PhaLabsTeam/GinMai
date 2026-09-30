@@ -26,6 +26,8 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | 3 | Create & sign-in inputs (+#39) | `fix/create-flow` | 🔧 in progress, #13 waiting on the Places key | — |
 | 4 | Settings, safety, App Store readiness (+#46–#48) | `fix/app-store-readiness` | 📦 awaiting review, #17 waiting on terms URL | — |
 | 5 | Map & product-feel UX | `fix/ux-polish` | 📦 awaiting review, #30 moves to #13 (Places) | — |
+| 5.5 | Metro crash on style edits (#44) | `fix/metro-nativewind` | 📦 awaiting review | — |
+| 5.6 | Host and guest push notifications (#45) | `feat/host-push-notifications` | 📦 awaiting review | — |
 | 6 | Visual consistency | `refactor/design-consistency` | ⬜ | — |
 | 7 | Two-user end-to-end testing | `test/two-user-e2e` | ⬜ | — |
 
@@ -181,6 +183,32 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 - Found while testing: the country picker exposed the whole list to VoiceOver as one element. Fixed in `2dabaa7`.
 - Metro crashed (#44) on almost every file edit during this phase. It's worth scheduling soon.
 
+## Phase 5.5: Metro crash on style edits (#44)
+
+**Verified:**
+- After `expo start -c` and loading the app, Metro survived 10 consecutive edits to `table-sign.tsx`, including 5 that each introduced a new Tailwind class (`mt-[61px]` … `mt-[65px]`) to force a CSS rebuild. Before the upgrade, a single style edit usually killed it.
+- No `addedFiles` error in the Metro log.
+- `expo-doctor` passes 21/21, `npm test` passes 88 tests, and the app renders the same.
+
+## Phase 5.6: Push notifications for guest and host events (#45)
+
+**Database:** migration `20260930000000_host_push_notifications.sql`, applied through the SQL editor. It enables `pg_net`, adds `send_expo_push()` (not callable by clients), and adds two triggers:
+- `notify_host_of_guest_event` on `connections`: guest joined, re-joined, arrived, cancelled or running late → host
+- `notify_guests_of_cancellation` on `moments`: Moment cancelled → guests
+
+**Verified** (Tester and Sam on one simulator; Expo's replies read from `net._http_response`):
+- Sam joins Tester's Moment → a push was sent to Tester (rows 1, 3, 4, 5)
+- Sam leaves → a push was sent to Tester (row 2)
+- Tester cancels with Sam still in → "Plans changed" was sent to Sam (row 6)
+- Every reply was Expo's "Could not find APNs credentials": the triggers fire and reach Expo, and only Apple delivery is missing
+- **Jest:** 93 tests pass (new `config/notifications` suite; tap routing in `useNotifications`)
+
+**To finish (the owner):** set up the Apple push key with `npx eas credentials` → iOS → `com.ginmai.app` → Push Notifications. Until then no push reaches any iPhone, including the existing eat-again match.
+
+**Notes:**
+- The iOS 27 simulator stopped returning Expo push tokens after repeated permission resets. `getExpoPushTokenAsync` now times out and logs after 15 s. Sam's token was set by hand for the test. Recheck on a real device in Phase 7.
+- New issues logged: #50 (a previous account's joined Moments stay in memory after sign-out), #51 (no back button on the guest confirmation screen), #52 (no place name for current-location Moments).
+
 ## Phase 6: Visual consistency
 
 | # | Issue | Status | Commit |
@@ -200,12 +228,15 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | 40 | expo-notifications 57 API changes: `removeNotificationSubscription` was removed (still called in `useNotifications.ts` cleanup), the handler needs `shouldShowBanner`/`shouldShowList`, and triggers need a `type` | 📦 ✅ | `4a8a2e2` |
 | 42 | Screens about one Moment (live, confirmation, arrival, running-late, feedback, detail) looked it up in the active-only map list, so they showed "not found" once it filled up or ended; leaving a full Moment never gave the seat back; running-late never reached the host of a full Moment | 📦 ✅ | `bc6945c` `b0d9896` |
 | 43 | `submitFeedback` destructures `checkForMatch` from the `matchStore` module, but it's a store method, so "eat again" feedback probably throws (and reports failure) and mutual-match notifications never fire. Needs confirming in Phase 7. | ⬜ | |
-| 44 | Dev only: Metro crashes (`Cannot read properties of undefined (reading 'addedFiles')`) when NativeWind 4.2.1's Tailwind watcher fires under SDK 57's Metro. NativeWind 4.2.7 may fix it. | ⬜ | |
-| 45 | No push is sent when a guest joins, arrives or cancels. `addNotification` can push, but nothing passes it a token, so hosts only hear about guests while the live screen is open. | ⬜ needs decision | |
+| 44 | Dev only: Metro crashes (`Cannot read properties of undefined (reading 'addedFiles')`) when NativeWind 4.2.1's Tailwind watcher fires under SDK 57's Metro. Fixed by upgrading to NativeWind 4.2.7. | 📦 ✅ | `88d28b2` |
+| 45 | No push when a guest joins, arrives, cancels or runs late, and none to guests when a host cancels | 📦 ✅ (triggers confirmed; delivery needs APNs key) | `0521db5` |
 | 46 | Settings > Blocked users was a dead link | 📦 ✅ | `69dbcab` |
 | 47 | Nobody could report or block anyone; the Safety test button was the only way into the report screen, and its "Block" option was a TODO | 📦 ✅ (entry points; full flow in Phase 7) | `8fcaa4e` |
 | 48 | Blocking had no effect: `blocks` was never read, and the join check used the legacy `blocked_users` table | 📦 ✅ (map + trigger; join rejection in Phase 7) | `8fcaa4e` |
-| 49 | Leaving a Moment and re-joining it probably fails with "You've already joined": the cancelled connection row still exists and the client only inserts | ⬜ Phase 7 | |
+| 49 | Leaving a Moment and re-joining it fails (confirmed 2026-09-30) with "You've already joined": the cancelled connection row still exists and the client only inserts | ⬜ Phase 7 | |
+| 50 | Signing out doesn't clear the user's joined Moments in memory; the next account on the device inherits them (reminders were scheduled for Tester as a guest of their own Moment) | ⬜ Phase 7 | |
+| 51 | The guest confirmation screen has no back button; a guest can only leave it by arriving or cancelling (guest version of #3) | ⬜ Phase 7 | |
+| 52 | Moments created with "current location" have no place name, so detail and confirmation show "Somewhere tasty" / the district twice | ⬜ with #13 | |
 | 41 | `tsc` fails: TypeScript 6 rejects `baseUrl` in `tsconfig.json`, and the test files have no Jest type definitions. Also `notificationStore.ts` builds an `"info"` payload that isn't in `PushNotificationData`'s type union (type-only; sending works) | ⬜ | |
 
 ## Phase 1.5: expo-notifications 57 (#40)

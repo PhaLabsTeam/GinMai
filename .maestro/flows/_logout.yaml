@@ -1,0 +1,14 @@
+# Shared: log out from anywhere reachable to the map's menu
+appId: com.ginmai.app
+---
+- tapOn:
+    point: "9%,10%"
+- tapOn: "Settings"
+- scrollUntilVisible:
+    element: ".*Log out.*"
+- tapOn: ".*Log out.*"
+- tapOn:
+    point: "68%,56%"
+- extendedWaitUntil:
+    visible: "Let's go"
+    timeout: 15000

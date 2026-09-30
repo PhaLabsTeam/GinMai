@@ -6,7 +6,7 @@
  */
 
 export interface PushNotificationData {
-  type: 'guest_joined' | 'guest_arrived' | 'guest_cancelled' | 'guest_running_late' | 'running_late_reminder' | 'eat_again_match';
+  type: 'guest_joined' | 'guest_arrived' | 'guest_cancelled' | 'guest_running_late' | 'running_late_reminder' | 'eat_again_match' | 'moment_cancelled';
   momentId?: string;
   guestName?: string;
   [key: string]: any;

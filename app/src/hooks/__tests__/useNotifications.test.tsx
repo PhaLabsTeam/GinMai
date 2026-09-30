@@ -19,6 +19,7 @@ jest.mock('expo-notifications', () => {
 });
 
 jest.mock('expo-constants', () => ({ __esModule: true, default: { expoConfig: { extra: {} } } }));
+jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
 
 import { renderHook } from '@testing-library/react-native';
 import * as Notifications from 'expo-notifications';
@@ -53,6 +54,19 @@ describe('useNotifications (SDK 57 API)', () => {
       expect.objectContaining({ shouldShowBanner: true, shouldShowList: true })
     );
     expect(behavior).not.toHaveProperty('shouldShowAlert');
+  });
+
+  it('opens the live screen when a host taps a guest push, the map for a cancellation', () => {
+    const { router } = require('expo-router');
+    renderHook(() => useNotifications());
+    const onTap = mocked.addNotificationResponseReceivedListener.mock.calls[0][0] as any;
+    const tap = (data: any) => onTap({ notification: { request: { content: { data } } } });
+
+    tap({ type: 'guest_joined', momentId: 'm1' });
+    expect(router.push).toHaveBeenCalledWith('/moment-live?momentId=m1');
+
+    tap({ type: 'moment_cancelled', momentId: 'm1' });
+    expect(router.push).toHaveBeenCalledWith('/map');
   });
 
   it('schedules test notifications with a typed trigger', async () => {

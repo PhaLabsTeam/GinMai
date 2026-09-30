@@ -43,10 +43,13 @@ export function useNotifications() {
 
       // Handle navigation based on notification type
       if (data?.type === 'running_late_reminder' && data?.momentId) {
-        console.log('🚀 Navigating to running-late screen for moment:', data.momentId);
         router.push(`/running-late?momentId=${data.momentId}`);
+      } else if (typeof data?.type === 'string' && data.type.startsWith('guest_') && data?.momentId) {
+        // Sent to the host by the database (#45): open their live screen
+        router.push(`/moment-live?momentId=${data.momentId}`);
+      } else if (data?.type === 'moment_cancelled') {
+        router.push('/map');
       }
-      // Add more notification type handlers here as needed
     });
 
     return () => {
@@ -100,9 +103,16 @@ export async function registerForPushNotificationsAsync(askIfNeeded = false): Pr
     console.log('✅ Notification permissions granted');
 
     // Get the push token
-    const tokenData = await Notifications.getExpoPushTokenAsync({
-      projectId: Constants.expoConfig?.extra?.eas?.projectId,
-    });
+    // Needs an APNs device token first; if that never arrives the call can wait
+    // forever with no error, so give up (and say so) after a while
+    const tokenData = await Promise.race([
+      Notifications.getExpoPushTokenAsync({
+        projectId: Constants.expoConfig?.extra?.eas?.projectId,
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Timed out waiting for a push token')), 15000)
+      ),
+    ]);
 
     token = tokenData.data;
     console.log('📱 Expo Push Token:', token);
