@@ -1,0 +1,65 @@
+# Two accounts on one device drive every host-push trigger (#45):
+# join -> "guest_joined", leave -> "guest_cancelled", host cancels ->
+# "moment_cancelled". Delivery itself needs APNs credentials; check
+# net._http_response in Supabase for Expo's replies.
+appId: com.ginmai.app
+---
+# Tester hosts a Moment
+- runFlow: 01-auth-signup.yaml
+- tapOn: "In 30 minutes"
+- tapOn: "Next"
+- tapOn: "Make visible"
+- runFlow:
+    when:
+      visible: "Want a heads-up\\?"
+    commands:
+      - tapOn: "Not now"
+- extendedWaitUntil:
+    visible: ".* visible\\."
+    timeout: 15000
+
+# Sign out
+- tapOn: "Back"
+- runFlow: _logout.yaml
+
+# Second account finds Tester's Moment and joins
+- tapOn: "Let's go"
+- tapOn: "Share location"
+- extendedWaitUntil:
+    visible: ".*Tester.*"
+    timeout: 15000
+- tapOn: ".*Tester.*"
+- tapOn: "Join"
+- tapOn: "Phone number"
+- inputText: "123456789"
+- tapOn: "Continue"
+- extendedWaitUntil:
+    visible: "Enter code"
+    timeout: 15000
+- inputText: "159632"
+- runFlow:
+    when:
+      visible: "What should people call you\\?"
+    commands:
+      - tapOn: "First name"
+      - inputText: "Mai"
+      - tapOn: "Continue"
+- extendedWaitUntil:
+    visible: "Join"
+    timeout: 15000
+- tapOn: "Join"
+- runFlow:
+    when:
+      visible: "Want a heads-up\\?"
+    commands:
+      - tapOn: "Not now"
+- extendedWaitUntil:
+    visible: ".*Can't make it anymore.*"
+    timeout: 15000
+
+# ...then leaves (guest_cancelled)
+- tapOn: ".*Can't make it anymore.*"
+- tapOn: "Leave"
+- extendedWaitUntil:
+    visible: "Chiang Mai"
+    timeout: 15000
