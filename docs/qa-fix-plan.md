@@ -30,6 +30,7 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | 5.6 | Host and guest push notifications (#45) | `feat/host-push-notifications` | 📦 awaiting review | — |
 | 6 | Visual consistency | `refactor/design-consistency` | 📦 awaiting review | — |
 | 7 | Two-user end-to-end testing | `test/two-user-e2e` | 📦 awaiting review | — |
+| 7.5 | Google Places search (#13, #30, #52) | `feat/places-search` | 📦 awaiting review | — |
 
 **Needed from the team**
 - Google Places API key (before Phase 3)
@@ -106,7 +107,7 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | # | Issue | Status | Commit |
 |---|---|---|---|
 | 12 | "Pick a time…" has no time picker and silently uses "now" | 📦 ✅ | `6a34bb5` |
-| 13 | Place search uses the address geocoder and can't find restaurants; switch to Google Places | ⬜ waiting on Google Places API key | |
+| 13 | Place search used the address geocoder and couldn't find restaurants; now Google Places | 📦 ✅ | `ab883fc` |
 | 14 | The keyboard covers the place search input and results | 📦 ✅ | `6a34bb5` |
 | 15 | One-time code: fast typing drops digits, paste breaks, no SMS autofill | 📦 ✅ | `2fc008d` |
 | 24 | "Lunch" is hard-coded at every time of day | 📦 ✅ | `05ae86a` |
@@ -162,7 +163,7 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | 27 | "Build your network" / "GinMai story" copy conflicts with the product philosophy | 📦 ✅ | `32d56f0` |
 | 28b | The country picker has only 10 countries | 📦 ✅ | `2dabaa7` |
 | 29 | "Your location is visible" sounds like live tracking | 📦 ✅ | `32d56f0` |
-| 30 | Area shows "Suthep" instead of "Nimman" | ⬜ done with #13: needs Places neighborhood data | |
+| 30 | Area showed "Suthep" instead of "Nimman" | 📦 ✅ | `ab883fc` |
 
 **Verified:**
 - **Jest:** `npm test` passes 88 tests in 16 suites. New test: `countries.test.ts` (common countries first, word-start search, longest dial-code match).
@@ -220,6 +221,23 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | 37 | Map header safe-area gap, card/button seam, empty space on welcome/location screens | 📦 ✅ | `2a6708a` `c3305d6` |
 | 38 | Duplicate titles ("Almost there", the Connections header) | 📦 ✅ | `c3305d6` |
 
+## Phase 7.5: Google Places (#13, #30, #52)
+
+**Key:** `EXPO_PUBLIC_GOOGLE_PLACES_KEY` in `app/.env` (gitignored). It's restricted to the iOS app `com.ginmai.app` and to Places API (New); a request without the bundle header is rejected ("Requests from this iOS client application <empty> are blocked").
+
+**Verified:**
+- **Jest:** 105 tests pass (new `neighborhoods` suite)
+- **Maestro:** `16-places.yaml`:
+  - current location reads "Nimman" (not "Suthep")
+  - searching "khao soi mae" lists real restaurants above the keyboard, "Khao Soi Maesai" first
+  - choosing it and creating a Moment shows "Khao Soi Maesai" on the live screen and the map
+  - the test Moment is cancelled afterwards
+- **Database:** the Moment saved `place_name` "Khao Soi Maesai", `area_name` "Santitham", and Google's exact coordinates
+
+**Notes:**
+- Autocomplete accepts at most five `includedPrimaryTypes`; six gave a 400
+- Android will need its own key, restricted to the Android package and signing certificate
+
 ## New issues (found during Phase 1, not yet scheduled)
 
 | # | Issue | Status | Commit |
@@ -236,7 +254,7 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | 49 | Leaving a Moment and re-joining it failed with "already joined" | 📦 ✅ | `40ee54a` |
 | 50 | Signing out didn't clear the user's joined Moments; the next account inherited them | 📦 ✅ | `40ee54a` |
 | 51 | The guest confirmation screen had no back button | 📦 ✅ | `40ee54a` |
-| 52 | Moments created with "current location" have no place name, so detail and confirmation show "Somewhere tasty" / the district twice | ⬜ with #13 | |
+| 52 | Moments created with "current location" had no place name ("Somewhere tasty", area shown twice) | 📦 ✅ | `ab883fc` |
 | 53 | Hosts had no way to give feedback, so a mutual "eat again" match could never happen | 📦 ✅ | `40ee54a` |
 | 54 | The host's guest list emptied once a guest arrived or finished | 📦 ✅ | `40ee54a` |
 | 55 | Security: any signed-in user could insert `eat_again_matches` rows between any two people | 📦 ✅ | migration `20261001000000` |
