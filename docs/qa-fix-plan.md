@@ -330,8 +330,8 @@ While getting ready for the full-table test I found that the live `moments` poli
 | 59 | Deleting an account erased reports about that person (so a reported user could wipe them and re-register), and left a deleted host's name on their Moments | 📦 ✅ | `6a04963` + migration `20261001000001` |
 | 60 | **Security:** the live database still had the M1 "Anyone can …" policies on `moments`, so the public anon key alone could edit or delete any Moment. Guests could only join because of that hole: the app counted seats itself from its cache, which could overbook. Legacy `join_moment`/`leave_moment` could act as any user | 📦 ✅ | `8106104` + migration `20261002000000` |
 | 61 | A host saw every guest who wasn't also hosting as "Guest": the only rule for reading another profile was "they're hosting an active Moment". Hidden in earlier tests because Sam had a stale January Moment | 📦 ✅ | migration `20261002000001` |
-| 63 | Ended Moments were never closed (19 stale "active"/"full" rows back to January, readable by signed-out visitors) | 📦 ✅ | migration `20261002000003` |
 | 62 | **Privacy:** any signed-in user could read the phone number and push token of anyone whose profile they could see (a stranger read Tester's and Sam's numbers). Users could also edit their own `no_shows` and `status` | 📦 ✅ | migration `20261002000001` |
+| 63 | Ended Moments were never closed (19 stale "active"/"full" rows back to January, readable by signed-out visitors) | 📦 ✅ | migration `20261002000003` |
 | 41 | `tsc` failed (477 errors): TS 6 rejects `baseUrl` and no longer auto-loads `@types`; old tests used a stale `User` shape; an unused client push path had an invalid payload type | 📦 ✅ `npm run typecheck` passes | `f50060e` |
 
 ## Phase 1.5: expo-notifications 57 (#40)
