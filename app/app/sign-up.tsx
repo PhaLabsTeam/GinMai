@@ -260,7 +260,13 @@ export default function SignUpScreen() {
             {/* Terms link */}
             <Text className="text-center text-[14px] text-ink-muted mt-4">
               By continuing, you agree to our{" "}
-              <Text className="text-ink-secondary underline">terms</Text>.
+              <Text
+                className="text-ink-secondary underline"
+                onPress={() => router.push("/terms")}
+                accessibilityRole="link"
+              >
+                terms
+              </Text>.
             </Text>
           </>
         ) : step === 2 ? (
