@@ -110,6 +110,7 @@ interface MomentState {
   fetchUserConnections: (userId: string) => Promise<void>;
   hasJoinedMoment: (momentId: string) => boolean;
   clearUserConnections: () => void;
+  resetUserState: () => void;
 
   // Supabase operations
   fetchNearbyMoments: (lat: number, lng: number, radiusKm?: number) => Promise<void>;
@@ -286,6 +287,10 @@ export const useMomentStore = create<MomentState>((set, get) => ({
 
   clearUserConnections: () => set({ userConnections: [] }),
 
+  // Everything that belongs to the signed-in user, so the next account on the
+  // device doesn't inherit it (#50). The public map list stays.
+  resetUserState: () => set({ userConnections: [], momentsById: {}, hiddenUserIds: [] }),
+
   // Fetch nearby moments from Supabase
   fetchNearbyMoments: async (lat: number, lng: number, radiusKm = 5) => {
     if (!isSupabaseConfigured()) {
@@ -419,19 +424,34 @@ export const useMomentStore = create<MomentState>((set, get) => ({
         throw new Error("You can't join your own moment");
       }
 
-      // Create connection
-      const { error: connectionError } = await db
+      // A cancelled row stays after leaving, and (moment_id, user_id) is unique,
+      // so re-joining must revive it instead of inserting (#49)
+      const { data: existing } = await db
         .from("connections")
-        .insert({
-          moment_id: momentId,
-          user_id: userId,
-          status: "confirmed",
-        });
+        .select("id, status")
+        .eq("moment_id", momentId)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      const { error: connectionError } =
+        existing && existing.status === "cancelled"
+          ? await db
+              .from("connections")
+              .update({ status: "confirmed", joined_at: new Date().toISOString(), cancelled_at: null, running_late: false })
+              .eq("id", existing.id)
+          : await db.from("connections").insert({
+              moment_id: momentId,
+              user_id: userId,
+              status: "confirmed",
+            });
 
       if (connectionError) {
         // Check if it's a duplicate
         if (connectionError.code === "23505") {
-          throw new Error("You've already joined this moment");
+          // Already in (e.g. tapped Join before connections loaded): not an error
+          await get().fetchUserConnections(userId);
+          set({ loading: false });
+          return { success: true };
         }
         // prevent_blocked_join trigger: either side has blocked the other
         if (connectionError.message?.includes("blocked")) {
@@ -754,7 +774,8 @@ export const useMomentStore = create<MomentState>((set, get) => ({
           )
         `)
         .eq("moment_id", momentId)
-        .eq("status", "confirmed");
+        // Still a guest after arriving or finishing; only cancelled/no-show drop off (#54)
+        .in("status", ["confirmed", "arrived", "completed"]);
 
       if (error) throw error;
 
@@ -810,7 +831,13 @@ export const useMomentStore = create<MomentState>((set, get) => ({
         async (payload: any) => {
           const { eventType, new: newRecord, old: oldRecord } = payload;
 
-          if (eventType === "INSERT" && newRecord.status === "confirmed") {
+          // A re-join (#49) is an UPDATE back to confirmed for someone not in the list
+          const isRejoin =
+            eventType === "UPDATE" &&
+            newRecord.status === "confirmed" &&
+            !get().momentGuests.get(momentId)?.some((g) => g.userId === newRecord.user_id);
+
+          if ((eventType === "INSERT" && newRecord.status === "confirmed") || isRejoin) {
             // New guest joined - fetch their info
             const { data: userData } = await db
               .from("users")
@@ -862,10 +889,20 @@ export const useMomentStore = create<MomentState>((set, get) => ({
               if (onGuestEvent && existingGuest) {
                 onGuestEvent("cancelled", { ...existingGuest, status: "cancelled" });
               }
-            } else if (newRecord.status === "arrived") {
-              // Guest arrived - notify host
-              if (onGuestEvent && existingGuest) {
-                onGuestEvent("arrived", { ...existingGuest, status: "completed" });
+            } else if (newRecord.status === "arrived" || newRecord.status === "completed") {
+              // Keep the guest listed with their new status (#54)
+              set((state) => {
+                const newMap = new Map(state.momentGuests);
+                newMap.set(
+                  momentId,
+                  (newMap.get(momentId) || []).map((g) =>
+                    g.userId === newRecord.user_id ? { ...g, status: newRecord.status } : g
+                  )
+                );
+                return { momentGuests: newMap };
+              });
+              if (newRecord.status === "arrived" && onGuestEvent && existingGuest) {
+                onGuestEvent("arrived", { ...existingGuest, status: "arrived" });
               }
             } else if (newRecord.running_late && !oldRecord?.running_late) {
               // Guest is running late - notify host
@@ -908,22 +945,8 @@ export const useMomentStore = create<MomentState>((set, get) => ({
 
       if (error) throw error;
 
-      // If both users said eat_again, create a relationship (handled by DB function)
-      if (eatAgain) {
-        await db.rpc("maybe_create_relationship", {
-          p_moment_id: momentId,
-          p_from_user: fromUserId,
-          p_about_user: aboutUserId,
-          p_eat_again: eatAgain,
-        });
-
-        // Check for mutual "eat again" match (M4 feature)
-        // This will create a match record and send notifications if both users selected "eat again"
-        const { checkForMatch } = await import("./matchStore");
-        checkForMatch(momentId, fromUserId, aboutUserId).catch((err) => {
-          console.error("Error checking for match:", err);
-        });
-      }
+      // Mutual "eat again" matches are made by a database trigger on
+      // feedback (#43, #55): only the server can see both answers.
 
       return { success: true };
     } catch (err) {

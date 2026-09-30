@@ -20,7 +20,6 @@ export default function MomentLiveScreen() {
 
   const cancelMomentInDb = useMomentStore((state) => state.cancelMomentInDb);
   const fetchMomentGuests = useMomentStore((state) => state.fetchMomentGuests);
-  const getMomentGuests = useMomentStore((state) => state.getMomentGuests);
   const subscribeToMomentConnections = useMomentStore((state) => state.subscribeToMomentConnections);
   const addNotification = useNotificationStore((state) => state.addNotification);
   // Settings > "Someone wants to join"
@@ -31,6 +30,7 @@ export default function MomentLiveScreen() {
 
   const { moment, loading: momentLoading } = useMoment(params.momentId);
 
+  const mealStarted = !!moment && new Date(moment.starts_at).getTime() <= Date.now();
   const [countdown, setCountdown] = useState("");
 
   // While this screen is open, guest pushes for it show as the in-app toast only
@@ -107,13 +107,11 @@ export default function MomentLiveScreen() {
     };
   }, [params.momentId, moment, fetchMomentGuests, subscribeToMomentConnections, handleGuestEvent]);
 
-  // Sync guests from store when they change
+  // Follow the store, where realtime keeps statuses current ("Here", "Done")
+  const storeGuests = useMomentStore((state) => state.momentGuests.get(params.momentId || ""));
   useEffect(() => {
-    const storeGuests = getMomentGuests(params.momentId || "");
-    if (storeGuests.length > 0) {
-      setGuests(storeGuests);
-    }
-  }, [params.momentId, getMomentGuests]);
+    if (storeGuests) setGuests(storeGuests);
+  }, [storeGuests]);
 
   useEffect(() => {
     if (!moment) return;
@@ -276,16 +274,21 @@ export default function MomentLiveScreen() {
               {/* Guest list */}
               <View className="bg-surface rounded-2xl px-4 py-3 shadow-sm">
                 {guests.map((guest, index) => (
-                  <Pressable
+                  <View
                     key={guest.id}
-                    onPress={() =>
-                      openSafetyActions(router, { userId: guest.userId, name: guest.firstName, momentId: moment.id })
-                    }
-                    accessibilityHint="Report or block"
-                    className={`flex-row items-center py-2 active:opacity-70 ${
+                    className={`flex-row items-center py-2 ${
                       index < guests.length - 1 ? "border-b border-subtle" : ""
                     }`}
                   >
+                    {/* Name area: report or block. A sibling of the feedback
+                        button, not its parent, so both are reachable. */}
+                    <Pressable
+                      onPress={() =>
+                        openSafetyActions(router, { userId: guest.userId, name: guest.firstName, momentId: moment.id })
+                      }
+                      accessibilityHint="Report or block"
+                      className="flex-1 flex-row items-center active:opacity-70"
+                    >
                     {/* Avatar circle */}
                     <View className="w-9 h-9 rounded-full bg-subtle items-center justify-center mr-3">
                       <Text className="text-ink-secondary text-[14px] font-medium">
@@ -296,13 +299,30 @@ export default function MomentLiveScreen() {
                     <Text className="text-[15px] text-ink flex-1">
                       {guest.firstName}
                     </Text>
-                    {/* Confirmed badge */}
+                    </Pressable>
+                    {/* Once the meal has started, the host can say how it went (#53) */}
+                    {mealStarted && (
+                      <Pressable
+                        onPress={() =>
+                          router.push(
+                            `/feedback?momentId=${moment.id}&aboutUserId=${guest.userId}&aboutName=${encodeURIComponent(guest.firstName)}`
+                          )
+                        }
+                        hitSlop={8}
+                        accessibilityRole="button"
+                        accessibilityLabel={`How was it with ${guest.firstName}?`}
+                        className="mr-2 px-2 py-1 rounded-full border border-line active:bg-subtle"
+                      >
+                        <Text className="text-[12px] text-ink">How was it?</Text>
+                      </Pressable>
+                    )}
+                    {/* Status badge */}
                     <View className="bg-success-soft px-2 py-1 rounded-full">
-                      <Text className="text-[12px] text-success font-medium">
-                        Confirmed
+                      <Text className="text-[12px] text-success-ink font-medium">
+                        {guest.status === "arrived" ? "Here" : guest.status === "completed" ? "Done" : "Coming"}
                       </Text>
                     </View>
-                  </Pressable>
+                  </View>
                 ))}
               </View>
             </>

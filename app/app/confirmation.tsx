@@ -8,11 +8,15 @@ import { useAuthStore } from "../src/stores/authStore";
 import { mealWord, capitalize } from "../src/utils/mealWord";
 import { colors } from "../src/theme/colors";
 import { Verified } from "../src/components/Icon";
+import { ScreenHeader } from "../src/components/ScreenHeader";
 
 export default function ConfirmationScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ momentId: string }>();
   const leaveMoment = useMomentStore((state) => state.leaveMoment);
+  const notifyHostRunningLate = useMomentStore((state) => state.notifyHostRunningLate);
+  const [notifyingLate, setNotifyingLate] = useState(false);
+  const [toldLate, setToldLate] = useState(false);
   const markArrived = useMomentStore((state) => state.markArrived);
   const user = useAuthStore((state) => state.user);
 
@@ -106,9 +110,11 @@ export default function ConfirmationScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-background">
+      {/* A guest can leave this screen without arriving or cancelling (#51) */}
+      <ScreenHeader />
       <View className="flex-1 px-6">
         {/* Header text */}
-        <View className="pt-8">
+        <View className="pt-2">
           <Text className="text-center text-[32px] font-normal text-ink">
             You're in.
           </Text>
@@ -186,6 +192,23 @@ export default function ConfirmationScreen() {
             )}
           </Pressable>
         </View>
+
+        {/* Running late: only makes sense before arriving (#57) */}
+        <Pressable
+          onPress={async () => {
+            if (!user || !moment || notifyingLate || toldLate) return;
+            setNotifyingLate(true);
+            await notifyHostRunningLate(moment.id, user.id, user.first_name || "Guest");
+            setNotifyingLate(false);
+            setToldLate(true);
+          }}
+          disabled={notifyingLate || toldLate}
+          className="mt-4"
+        >
+          <Text className="text-center text-[16px] text-ink-secondary">
+            {toldLate ? `${moment.host_name} knows you're running late` : "Running a few minutes late →"}
+          </Text>
+        </Pressable>
 
         {/* Cancel link */}
         <Pressable onPress={handleCancel} disabled={leaving} className="mt-4">

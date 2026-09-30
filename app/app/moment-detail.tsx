@@ -87,7 +87,9 @@ export default function MomentDetailScreen() {
   const handleJoin = async () => {
     // Check if user is logged in
     if (!user) {
-      router.push(`/sign-up?returnTo=/moment-detail?momentId=${moment.id}`);
+      // Replace, not push: sign-up returns here with replace too, so a push
+      // would leave this Moment in the history twice (#58)
+      router.replace(`/sign-up?returnTo=${encodeURIComponent(`/moment-detail?momentId=${moment.id}`)}`);
       return;
     }
 

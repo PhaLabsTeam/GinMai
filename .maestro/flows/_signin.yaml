@@ -1,0 +1,10 @@
+# Shared: sign in from the phone step. Needs PHONE and CODE.
+appId: com.ginmai.app
+---
+- tapOn: "Phone number"
+- inputText: ${PHONE}
+- tapOn: "Continue"
+- extendedWaitUntil:
+    visible: "Enter code"
+    timeout: 15000
+- inputText: ${CODE}

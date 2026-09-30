@@ -2,8 +2,6 @@ import { create } from "zustand";
 import { supabase, isSupabaseConfigured, DEV_MODE } from "../config/supabase";
 import type { EatAgainMatch, EatAgainMatchInsert } from "../types/database";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { sendPushNotification, NotificationTemplates } from "../utils/sendPushNotification";
-import { getUserPushToken } from "../config/notifications";
 
 const db = supabase as SupabaseClient<any>;
 
@@ -24,7 +22,6 @@ interface MatchState {
   error: string | null;
 
   // Actions
-  checkForMatch: (momentId: string, fromUserId: string, aboutUserId: string) => Promise<boolean>;
   fetchUserMatches: (userId: string) => Promise<void>;
   getMatchedUsers: () => MatchedUser[];
 }
@@ -35,110 +32,6 @@ export const useMatchStore = create<MatchState>((set, get) => ({
   loading: false,
   error: null,
 
-  /**
-   * Check if there's a mutual "eat again" match
-   * Called after user submits feedback with eat_again: true
-   */
-  checkForMatch: async (momentId: string, fromUserId: string, aboutUserId: string) => {
-    if (DEV_MODE || !isSupabaseConfigured()) {
-      console.log("[DEV MODE] Would check for eat-again match");
-      return false;
-    }
-
-    try {
-      // Check if the other user also selected "eat again" for this user
-      const { data: otherFeedback, error: feedbackError } = await db
-        .from("feedback")
-        .select("eat_again")
-        .eq("moment_id", momentId)
-        .eq("from_user", aboutUserId)
-        .eq("about_user", fromUserId)
-        .eq("eat_again", true)
-        .maybeSingle();
-
-      if (feedbackError) {
-        console.error("Error checking feedback:", feedbackError);
-        return false;
-      }
-
-      // If other user also selected "eat again", create a match
-      if (otherFeedback) {
-        console.log("🎉 Mutual eat-again match found!");
-
-        // Create match record (order users alphabetically to avoid duplicates)
-        const [userA, userB] = [fromUserId, aboutUserId].sort();
-
-        const matchData: EatAgainMatchInsert = {
-          user_a_id: userA,
-          user_b_id: userB,
-          moment_id: momentId,
-        };
-
-        const { data: match, error: matchError } = await db
-          .from("eat_again_matches")
-          .insert(matchData)
-          .select()
-          .single();
-
-        if (matchError) {
-          // Might already exist, that's okay
-          if (matchError.code === '23505') {
-            console.log("Match already exists");
-            return true;
-          }
-          console.error("Error creating match:", matchError);
-          return false;
-        }
-
-        // Fetch matched user's info for notification
-        const { data: matchedUserData } = await db
-          .from("users")
-          .select("first_name, push_token")
-          .eq("id", aboutUserId)
-          .single();
-
-        // Send push notification to both users
-        if (matchedUserData) {
-          // Notify the other user
-          if (matchedUserData.push_token) {
-            const { data: currentUserData } = await db
-              .from("users")
-              .select("first_name")
-              .eq("id", fromUserId)
-              .single();
-
-            if (currentUserData) {
-              await sendPushNotification(
-                NotificationTemplates.eatAgainMatch(
-                  matchedUserData.push_token,
-                  currentUserData.first_name
-                )
-              );
-            }
-          }
-
-          // Notify current user
-          const currentUserToken = await getUserPushToken(fromUserId, db);
-          if (currentUserToken) {
-            await sendPushNotification(
-              NotificationTemplates.eatAgainMatch(
-                currentUserToken,
-                matchedUserData.first_name
-              )
-            );
-          }
-        }
-
-        console.log("✅ Match created and notifications sent");
-        return true;
-      }
-
-      return false;
-    } catch (error) {
-      console.error("Error checking for match:", error);
-      return false;
-    }
-  },
 
   /**
    * Fetch all matches for a user

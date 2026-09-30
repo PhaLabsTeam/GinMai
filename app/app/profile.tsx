@@ -1,17 +1,11 @@
-import { View, Text, Pressable, ScrollView, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, ScrollView, ActivityIndicator, TextInput, Alert } from "react-native";
+import { useState } from "react";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore } from "../src/stores/authStore";
 import { ReliabilityScore } from "../src/components/ReliabilityBadge";
 import { colors } from "../src/theme/colors";
 import { Icon, Verified } from "../src/components/Icon";
-
-// Mock connections - would come from database in real app
-const mockConnections = [
-  { id: "1", name: "Alex", verified: true },
-  { id: "2", name: "James", verified: true },
-  { id: "3", name: "Sara", verified: true },
-];
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -24,8 +18,27 @@ export default function ProfileScreen() {
     router.back();
   };
 
+  // Only the first name is editable; it's all a profile holds (#56)
+  const updateFirstName = useAuthStore((state) => state.updateFirstName);
+  const [editing, setEditing] = useState(false);
+  const [draftName, setDraftName] = useState("");
+  const [saving, setSaving] = useState(false);
+
   const handleEdit = () => {
-    // Navigate to edit profile (future feature)
+    setDraftName(user?.first_name ?? "");
+    setEditing(true);
+  };
+
+  const handleSaveName = async () => {
+    if (saving) return;
+    setSaving(true);
+    const result = await updateFirstName(draftName);
+    setSaving(false);
+    if (result.success) {
+      setEditing(false);
+    } else {
+      Alert.alert("Couldn't save", result.error === "Use 1 to 30 characters" ? "Use 1 to 30 characters." : "Check your connection and try again.");
+    }
   };
 
   const handleSettings = () => {
@@ -33,7 +46,7 @@ export default function ProfileScreen() {
   };
 
   const handleSignIn = () => {
-    router.push("/sign-up?returnTo=/profile");
+    router.replace("/sign-up?returnTo=/profile");
   };
 
   // Format joined date
@@ -96,18 +109,43 @@ export default function ProfileScreen() {
         >
           <Icon name="arrow-back" size={24} />
         </Pressable>
-        <Pressable onPress={handleEdit}>
-          <Text className="text-[16px] text-ink">Edit</Text>
-        </Pressable>
+        {editing ? (
+          <View className="flex-row">
+            <Pressable onPress={() => setEditing(false)} className="mr-5" hitSlop={8}>
+              <Text className="text-[16px] text-ink-secondary">Cancel</Text>
+            </Pressable>
+            <Pressable onPress={handleSaveName} disabled={saving} hitSlop={8}>
+              <Text className="text-[16px] font-semibold text-ink">Save</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable onPress={handleEdit} hitSlop={8}>
+            <Text className="text-[16px] text-ink">Edit</Text>
+          </Pressable>
+        )}
       </View>
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Profile header */}
         <View className="items-center pt-4 pb-6">
           <View className="flex-row items-center">
-            <Text className="text-[28px] font-semibold text-ink">
-              {user.first_name}
-            </Text>
+            {editing ? (
+              <TextInput
+                value={draftName}
+                onChangeText={setDraftName}
+                autoFocus
+                maxLength={30}
+                autoCapitalize="words"
+                returnKeyType="done"
+                onSubmitEditing={handleSaveName}
+                accessibilityLabel="First name"
+                className="text-[28px] font-semibold text-ink border-b border-line-strong min-w-[140px] text-center pb-1"
+              />
+            ) : (
+              <Text className="text-[28px] font-semibold text-ink">
+                {user.first_name}
+              </Text>
+            )}
             {user.phone_verified && (
               <View className="ml-2"><Verified size={24} /></View>
             )}

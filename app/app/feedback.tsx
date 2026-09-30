@@ -12,15 +12,17 @@ type FeedbackOption = "great" | "okay" | "nope" | null;
 
 export default function FeedbackScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ momentId: string; hostName: string }>();
-  const hostName = params.hostName || "them";
+  // Guests rate the host (default). Hosts pass the guest they're rating (#53).
+  const params = useLocalSearchParams<{ momentId: string; hostName: string; aboutUserId?: string; aboutName?: string }>();
+  const hostName = params.aboutName || params.hostName || "them";
 
   const submitFeedback = useMomentStore((state) => state.submitFeedback);
   const markConnectionCompleted = useMomentStore((state) => state.markConnectionCompleted);
   const user = useAuthStore((state) => state.user);
 
   const { moment, loading: momentLoading } = useMoment(params.momentId);
-  const hostId = moment?.host_id || "";
+  const hostId = params.aboutUserId || moment?.host_id || "";
+  const ratingGuest = !!params.aboutUserId;
 
   const [step, setStep] = useState(1);
   const [feedback, setFeedback] = useState<FeedbackOption>(null);
@@ -58,11 +60,15 @@ export default function FeedbackScreen() {
         throw new Error(feedbackResult.error || "Failed to submit feedback");
       }
 
-      // Mark connection as completed
-      await markConnectionCompleted(params.momentId, user.id);
+      // A guest's own connection is now done; a host has no connection row
+      if (!ratingGuest) await markConnectionCompleted(params.momentId, user.id);
 
       setSubmitting(false);
-      router.replace("/map");
+      if (ratingGuest) {
+        router.back();
+      } else {
+        router.replace("/map");
+      }
     } catch (err) {
       setSubmitting(false);
       const message = err instanceof Error ? err.message : "Something went wrong";
@@ -83,6 +89,10 @@ export default function FeedbackScreen() {
   };
 
   const handleSkip = async () => {
+    if (ratingGuest) {
+      router.back();
+      return;
+    }
     if (user && params.momentId) {
       // Still mark connection as completed even if skipping feedback
       await markConnectionCompleted(params.momentId, user.id);
@@ -152,6 +162,7 @@ export default function FeedbackScreen() {
     Face: React.FC;
   }) => (
     <Pressable
+      testID={`feedback-${option}`}
       onPress={() => handleFeedback(option)}
       disabled={submitting}
       className={`flex-1 items-center py-5 rounded-xl border ${
@@ -177,7 +188,7 @@ export default function FeedbackScreen() {
             {/* Step 1: How was the meal? */}
             <View className="pt-8">
               <Text className="text-center text-[32px] font-normal text-ink">
-                How was {mealWord(moment?.starts_at ?? new Date())}?
+                How was {mealWord(moment?.starts_at ?? new Date())}{ratingGuest ? ` with ${hostName}` : ""}?
               </Text>
             </View>
 
@@ -210,6 +221,7 @@ export default function FeedbackScreen() {
             {/* Yes/No options */}
             <View className="mt-10">
               <Pressable
+                testID="eat-again-yes"
                 onPress={() => handleEatAgain(true)}
                 disabled={submitting}
                 className="bg-ink py-4 rounded-xl items-center active:opacity-80 mb-3"
@@ -224,6 +236,7 @@ export default function FeedbackScreen() {
               </Pressable>
 
               <Pressable
+                testID="eat-again-no"
                 onPress={() => handleEatAgain(false)}
                 disabled={submitting}
                 className="border border-line py-4 rounded-xl items-center active:bg-subtle"
