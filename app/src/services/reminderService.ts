@@ -25,6 +25,13 @@ export async function scheduleRunningLateReminder(
   momentLocation: string
 ): Promise<boolean> {
   try {
+    // Notifications are only asked for after a first Moment and can be declined;
+    // without permission iOS refuses to schedule (UNErrorDomain 2003)
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== 'granted') {
+      return false;
+    }
+
     // Calculate when to send reminder (10 minutes before)
     const reminderTime = new Date(momentStartTime.getTime() - 10 * 60 * 1000);
     const now = new Date();
