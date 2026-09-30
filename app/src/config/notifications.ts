@@ -50,64 +50,6 @@ export const NotificationCategories = {
 } as const;
 
 /**
- * Get user's push token from database
- * Used when you need to send a notification to a specific user
- */
-export async function getUserPushToken(userId: string, supabase: any): Promise<string | null> {
-  try {
-    const { data, error } = await supabase
-      .from('users')
-      .select('push_token')
-      .eq('id', userId)
-      .single();
-
-    if (error) {
-      console.error('Error fetching user push token:', error);
-      return null;
-    }
-
-    return data?.push_token || null;
-  } catch (error) {
-    console.error('Error in getUserPushToken:', error);
-    return null;
-  }
-}
-
-/**
- * Get multiple users' push tokens from database
- * Used when you need to send notifications to multiple users (e.g., all guests)
- */
-export async function getMultipleUserPushTokens(
-  userIds: string[],
-  supabase: any
-): Promise<Map<string, string>> {
-  const tokenMap = new Map<string, string>();
-
-  try {
-    const { data, error } = await supabase
-      .from('users')
-      .select('id, push_token')
-      .in('id', userIds);
-
-    if (error) {
-      console.error('Error fetching multiple user push tokens:', error);
-      return tokenMap;
-    }
-
-    data?.forEach((user: { id: string; push_token: string | null }) => {
-      if (user.push_token) {
-        tokenMap.set(user.id, user.push_token);
-      }
-    });
-
-    return tokenMap;
-  } catch (error) {
-    console.error('Error in getMultipleUserPushTokens:', error);
-    return tokenMap;
-  }
-}
-
-/**
  * Schedule a local notification (does not require push tokens)
  * Useful for reminders and scheduled notifications
  */

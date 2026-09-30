@@ -20,7 +20,13 @@ describe('authStore', () => {
         id: 'dev-user-id',
         phone: '+66812345678',
         first_name: 'Dev User',
-        verified: true,
+        phone_verified: true,
+        verified_at: null,
+        push_token: null,
+        notify_reminders: true,
+        notify_joins: true,
+        status: 'active',
+        updated_at: new Date().toISOString(),
         meals_hosted: 0,
         meals_joined: 0,
         no_shows: 0,
@@ -43,7 +49,13 @@ describe('authStore', () => {
         id: 'user-1',
         phone: '+66812345678',
         first_name: 'Verified User',
-        verified: true,
+        phone_verified: true,
+        verified_at: null,
+        push_token: null,
+        notify_reminders: true,
+        notify_joins: true,
+        status: 'active',
+        updated_at: new Date().toISOString(),
         meals_hosted: 5,
         meals_joined: 10,
         no_shows: 0,
@@ -54,7 +66,7 @@ describe('authStore', () => {
         result.current.user = verifiedUser;
       });
 
-      expect(result.current.user?.verified).toBe(true);
+      expect(result.current.user?.phone_verified).toBe(true);
       expect(result.current.user?.meals_hosted).toBe(5);
       expect(result.current.user?.meals_joined).toBe(10);
     });
@@ -66,7 +78,13 @@ describe('authStore', () => {
         id: 'user-2',
         phone: '+66823456789',
         first_name: 'New User',
-        verified: false,
+        phone_verified: false,
+        verified_at: null,
+        push_token: null,
+        notify_reminders: true,
+        notify_joins: true,
+        status: 'active',
+        updated_at: new Date().toISOString(),
         meals_hosted: 0,
         meals_joined: 0,
         no_shows: 0,
@@ -77,7 +95,7 @@ describe('authStore', () => {
         result.current.user = unverifiedUser;
       });
 
-      expect(result.current.user?.verified).toBe(false);
+      expect(result.current.user?.phone_verified).toBe(false);
       expect(result.current.user?.meals_hosted).toBe(0);
     });
   });
@@ -113,7 +131,13 @@ describe('authStore', () => {
         id: 'user-1',
         phone: '+66812345678',
         first_name: 'Test',
-        verified: true,
+        phone_verified: true,
+        verified_at: null,
+        push_token: null,
+        notify_reminders: true,
+        notify_joins: true,
+        status: 'active',
+        updated_at: new Date().toISOString(),
         meals_hosted: 0,
         meals_joined: 0,
         no_shows: 0,
@@ -154,7 +178,13 @@ describe('authStore', () => {
           id: 'user-1',
           phone: '+66812345678',
           first_name: 'Test',
-          verified: false,
+          phone_verified: false,
+          verified_at: null,
+          push_token: null,
+          notify_reminders: true,
+          notify_joins: true,
+          status: 'active',
+          updated_at: new Date().toISOString(),
           meals_hosted: 0,
           meals_joined: 0,
           no_shows: 0,
@@ -169,12 +199,18 @@ describe('authStore', () => {
         if (result.current.user) {
           result.current.user = {
             ...result.current.user,
-            verified: true,
+            phone_verified: true,
+            verified_at: null,
+            push_token: null,
+            notify_reminders: true,
+            notify_joins: true,
+            status: 'active',
+            updated_at: new Date().toISOString(),
           };
         }
       });
 
-      expect(result.current.user?.verified).toBe(true);
+      expect(result.current.user?.phone_verified).toBe(true);
 
       // Sign out
       act(() => {
@@ -194,7 +230,13 @@ describe('authStore', () => {
         id: 'user-1',
         phone: '+66812345678',
         first_name: 'Active User',
-        verified: true,
+        phone_verified: true,
+        verified_at: null,
+        push_token: null,
+        notify_reminders: true,
+        notify_joins: true,
+        status: 'active',
+        updated_at: new Date().toISOString(),
         meals_hosted: 15,
         meals_joined: 25,
         no_shows: 1,
@@ -217,7 +259,13 @@ describe('authStore', () => {
         id: 'user-2',
         phone: '+66823456789',
         first_name: 'Brand New',
-        verified: false,
+        phone_verified: false,
+        verified_at: null,
+        push_token: null,
+        notify_reminders: true,
+        notify_joins: true,
+        status: 'active',
+        updated_at: new Date().toISOString(),
         meals_hosted: 0,
         meals_joined: 0,
         no_shows: 0,
