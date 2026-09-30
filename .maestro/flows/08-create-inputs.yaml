@@ -1,0 +1,23 @@
+# Create-moment inputs (#12, #24, #32). #14 (keyboard over search) is checked
+# by screenshot: Maestro counts elements under the keyboard as visible.
+appId: com.ginmai.app
+---
+# Signed in, on create-moment
+- runFlow: 01-auth-signup.yaml
+
+# Title names the meal for the chosen time, not always "lunch" (#24)
+- assertVisible: "Share your (breakfast|lunch|dinner)"
+
+# "Pick a time..." opens a picker and the chosen time is shown (#12)
+- tapOn: "Pick a time\\.\\.\\."
+- assertVisible:
+    id: "custom-time-picker"
+- assertVisible: "At \\d{2}:\\d{2}"
+- tapOn: "Next"
+- assertVisible: "Almost there"
+
+# The note field's Return key closes the keyboard (#32)
+- tapOn: "First week in CM.*"
+- inputText: "QA test note"
+- pressKey: Enter
+- assertVisible: "Make visible"

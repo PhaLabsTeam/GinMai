@@ -42,7 +42,7 @@ export async function scheduleRunningLateReminder(
     // Schedule the notification
     const notificationId = await scheduleLocalNotification(
       'Your meal starts soon',
-      `Your lunch at ${momentLocation} starts in 10 minutes. Running late?`,
+      `Your meal at ${momentLocation} starts in 10 minutes. Running late?`,
       secondsUntilReminder,
       {
         type: 'running_late_reminder',

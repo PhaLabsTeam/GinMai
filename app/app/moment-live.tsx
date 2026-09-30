@@ -6,6 +6,7 @@ import { useMoment } from "../src/hooks/useMoment";
 import { useMomentStore, MomentGuest } from "../src/stores/momentStore";
 import { useNotificationStore } from "../src/stores/notificationStore";
 import { InAppToast } from "../src/components/InAppToast";
+import { mealWord, capitalize } from "../src/utils/mealWord";
 
 export default function MomentLiveScreen() {
   const router = useRouter();
@@ -30,7 +31,7 @@ export default function MomentLiveScreen() {
       addNotification({
         type: "guest_joined",
         title: "New guest!",
-        message: `${guest.firstName} wants to join your lunch`,
+        message: `${guest.firstName} wants to join your table`,
         momentId: params.momentId,
         guestName: guest.firstName,
       });
@@ -216,7 +217,7 @@ export default function MomentLiveScreen() {
         {/* Header text */}
         <View className="pt-2">
           <Text className="text-center text-[32px] font-normal text-[#1C1917]">
-            Lunch visible.
+            {capitalize(mealWord(moment.starts_at))} visible.
           </Text>
           <Text className="text-center text-[17px] text-[#6B7280] mt-2">
             You're just eating as planned.

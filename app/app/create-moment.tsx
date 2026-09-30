@@ -1,11 +1,14 @@
-import { View, Text, Pressable, TextInput, ScrollView, ActivityIndicator, Keyboard, Alert } from "react-native";
+import { View, Text, Pressable, TextInput, ScrollView, ActivityIndicator, Keyboard, Alert, KeyboardAvoidingView, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import * as Location from "expo-location";
+import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
+import { resolvePickedTime, defaultPickerTime, MAX_HOURS_AHEAD } from "../src/utils/pickTime";
 import { useMomentStore } from "../src/stores/momentStore";
 import { useAuthStore } from "../src/stores/authStore";
 import type { MomentLocal } from "../src/types";
+import { mealWord, capitalize } from "../src/utils/mealWord";
 
 type TimeOption = "now" | "30min" | "1hr" | "custom";
 type Duration = "quick" | "normal" | "long";
@@ -40,9 +43,21 @@ export default function CreateMomentScreen() {
   // Step 1: When & Where
   const [timeOption, setTimeOption] = useState<TimeOption>("now");
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [locationName, setLocationName] = useState("Loading...");
-  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
+  // Clock time chosen in the picker; resolved to a real start time on use
+  const [pickedTime, setPickedTime] = useState<Date | null>(null);
+  const [showAndroidPicker, setShowAndroidPicker] = useState(false);
+
+  // Where: "current location" and "searched place" are kept apart so a failed
+  // GPS lookup can never leave a stale place selected (or vice versa)
   const [useCurrentLocation, setUseCurrentLocation] = useState(true);
+  const [locationStatus, setLocationStatus] = useState<"locating" | "ready" | "unavailable">("locating");
+  const [currentCoords, setCurrentCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [currentAreaName, setCurrentAreaName] = useState<string | null>(null);
+  const [placeCoords, setPlaceCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [placeName, setPlaceName] = useState<string | null>(null);
+  const coordinates = useCurrentLocation ? currentCoords : placeCoords;
+
+  const scrollRef = useRef<ScrollView>(null);
 
   // Location search
   const [searchQuery, setSearchQuery] = useState("");
@@ -55,30 +70,39 @@ export default function CreateMomentScreen() {
   const [duration, setDuration] = useState<Duration>("normal");
   const [note, setNote] = useState("");
 
-  // Get current location on mount
-  useEffect(() => {
-    (async () => {
+  // Find the user. A cold GPS can fail on the first request, so fall back to the
+  // last known fix; if there's neither, say so instead of guessing a location.
+  const locateUser = useCallback(async () => {
+    setLocationStatus("locating");
+    try {
       const { status } = await Location.getForegroundPermissionsAsync();
-      if (status === "granted") {
-        const location = await Location.getCurrentPositionAsync({});
-        setCoordinates({
-          lat: location.coords.latitude,
-          lng: location.coords.longitude,
-        });
+      if (status !== "granted") throw new Error("Location permission not granted");
 
-        // Reverse geocode to get area name
-        const [address] = await Location.reverseGeocodeAsync({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        });
-        if (address) {
-          setLocationName(address.district || address.subregion || address.city || "Current location");
-        }
-      } else {
-        setLocationName("Chiang Mai");
-        setCoordinates({ lat: 18.7883, lng: 98.9853 });
+      const position =
+        (await Location.getCurrentPositionAsync({}).catch(() => null)) ??
+        (await Location.getLastKnownPositionAsync());
+      if (!position) throw new Error("No position available");
+
+      const { latitude, longitude } = position.coords;
+      setCurrentCoords({ lat: latitude, lng: longitude });
+      setLocationStatus("ready");
+
+      // The area name is a nicety; the Moment works without it
+      try {
+        const [address] = await Location.reverseGeocodeAsync({ latitude, longitude });
+        setCurrentAreaName(address?.district || address?.subregion || address?.city || null);
+      } catch (e) {
+        console.log("Reverse geocode failed:", e);
       }
-    })();
+    } catch (e) {
+      console.log("Couldn't get current location:", e);
+      setCurrentCoords(null);
+      setLocationStatus("unavailable");
+    }
+  }, []);
+
+  useEffect(() => {
+    locateUser();
 
     // Update current time every minute
     const interval = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -129,8 +153,8 @@ export default function CreateMomentScreen() {
   };
 
   const selectSearchResult = (result: SearchResult) => {
-    setCoordinates({ lat: result.lat, lng: result.lng });
-    setLocationName(result.name);
+    setPlaceCoords({ lat: result.lat, lng: result.lng });
+    setPlaceName(result.name);
     setUseCurrentLocation(false);
     setShowSearch(false);
     setSearchQuery("");
@@ -138,28 +162,40 @@ export default function CreateMomentScreen() {
     Keyboard.dismiss();
   };
 
-  const selectCurrentLocation = async () => {
+  const selectCurrentLocation = () => {
     setUseCurrentLocation(true);
     setShowSearch(false);
     setSearchQuery("");
     setSearchResults([]);
+    // Refresh the fix (and retry after a failure)
+    locateUser();
+  };
 
-    const { status } = await Location.getForegroundPermissionsAsync();
-    if (status === "granted") {
-      const location = await Location.getCurrentPositionAsync({});
-      setCoordinates({
-        lat: location.coords.latitude,
-        lng: location.coords.longitude,
-      });
+  // Keep the search box and its results above the keyboard
+  useEffect(() => {
+    if (!showSearch) return;
+    const sub = Keyboard.addListener("keyboardDidShow", () => {
+      scrollRef.current?.scrollToEnd({ animated: true });
+    });
+    return () => sub.remove();
+  }, [showSearch]);
 
-      const [address] = await Location.reverseGeocodeAsync({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      });
-      if (address) {
-        setLocationName(address.district || address.subregion || address.city || "Current location");
-      }
+  // Results arrive after the keyboard is up; bring them into view too
+  useEffect(() => {
+    if (showSearch && searchResults.length > 0) {
+      scrollRef.current?.scrollToEnd({ animated: true });
     }
+  }, [showSearch, searchResults]);
+
+  const selectCustomTime = () => {
+    setTimeOption("custom");
+    if (!pickedTime) setPickedTime(defaultPickerTime());
+    if (Platform.OS === "android") setShowAndroidPicker(true);
+  };
+
+  const handlePickerChange = (event: DateTimePickerEvent, date?: Date) => {
+    if (Platform.OS === "android") setShowAndroidPicker(false);
+    if (event.type === "set" && date) setPickedTime(date);
   };
 
   const getSelectedTime = (): Date => {
@@ -171,6 +207,8 @@ export default function CreateMomentScreen() {
         return new Date(now.getTime() + 30 * 60000);
       case "1hr":
         return new Date(now.getTime() + 60 * 60000);
+      case "custom":
+        return (pickedTime && resolvePickedTime(pickedTime, now)) || now;
       default:
         return now;
     }
@@ -181,6 +219,19 @@ export default function CreateMomentScreen() {
   };
 
   const handleNext = () => {
+    if (timeOption === "custom" && (!pickedTime || !resolvePickedTime(pickedTime))) {
+      Alert.alert("Pick a closer time", `Choose a time in the next ${MAX_HOURS_AHEAD} hours.`);
+      return;
+    }
+    if (!coordinates) {
+      if (useCurrentLocation && locationStatus === "locating") {
+        Alert.alert("Still finding you", "One moment, then try again. Or search for a place.");
+      } else {
+        Alert.alert("Where are you eating?", "We couldn't find your location. Search for a place instead.");
+      }
+      return;
+    }
+    Keyboard.dismiss();
     setStep(2);
   };
 
@@ -215,8 +266,8 @@ export default function CreateMomentScreen() {
         location: {
           lat: coordinates.lat,
           lng: coordinates.lng,
-          place_name: !useCurrentLocation ? locationName : undefined,
-          area_name: useCurrentLocation ? locationName : undefined,
+          place_name: !useCurrentLocation ? placeName ?? undefined : undefined,
+          area_name: useCurrentLocation ? currentAreaName ?? undefined : undefined,
         },
         seats_total: seats,
         seats_taken: 0,
@@ -346,15 +397,24 @@ export default function CreateMomentScreen() {
     <SafeAreaView className="flex-1 bg-[#FAFAF9]">
       {/* Header */}
       <View className="flex-row items-center px-5 py-3">
-        <Pressable onPress={handleBack} className="w-10 h-10 items-center justify-center">
+        <Pressable onPress={handleBack} accessibilityLabel="Back" className="w-10 h-10 items-center justify-center">
           <Text className="text-[24px] text-[#1C1917]">←</Text>
         </Pressable>
       </View>
 
-      <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView
+        className="flex-1"
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+      <ScrollView
+        ref={scrollRef}
+        className="flex-1 px-6"
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Title */}
         <Text className="text-center text-[26px] font-normal text-[#1C1917] mb-8">
-          {step === 1 ? "Share your lunch" : "Almost there"}
+          {step === 1 ? `Share your ${mealWord(getSelectedTime())}` : "Almost there"}
         </Text>
 
         {step === 1 ? (
@@ -379,9 +439,25 @@ export default function CreateMomentScreen() {
             />
             <RadioOption
               selected={timeOption === "custom"}
-              onPress={() => setTimeOption("custom")}
-              label="Pick a time..."
+              onPress={selectCustomTime}
+              label={
+                timeOption === "custom" && pickedTime
+                  ? `At ${formatTime(getSelectedTime())}`
+                  : "Pick a time..."
+              }
             />
+
+            {/* iOS: inline spinner under the option. Android: a dialog. */}
+            {timeOption === "custom" && pickedTime && (Platform.OS === "ios" || showAndroidPicker) && (
+              <DateTimePicker
+                testID="custom-time-picker"
+                value={pickedTime}
+                mode="time"
+                display={Platform.OS === "ios" ? "spinner" : "default"}
+                minuteInterval={5}
+                onChange={handlePickerChange}
+              />
+            )}
 
             {/* Where? */}
             <Text className="text-[15px] text-[#6B7280] mt-6 mb-3">Where?</Text>
@@ -405,8 +481,16 @@ export default function CreateMomentScreen() {
               </View>
               <View className="flex-1">
                 <Text className="text-[16px] text-[#1C1917]">Use current location</Text>
-                {useCurrentLocation && (
-                  <Text className="text-[14px] text-[#9CA3AF]">{locationName}</Text>
+                {useCurrentLocation && locationStatus === "locating" && (
+                  <Text className="text-[14px] text-[#9CA3AF]">Finding you…</Text>
+                )}
+                {useCurrentLocation && locationStatus === "ready" && (
+                  <Text className="text-[14px] text-[#9CA3AF]">{currentAreaName ?? "Found you"}</Text>
+                )}
+                {useCurrentLocation && locationStatus === "unavailable" && (
+                  <Text className="text-[14px] text-[#78716C]">
+                    Couldn't find you. Tap to retry, or search for a place.
+                  </Text>
                 )}
               </View>
             </Pressable>
@@ -430,9 +514,9 @@ export default function CreateMomentScreen() {
               </View>
               <View className="flex-1">
                 <Text className="text-[16px] text-[#1C1917]">
-                  {!useCurrentLocation ? locationName : "Search for a place"}
+                  {!useCurrentLocation && placeName ? placeName : "Search for a place"}
                 </Text>
-                {!useCurrentLocation && (
+                {!useCurrentLocation && placeName && (
                   <Text className="text-[14px] text-[#9CA3AF]">Tap to change</Text>
                 )}
               </View>
@@ -509,6 +593,9 @@ export default function CreateMomentScreen() {
               placeholder="First week in CM. Nothing fancy."
               placeholderTextColor="#9CA3AF"
               multiline
+              // Return closes the keyboard; a note doesn't need line breaks
+              returnKeyType="done"
+              submitBehavior="blurAndSubmit"
               className="border border-[#E5E7EB] rounded-xl px-4 py-3 text-[16px] text-[#1C1917] min-h-[100px]"
               style={{ textAlignVertical: "top" }}
             />
@@ -535,6 +622,7 @@ export default function CreateMomentScreen() {
           )}
         </Pressable>
       </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
