@@ -93,6 +93,21 @@ export function ReliabilityScore({
   const stats = calculateReliability(mealsHosted, mealsJoined, noShows);
   const badgeColor = getReliabilityBadgeColor(stats.reliabilityLabel);
 
+  // With no meals there's nothing to score: "100%" would be made up
+  if (stats.totalMeals === 0) {
+    return (
+      <View className="bg-white rounded-2xl p-4 shadow-sm">
+        <View className="flex-row items-center justify-between">
+          <Text className="text-[17px] font-semibold text-[#1C1917]">Reliability</Text>
+          <Text className="text-[17px] font-semibold text-[#78716C]">New</Text>
+        </View>
+        <Text className="text-[13px] text-[#9CA3AF] mt-2">
+          Your record starts with your first meal.
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <View className="bg-white rounded-2xl p-4 shadow-sm">
       {/* Header */}

@@ -238,7 +238,7 @@ export default function MomentLiveScreen() {
                 <Text className="text-2xl">📍</Text>
               </View>
             </View>
-            <Text className="text-[#6B7280] text-sm">Your location is visible</Text>
+            <Text className="text-[#6B7280] text-sm">Your table is on the map</Text>
           </View>
         </View>
 

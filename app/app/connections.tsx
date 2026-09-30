@@ -86,7 +86,7 @@ export default function ConnectionsScreen() {
               No connections yet
             </Text>
             <Text className="text-[15px] text-[#9CA3AF] text-center mt-2 px-8">
-              Share meals and tap "I'd eat with them again" to build your network.
+              After a meal, tap "I'd eat with them again". If they say the same, they'll show up here.
             </Text>
           </View>
         ) : (
