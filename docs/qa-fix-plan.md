@@ -29,7 +29,7 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | 5.5 | Metro crash on style edits (#44) | `fix/metro-nativewind` | 📦 awaiting review | — |
 | 5.6 | Host and guest push notifications (#45) | `feat/host-push-notifications` | 📦 awaiting review | — |
 | 6 | Visual consistency | `refactor/design-consistency` | 📦 awaiting review | — |
-| 7 | Two-user end-to-end testing | `test/two-user-e2e` | ⬜ | — |
+| 7 | Two-user end-to-end testing | `test/two-user-e2e` | 📦 awaiting review | — |
 
 **Needed from the team**
 - Google Places API key (before Phase 3)
@@ -227,16 +227,22 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | 39 | **Higher priority than it looked:** `create-moment` calls `getCurrentPositionAsync` without a catch. When location is unavailable it stays on "Loading…" and "Make visible" silently does nothing | 📦 ✅ | `6a34bb5` |
 | 40 | expo-notifications 57 API changes: `removeNotificationSubscription` was removed (still called in `useNotifications.ts` cleanup), the handler needs `shouldShowBanner`/`shouldShowList`, and triggers need a `type` | 📦 ✅ | `4a8a2e2` |
 | 42 | Screens about one Moment (live, confirmation, arrival, running-late, feedback, detail) looked it up in the active-only map list, so they showed "not found" once it filled up or ended; leaving a full Moment never gave the seat back; running-late never reached the host of a full Moment | 📦 ✅ | `bc6945c` `b0d9896` |
-| 43 | `submitFeedback` destructures `checkForMatch` from the `matchStore` module, but it's a store method, so "eat again" feedback probably throws (and reports failure) and mutual-match notifications never fire. Needs confirming in Phase 7. | ⬜ | |
+| 43 | "Eat again" feedback reported failure and mutual matches were never created (the client can't read the other person's feedback) | 📦 ✅ | `40ee54a` + migration `20261001000000` |
 | 44 | Dev only: Metro crashes (`Cannot read properties of undefined (reading 'addedFiles')`) when NativeWind 4.2.1's Tailwind watcher fires under SDK 57's Metro. Fixed by upgrading to NativeWind 4.2.7. | 📦 ✅ | `88d28b2` |
 | 45 | No push when a guest joins, arrives, cancels or runs late, and none to guests when a host cancels | 📦 ✅ (triggers confirmed; delivery needs APNs key) | `0521db5` |
 | 46 | Settings > Blocked users was a dead link | 📦 ✅ | `69dbcab` |
 | 47 | Nobody could report or block anyone; the Safety test button was the only way into the report screen, and its "Block" option was a TODO | 📦 ✅ (entry points; full flow in Phase 7) | `8fcaa4e` |
 | 48 | Blocking had no effect: `blocks` was never read, and the join check used the legacy `blocked_users` table | 📦 ✅ (map + trigger; join rejection in Phase 7) | `8fcaa4e` |
-| 49 | Leaving a Moment and re-joining it fails (confirmed 2026-09-30) with "You've already joined": the cancelled connection row still exists and the client only inserts | ⬜ Phase 7 | |
-| 50 | Signing out doesn't clear the user's joined Moments in memory; the next account on the device inherits them (reminders were scheduled for Tester as a guest of their own Moment) | ⬜ Phase 7 | |
-| 51 | The guest confirmation screen has no back button; a guest can only leave it by arriving or cancelling (guest version of #3) | ⬜ Phase 7 | |
+| 49 | Leaving a Moment and re-joining it failed with "already joined" | 📦 ✅ | `40ee54a` |
+| 50 | Signing out didn't clear the user's joined Moments; the next account inherited them | 📦 ✅ | `40ee54a` |
+| 51 | The guest confirmation screen had no back button | 📦 ✅ | `40ee54a` |
 | 52 | Moments created with "current location" have no place name, so detail and confirmation show "Somewhere tasty" / the district twice | ⬜ with #13 | |
+| 53 | Hosts had no way to give feedback, so a mutual "eat again" match could never happen | 📦 ✅ | `40ee54a` |
+| 54 | The host's guest list emptied once a guest arrived or finished | 📦 ✅ | `40ee54a` |
+| 55 | Security: any signed-in user could insert `eat_again_matches` rows between any two people | 📦 ✅ | migration `20261001000000` |
+| 56 | Profile "Edit" did nothing | 📦 ✅ | `40ee54a` |
+| 57 | "Running late" was only offered after arriving | 📦 ✅ | `312a563` |
+| 58 | Signing in from a Moment, the Menu or Profile left that screen in the back history twice | 📦 ✅ | `312a563` |
 | 41 | `tsc` fails: TypeScript 6 rejects `baseUrl` in `tsconfig.json`, and the test files have no Jest type definitions. Also `notificationStore.ts` builds an `"info"` payload that isn't in `PushNotificationData`'s type union (type-only; sending works) | ⬜ | |
 
 ## Phase 1.5: expo-notifications 57 (#40)
@@ -261,18 +267,35 @@ Done ahead of Phase 2 because it was a runtime regression from the SDK upgrade.
 
 ## Phase 7: Two-user E2E
 
+**Database:** migration `20261001000000_server_side_matching.sql`, applied through the SQL editor. The first attempt hit a deadlock with the running app and rolled back cleanly; the second attempt with the app closed succeeded. It adds the `create_match_on_mutual_feedback` trigger, removes client inserts on `eat_again_matches`, and backfills existing mutual pairs.
+
+**Verified** with Tester and Sam on one simulator (`15-two-user.yaml` plus manual steps):
+- Sam signs in from Tester's Moment and joins. Back from "You're in" returns to the Moment and then the map; the map says "You're in", not "You're hosting".
+- Sam leaves, then re-joins without an error.
+- "Running a few minutes late" on "You're in" → "Tester knows you're running late"; then "I'm here" → "Found them!" → Great + eat again, with no error.
+- Tester sees Sam as "Done" and taps "How was it with Sam?" → Great + eat again → both Connections show each other ("2 meals together").
+- Tester reports Sam ("Report Submitted") and blocks Sam. Sam's map no longer shows Tester's Moments; joining one by direct link gives "You can't join this meal.". Unblock works.
+- Profile Edit: rename to "Samuel" survives an app restart, then renamed back.
+- **Jest:** 100 tests pass (new `momentStore.phase7` suite; the #43 test fails on the old code).
+
+**Still open:**
+- Real push delivery on a device (needs the APNs key)
+- A full table of 2 guests (#42 live case)
+- Delete account on a spare number (#7)
+
+
 | Flow | Status | Notes |
 |---|---|---|
-| Join as a guest | ⬜ | |
-| Arrival / "Found them!" | ⬜ | |
-| Running late | ⬜ | |
-| Feedback / "eat again" match | ⬜ | |
-| Guest moment-detail view | ⬜ | |
-| Host's live screen stays up when the table fills (#42) | ⬜ | |
-| "Eat again" feedback and mutual match (#43) | ⬜ | |
-| Report / block another user, blocked join rejected (#47, #48) | ⬜ | |
-| Leave and re-join a Moment (#49) | ⬜ | |
-| Delete account on a spare number (#7) | ⬜ | |
-| Block / report a real user | ⬜ | |
-| Profile Edit | ⬜ | |
-| Real push delivery (physical device) | ⬜ | |
+| Join as a guest | ✅ | |
+| Arrival / "Found them!" | ✅ | |
+| Running late | ✅ (moved before arrival, #57) | |
+| Feedback / "eat again" match | ✅ (match made by trigger) | |
+| Guest moment-detail view | ✅ | |
+| Host's live screen stays up when the table fills (#42) | ⬜ (needs 2 guests) | |
+| "Eat again" feedback and mutual match (#43) | ✅ | |
+| Report / block another user, blocked join rejected (#47, #48) | ✅ | |
+| Leave and re-join a Moment (#49) | ✅ | |
+| Delete account on a spare number (#7) | ⬜ (needs a spare number) | |
+| Block / report a real user | ✅ | |
+| Profile Edit | ✅ (#56) | |
+| Real push delivery (physical device) | ⬜ (needs APNs key + device) | |
