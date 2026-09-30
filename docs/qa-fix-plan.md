@@ -34,6 +34,7 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | 7.6 | TypeScript clean (#41) | `fix/typescript` | 📦 awaiting review | — |
 | 7.7 | Terms of Use (#17) | `feat/terms` | 📦 awaiting review | — |
 | 7.8 | Privacy Policy, deletion retention (#59) | `feat/privacy-policy` | 📦 awaiting review | — |
+| 7.9 | Full table (#42), lock down moments (#60) | `test/full-table` | 🔧 in progress | — |
 
 **Needed from the team**
 - Google Places API key (before Phase 3)
@@ -256,6 +257,26 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 
 **Before launch:** fill in the placeholders ([Company name], [Company address], [contact email], [hosting region], [backup period]), get a Thai lawyer's review, and host the Privacy Policy at a public URL for App Store Connect.
 
+## Phase 7.9: Full table and moments lock-down (#42, #60)
+Branch `test/full-table`, from `feat/privacy-policy`.
+
+While getting ready for the full-table test I found that the live `moments` policies weren't the repo's: an anonymous PATCH using only the public key was accepted. The M1 migration `20240101000003` had opened moments to anyone, and `20240101000005`, which was meant to close them again, never reached the live database.
+
+**Fix, migration `20261002000000_lock_down_moments.sql`:**
+- drops every `moments` policy by name and recreates them:
+  - signed-out visitors: read open Moments only
+  - members: open (minus blocks), own and joined
+  - host only: insert, update, delete
+- `claim_seat` trigger: locks the Moment and refuses a join that is full (`full:`), closed (`closed:`) or the host's own (`own:`), so two last-seat joins can't both succeed
+- `sync_seats_on_connection` trigger: recounts `seats_taken` and flips full ↔ active on every connection change
+- `protect_seats` trigger: nobody else can set those two fields
+- existing counts are recounted
+- revokes the legacy definer functions that took a user id
+
+**App:**
+- `joinMoment` and `leaveMoment` no longer write to `moments`; they read back what the database counted
+- refusals map to plain words ("This meal is full.")
+
 ## New issues (found during Phase 1, not yet scheduled)
 
 | # | Issue | Status | Commit |
@@ -280,6 +301,7 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | 57 | "Running late" was only offered after arriving | 📦 ✅ | `312a563` |
 | 58 | Signing in from a Moment, the Menu or Profile left that screen in the back history twice | 📦 ✅ | `312a563` |
 | 59 | Deleting an account erased reports about that person (so a reported user could wipe them and re-register), and left a deleted host's name on their Moments | 📦 ✅ | `6a04963` + migration `20261001000001` |
+| 60 | **Security:** the live database still had the M1 "Anyone can …" policies on `moments`, so the public anon key alone could edit or delete any Moment. Guests could only join because of that hole: the app counted seats itself from its cache, which could overbook. Legacy `join_moment`/`leave_moment` could act as any user | 🔧 (SQL to apply) | migration `20261002000000` |
 | 41 | `tsc` failed (477 errors): TS 6 rejects `baseUrl` and no longer auto-loads `@types`; old tests used a stale `User` shape; an unused client push path had an invalid payload type | 📦 ✅ `npm run typecheck` passes | `f50060e` |
 
 ## Phase 1.5: expo-notifications 57 (#40)
