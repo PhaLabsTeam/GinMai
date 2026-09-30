@@ -1,0 +1,140 @@
+# Delete account end to end (#7, #59), with a spare test number.
+appId: com.ginmai.app
+---
+- runFlow: _reset-tester.yaml
+
+# Dee signs up (or back in) and hosts a Moment
+- tapOn: "Let's go"
+- tapOn: "Share location"
+- extendedWaitUntil:
+    visible: "Share where you're eating.*"
+    timeout: 15000
+- tapOn: "Share where you're eating.*"
+- extendedWaitUntil:
+    visible: "Phone number"
+    timeout: 10000
+- runFlow:
+    file: _signin.yaml
+    env:
+      PHONE: "823456789"
+      CODE: "123456"
+- runFlow:
+    when:
+      visible: "What should people call you\\?"
+    commands:
+      - tapOn: "First name"
+      - inputText: "Dee"
+      - tapOn: "Continue"
+- extendedWaitUntil:
+    visible: "Share your .*"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: ".*Nimman.*"
+    timeout: 20000
+- tapOn: "In 30 minutes"
+- tapOn: "Next"
+- tapOn: "First week in CM.*"
+- inputText: "Delete-account test"
+- tapOn: "How long?"
+- tapOn: "Make visible"
+- runFlow:
+    when:
+      visible: "Want a heads-up\\?"
+    commands:
+      - tapOn: "Not now"
+- extendedWaitUntil:
+    visible: ".* visible\\."
+    timeout: 15000
+- tapOn: "Back"
+- runFlow: _logout.yaml
+
+# Tester reports Dee from Dee's Moment
+- tapOn: "Let's go"
+- tapOn: "Share location"
+- extendedWaitUntil:
+    visible: ".*Somewhere in Nimman.*|.*Nimman.*"
+    timeout: 15000
+- tapOn: "Share where you're eating.*"
+- extendedWaitUntil:
+    visible: "Phone number"
+    timeout: 10000
+- runFlow:
+    file: _signin.yaml
+    env:
+      PHONE: "999999999"
+      CODE: "123456"
+- extendedWaitUntil:
+    visible: "Share your .*"
+    timeout: 15000
+- tapOn: "Back"
+- tapOn: ".*Nimman.*Dee.*"
+- tapOn: "Report or block"
+- tapOn: "Report Dee"
+- tapOn: ".*Other.*"
+- scrollUntilVisible:
+    element: "Submit.*"
+- tapOn: "Submit.*"
+- extendedWaitUntil:
+    visible: "Report Submitted"
+    timeout: 15000
+- tapOn: "Done"
+- tapOn: "Back"
+- runFlow: _logout.yaml
+
+# Dee deletes the account
+- tapOn: "Let's go"
+- tapOn: "Share location"
+- extendedWaitUntil:
+    visible: "Share where you're eating.*"
+    timeout: 15000
+- tapOn: "Share where you're eating.*"
+- extendedWaitUntil:
+    visible: "Phone number"
+    timeout: 10000
+- runFlow:
+    file: _signin.yaml
+    env:
+      PHONE: "823456789"
+      CODE: "123456"
+- extendedWaitUntil:
+    visible: "Share your .*"
+    timeout: 15000
+- tapOn: "Back"
+- tapOn: "Menu"
+- tapOn: "Settings"
+- scrollUntilVisible:
+    element: ".*Delete account.*"
+- tapOn: ".*Delete account.*"
+- extendedWaitUntil:
+    visible: "Delete your account\\?"
+    timeout: 5000
+- tapOn: "Continue"
+- extendedWaitUntil:
+    visible: "This can't be undone"
+    timeout: 5000
+# The alert's own button (the row behind it has the same label)
+- tapOn:
+    point: "50%,52%"
+- extendedWaitUntil:
+    visible: "Let's go"
+    timeout: 20000
+
+# Signing in again with the same number starts from scratch
+- tapOn: "Let's go"
+- tapOn: "Share location"
+- extendedWaitUntil:
+    visible: "Share where you're eating.*"
+    timeout: 15000
+- assertNotVisible: ".*Dee.*"
+- tapOn: "Share where you're eating.*"
+- extendedWaitUntil:
+    visible: "Phone number"
+    timeout: 10000
+- runFlow:
+    file: _signin.yaml
+    env:
+      PHONE: "823456789"
+      CODE: "123456"
+- extendedWaitUntil:
+    visible: "What should people call you\\?"
+    timeout: 15000

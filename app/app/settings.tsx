@@ -244,6 +244,7 @@ export default function SettingsScreen() {
         <SectionHeader title="Privacy & Safety" />
         <SettingRow label="Blocked users" onPress={() => router.push("/blocked-users")} />
         <SettingRow label="Terms of Use" onPress={() => router.push("/terms")} />
+        <SettingRow label="Privacy Policy" onPress={() => router.push("/privacy")} />
 
         {/* Session section - only show if logged in */}
         {user && (
