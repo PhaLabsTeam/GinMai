@@ -12,6 +12,7 @@ import { setActiveLiveMoment } from "../src/config/notifications";
 import { mealWord, capitalize } from "../src/utils/mealWord";
 import { colors } from "../src/theme/colors";
 import { Icon } from "../src/components/Icon";
+import { formatTime } from "../src/utils/formatTime";
 
 export default function MomentLiveScreen() {
   const router = useRouter();
@@ -205,13 +206,6 @@ export default function MomentLiveScreen() {
     );
   }
 
-  const formatTime = (dateStr: string) => {
-    return new Date(dateStr).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
-  };
 
   return (
     <SafeAreaView className="flex-1 bg-background">

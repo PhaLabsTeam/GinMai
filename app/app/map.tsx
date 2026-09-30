@@ -9,6 +9,7 @@ import { MapComponent, mapsAvailable } from "../src/components/MapComponent";
 import { mealWord, capitalize } from "../src/utils/mealWord";
 import { colors } from "../src/theme/colors";
 import { Icon, Verified } from "../src/components/Icon";
+import { formatTime } from "../src/utils/formatTime";
 
 // Default to Chiang Mai center
 const CHIANG_MAI = {
@@ -214,7 +215,7 @@ export default function MapScreen() {
                       {/* Time and place */}
                       <View className="flex-row items-center">
                         <Text className="text-[15px] font-semibold text-ink">
-                          {new Date(moment.starts_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {formatTime(moment.starts_at)}
                         </Text>
                         <Text className="text-[15px] text-ink ml-2">
                           · {moment.location.place_name || moment.location.area_name || "Somewhere tasty"}

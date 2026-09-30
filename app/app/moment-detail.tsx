@@ -11,6 +11,7 @@ import { distanceMeters, formatWalk } from "../src/utils/distance";
 import { maybeAskForPushPermission } from "../src/services/pushPermission";
 import { colors } from "../src/theme/colors";
 import { Icon, Verified } from "../src/components/Icon";
+import { formatTime } from "../src/utils/formatTime";
 
 export default function MomentDetailScreen() {
   const router = useRouter();
@@ -71,13 +72,6 @@ export default function MomentDetailScreen() {
     );
   }
 
-  const formatTime = (dateStr: string) => {
-    return new Date(dateStr).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
-  };
 
   const getEndTime = () => {
     const start = new Date(moment.starts_at);

@@ -13,6 +13,7 @@ import { mealWord, capitalize } from "../src/utils/mealWord";
 import { maybeAskForPushPermission } from "../src/services/pushPermission";
 import { colors } from "../src/theme/colors";
 import { Icon } from "../src/components/Icon";
+import { formatTime } from "../src/utils/formatTime";
 
 type TimeOption = "now" | "30min" | "1hr" | "custom";
 type Duration = "quick" | "normal" | "long";
@@ -209,9 +210,6 @@ export default function CreateMomentScreen() {
     }
   };
 
-  const formatTime = (date: Date): string => {
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
-  };
 
   const handleNext = () => {
     if (timeOption === "custom" && (!pickedTime || !resolvePickedTime(pickedTime))) {

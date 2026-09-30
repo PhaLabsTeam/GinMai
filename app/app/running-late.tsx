@@ -7,6 +7,7 @@ import { useMomentStore } from "../src/stores/momentStore";
 import { useAuthStore } from "../src/stores/authStore";
 import { mealWord, capitalize } from "../src/utils/mealWord";
 import { colors } from "../src/theme/colors";
+import { formatTime } from "../src/utils/formatTime";
 
 export default function RunningLateScreen() {
   const router = useRouter();
@@ -70,13 +71,6 @@ export default function RunningLateScreen() {
     );
   }
 
-  const formatTime = (dateStr: string) => {
-    return new Date(dateStr).toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    });
-  };
 
   return (
     <SafeAreaView className="flex-1 bg-background">
