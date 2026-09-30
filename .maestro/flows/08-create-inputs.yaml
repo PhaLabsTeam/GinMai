@@ -14,7 +14,7 @@ appId: com.ginmai.app
     id: "custom-time-picker"
 - assertVisible: "At \\d{2}:\\d{2}"
 - tapOn: "Next"
-- assertVisible: "Almost there"
+- assertVisible: "A few details"
 
 # The note field's Return key closes the keyboard (#32)
 - tapOn: "First week in CM.*"

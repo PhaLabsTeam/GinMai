@@ -62,10 +62,7 @@ export default function ConnectionsScreen() {
         >
           <Icon name="arrow-back" size={24} />
         </Pressable>
-        <Text className="text-[18px] font-semibold text-ink">
-          Connections
-        </Text>
-        <View className="w-10" />
+        <View className="flex-1" />
       </View>
 
       <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>

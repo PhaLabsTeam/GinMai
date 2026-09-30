@@ -21,7 +21,7 @@ export default function LocationPermissionScreen() {
     <SafeAreaView testID="location-permission-screen" className="flex-1 bg-background">
       <View className="flex-1 px-6">
         {/* Main content - positioned in upper portion */}
-        <View className="pt-10">
+        <View className="flex-1 justify-center pb-24">
           {/* Title */}
           <Text className="text-center text-[28px] font-normal text-ink">
             Where are you?

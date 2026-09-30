@@ -408,7 +408,7 @@ export default function CreateMomentScreen() {
       >
         {/* Title */}
         <Text className="text-center text-[26px] font-normal text-ink mb-8">
-          {step === 1 ? `Share your ${mealWord(getSelectedTime())}` : "Almost there"}
+          {step === 1 ? `Share your ${mealWord(getSelectedTime())}` : "A few details"}
         </Text>
 
         {step === 1 ? (
@@ -447,7 +447,7 @@ export default function CreateMomentScreen() {
                 testID="custom-time-picker"
                 value={pickedTime}
                 mode="time"
-                display={Platform.OS === "ios" ? "spinner" : "default"}
+                display={Platform.OS === "ios" ? "compact" : "default"}
                 minuteInterval={5}
                 onChange={handlePickerChange}
               />

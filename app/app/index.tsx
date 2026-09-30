@@ -55,7 +55,7 @@ export default function WelcomeScreen() {
     <SafeAreaView testID="welcome-screen" className="flex-1 bg-background">
       <View className="flex-1 px-8">
         {/* Main content - positioned in upper portion */}
-        <View className="pt-16">
+        <View className="flex-1 justify-center pb-24">
           {/* Thai title */}
           <Text testID="welcome-title" className="text-center text-[56px] font-bold text-ink leading-tight">
             กินไหม
