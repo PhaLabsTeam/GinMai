@@ -33,6 +33,7 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | 7.5 | Google Places search (#13, #30, #52) | `feat/places-search` | 📦 awaiting review | — |
 | 7.6 | TypeScript clean (#41) | `fix/typescript` | 📦 awaiting review | — |
 | 7.7 | Terms of Use (#17) | `feat/terms` | 📦 awaiting review | — |
+| 7.8 | Privacy Policy, deletion retention (#59) | `feat/privacy-policy` | 📦 awaiting review | — |
 
 **Needed from the team**
 - Google Places API key (before Phase 3)
@@ -133,7 +134,7 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | # | Issue | Status | Commit |
 |---|---|---|---|
 | 6 | Settings toggles don't save and have no effect; "Auto-accept" has nothing to control | 📦 ✅ | `69dbcab` |
-| 7 | "Delete account" does nothing (App Store requirement) | 📦 ✅ (unit + SQL; not run on device) | `69dbcab` |
+| 7 | "Delete account" does nothing (App Store requirement) | 📦 ✅ (verified end to end on a spare number) | `69dbcab` `6a04963` `405f201` |
 | 17 | The "terms" link wasn't tappable and no terms existed | 📦 ✅ (draft: placeholders + legal review pending) | `3b6f982` |
 | 18 | Test "Report Inappropriate Behavior" button shows on the Safety screen | 📦 ✅ | `8fcaa4e` |
 | 19 | The Safety banner promises location sharing that doesn't exist | 📦 ✅ | `8fcaa4e` |
@@ -240,6 +241,21 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 - Autocomplete accepts at most five `includedPrimaryTypes`; six gave a 400
 - Android will need its own key, restricted to the Android package and signing certificate
 
+## Phase 7.8: Privacy Policy and deletion retention (#59, #7)
+
+**Database:** migration `20261001000001_deletion_retention.sql`, applied through the SQL editor.
+- Reports now outlive the reported account: the links are set to NULL, `reported_phone` is recorded at report time, and a 12-month purge (`purge_expired_reports`) runs daily if `pg_cron` is enabled.
+- `delete_my_account` sets a deleted host's Moments to "Former member" and removes their note.
+
+**Verified** with spare number `66823456789` ("Dee"), flow `18-delete-account.yaml`:
+- Dee hosts a Moment; Tester reports Dee; Dee deletes the account through both confirmations and lands on the welcome screen
+- the Moment is gone from the map; signing in again with the same number asks for a name, so the profile is deleted
+- **Database:** Dee's Moment has `host_name` "Former member", with `host_id` and `note` NULL
+- **Database:** the report survives: reporter kept, account link cleared, `reported_phone` +66823456789, purge clock started
+- **Jest:** 110 tests pass; the `legal` suite checks that the Terms and Privacy Policy match `docs/legal/*.md` and agree on 12-month report retention
+
+**Before launch:** fill in the placeholders ([Company name], [Company address], [contact email], [hosting region], [backup period]), get a Thai lawyer's review, and host the Privacy Policy at a public URL for App Store Connect.
+
 ## New issues (found during Phase 1, not yet scheduled)
 
 | # | Issue | Status | Commit |
@@ -263,6 +279,7 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | 56 | Profile "Edit" did nothing | 📦 ✅ | `40ee54a` |
 | 57 | "Running late" was only offered after arriving | 📦 ✅ | `312a563` |
 | 58 | Signing in from a Moment, the Menu or Profile left that screen in the back history twice | 📦 ✅ | `312a563` |
+| 59 | Deleting an account erased reports about that person (so a reported user could wipe them and re-register), and left a deleted host's name on their Moments | 📦 ✅ | `6a04963` + migration `20261001000001` |
 | 41 | `tsc` failed (477 errors): TS 6 rejects `baseUrl` and no longer auto-loads `@types`; old tests used a stale `User` shape; an unused client push path had an invalid payload type | 📦 ✅ `npm run typecheck` passes | `f50060e` |
 
 ## Phase 1.5: expo-notifications 57 (#40)
@@ -315,7 +332,7 @@ Done ahead of Phase 2 because it was a runtime regression from the SDK upgrade.
 | "Eat again" feedback and mutual match (#43) | ✅ | |
 | Report / block another user, blocked join rejected (#47, #48) | ✅ | |
 | Leave and re-join a Moment (#49) | ✅ | |
-| Delete account on a spare number (#7) | ⬜ (needs a spare number) | |
+| Delete account on a spare number (#7) | ✅ | flow 18 |
 | Block / report a real user | ✅ | |
 | Profile Edit | ✅ (#56) | |
 | Real push delivery (physical device) | ⬜ (needs APNs key + device) | |
