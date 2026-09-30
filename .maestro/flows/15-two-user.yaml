@@ -1,0 +1,147 @@
+# Tester hosts, Sam (second account) joins, leaves, re-joins, arrives and
+# rates Tester; Tester rates Sam back; both said "eat again" so they match.
+# Covers #43, #49, #50, #51, #53 and the arrival / running-late paths.
+appId: com.ginmai.app
+---
+# Tester hosts a Moment starting now
+- runFlow: 01-auth-signup.yaml
+- tapOn: "Now.*"
+- tapOn: "Next"
+- tapOn: "Make visible"
+- runFlow:
+    when:
+      visible: "Want a heads-up\\?"
+    commands:
+      - tapOn: "Not now"
+- extendedWaitUntil:
+    visible: ".* visible\\."
+    timeout: 15000
+- tapOn: "Back"
+- runFlow: _logout.yaml
+
+# Sam signs in from Tester's Moment and joins
+- tapOn: "Let's go"
+- tapOn: "Share location"
+- extendedWaitUntil:
+    visible: ".*Tester.*"
+    timeout: 15000
+- tapOn: ".*Tester.*"
+- tapOn: "Join"
+- runFlow:
+    file: _signin.yaml
+    env:
+      PHONE: "123456789"
+      CODE: "159632"
+- extendedWaitUntil:
+    visible: "Join"
+    timeout: 15000
+- tapOn: "Join"
+- runFlow:
+    when:
+      visible: "Want a heads-up\\?"
+    commands:
+      - tapOn: "Not now"
+- extendedWaitUntil:
+    visible: "You're in\\."
+    timeout: 15000
+
+# #50: Sam's map doesn't claim Tester's Moment as Sam's own
+# #51: the confirmation screen has a way back (to the Moment, then the map)
+- tapOn: "Back"
+- assertVisible: "You're in.*"
+- tapOn: "Back"
+- extendedWaitUntil:
+    visible: "Eating soon\\?"
+    timeout: 10000
+- assertVisible: ".*You're in.*"
+- assertNotVisible: ".*You're hosting.*"
+
+# Leave, then re-join (#49)
+- tapOn:
+    point: "9%,10%"
+- tapOn: "My Moments"
+- extendedWaitUntil:
+    visible: ".*Can't make it anymore.*"
+    timeout: 15000
+- tapOn: ".*Can't make it anymore.*"
+- tapOn: "Leave"
+- extendedWaitUntil:
+    visible: "Eating soon\\?"
+    timeout: 15000
+- tapOn: ".*Tester.*"
+- tapOn: "Join"
+- assertNotVisible: "Couldn't join"
+- extendedWaitUntil:
+    visible: "You're in\\."
+    timeout: 15000
+
+# Arrive; try running late; find them; rate Tester and say "eat again" (#43)
+- tapOn: "I'm here"
+- extendedWaitUntil:
+    visible: "You're here\\."
+    timeout: 15000
+- tapOn: ".*Running a few minutes late.*"
+- extendedWaitUntil:
+    visible: "Host notified"
+    timeout: 10000
+- tapOn: "OK"
+- extendedWaitUntil:
+    visible: "Found them!"
+    timeout: 10000
+- tapOn: "Found them!"
+- extendedWaitUntil:
+    visible: "How was .*\\?"
+    timeout: 10000
+- tapOn:
+    id: "feedback-great"
+- tapOn:
+    id: "eat-again-yes"
+- assertNotVisible: "Error"
+- extendedWaitUntil:
+    visible: "Chiang Mai"
+    timeout: 15000
+- runFlow: _logout.yaml
+
+# Tester rates Sam from the live screen (#53)
+- tapOn: "Let's go"
+- tapOn: "Share location"
+- extendedWaitUntil:
+    visible: ".*Tester.*"
+    timeout: 15000
+- tapOn: "Share where you're eating.*"
+- extendedWaitUntil:
+    visible: "Phone number"
+    timeout: 10000
+- runFlow:
+    file: _signin.yaml
+    env:
+      PHONE: "999999999"
+      CODE: "123456"
+- extendedWaitUntil:
+    visible: "Share your .*"
+    timeout: 15000
+- tapOn: "Back"
+- tapOn:
+    point: "9%,10%"
+- tapOn: "My Moments"
+- extendedWaitUntil:
+    visible: ".*How was it\\?.*"
+    timeout: 15000
+- tapOn: "How was it with Sam\\?"
+- tapOn:
+    id: "feedback-great"
+- tapOn:
+    id: "eat-again-yes"
+- extendedWaitUntil:
+    visible: ".* visible\\."
+    timeout: 15000
+
+# Mutual "eat again": Sam shows up in Tester's connections
+- tapOn: "Back"
+- tapOn:
+    point: "9%,10%"
+- tapOn: "Profile"
+- tapOn: ".*Connections.*"
+- extendedWaitUntil:
+    visible: ".*Sam.*"
+    timeout: 15000

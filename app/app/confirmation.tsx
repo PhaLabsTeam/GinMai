@@ -8,6 +8,7 @@ import { useAuthStore } from "../src/stores/authStore";
 import { mealWord, capitalize } from "../src/utils/mealWord";
 import { colors } from "../src/theme/colors";
 import { Verified } from "../src/components/Icon";
+import { ScreenHeader } from "../src/components/ScreenHeader";
 
 export default function ConfirmationScreen() {
   const router = useRouter();
@@ -106,9 +107,11 @@ export default function ConfirmationScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-background">
+      {/* A guest can leave this screen without arriving or cancelling (#51) */}
+      <ScreenHeader />
       <View className="flex-1 px-6">
         {/* Header text */}
-        <View className="pt-8">
+        <View className="pt-2">
           <Text className="text-center text-[32px] font-normal text-ink">
             You're in.
           </Text>

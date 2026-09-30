@@ -46,6 +46,7 @@ interface AuthState {
     prefs: Partial<Pick<User, "notify_reminders" | "notify_joins">>
   ) => Promise<{ success: boolean; error?: string }>;
   deleteAccount: () => Promise<{ success: boolean; error?: string }>;
+  updateFirstName: (firstName: string) => Promise<{ success: boolean; error?: string }>;
   updatePushToken: (token: string) => Promise<void>;
   clearError: () => void;
 }
@@ -291,6 +292,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.error("Sign out error:", error);
       set({ loading: false, error: (error as Error).message });
     }
+  },
+
+  updateFirstName: async (firstName) => {
+    const { user } = get();
+    const name = firstName.trim();
+    if (!user) return { success: false, error: "Not signed in" };
+    if (!name || name.length > 30) return { success: false, error: "Use 1 to 30 characters" };
+    if (DEV_MODE || !isSupabaseConfigured()) {
+      set({ user: { ...user, first_name: name } });
+      return { success: true };
+    }
+    const { error } = await db.from("users").update({ first_name: name }).eq("id", user.id);
+    if (error) {
+      console.error("[AUTH] updateFirstName error:", error);
+      return { success: false, error: error.message };
+    }
+    set({ user: { ...user, first_name: name } });
+    return { success: true };
   },
 
   // Optimistic: the switch moves immediately and is put back if the save fails

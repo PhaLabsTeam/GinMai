@@ -6,6 +6,7 @@ import { useAuthStore } from "../src/stores/authStore";
 import { useNotifications } from "../src/hooks/useNotifications";
 import { useMomentReminders } from "../src/hooks/useMomentReminders";
 import { colors } from "../src/theme/colors";
+import { useMomentStore } from "../src/stores/momentStore";
 
 export default function RootLayout() {
   const initialize = useAuthStore((state) => state.initialize);
@@ -22,6 +23,14 @@ export default function RootLayout() {
   useEffect(() => {
     initialize();
   }, []);
+
+  // Per-user state follows the signed-in account (#50)
+  const resetUserState = useMomentStore((state) => state.resetUserState);
+  const fetchUserConnections = useMomentStore((state) => state.fetchUserConnections);
+  useEffect(() => {
+    resetUserState();
+    if (userId) fetchUserConnections(userId);
+  }, [userId, resetUserState, fetchUserConnections]);
 
   // Store push token when received (only if user is authenticated)
   useEffect(() => {
