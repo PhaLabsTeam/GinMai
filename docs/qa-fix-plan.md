@@ -20,7 +20,7 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | Phase | Scope | Branch | Status | PR |
 |---|---|---|---|---|
 | 0 | Baseline: SDK 57, iOS 27 scene fix, this doc | `fix/expo-sdk-57` | 📦 | — |
-| 1 | Auth & data correctness | `fix/auth-and-data` | ⬜ | — |
+| 1 | Auth & data correctness | `fix/auth-and-data` | 📦 awaiting review | — |
 | 2 | Host flow & navigation | `fix/host-flow` | ⬜ | — |
 | 3 | Create & sign-in inputs | `fix/create-flow` | ⬜ | — |
 | 4 | Settings, safety, App Store readiness | `fix/app-store-readiness` | ⬜ | — |
@@ -54,12 +54,26 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 
 | # | Issue | Status | Commit |
 |---|---|---|---|
-| 1 | Auth listener race overwrites the fresh profile with stale data; the listener is re-registered on every `initialize` | ⬜ | |
-| 2 | Returning users must re-enter their name, which overwrites the saved one. Change to phone → code → name only if new. | ⬜ | |
-| 8 | After sign-up, `returnTo` is ignored; the welcome screen's redirect replaces the top screen | ⬜ | |
-| 9 | A failed Moments fetch shows "Nothing here yet" plus an empty error toast | ⬜ | |
-| 10 | Raw Twilio or Supabase errors are shown to users | ⬜ | |
-| 31 | The code screen shows "999999999" without the country code | ⬜ | |
+| 1 | Auth listener race overwrites the fresh profile with stale data; the listener is re-registered on every `initialize` | 📦 ✅ | `b173bda` |
+| 2 | Returning users must re-enter their name, which overwrites the saved one. Change to phone → code → name only if new. | 📦 ✅ | `b173bda` |
+| 8 | After sign-up, `returnTo` is ignored; the welcome screen's redirect replaces the top screen | 📦 ✅ | `ba72b84` |
+| 9 | A failed Moments fetch shows "Nothing here yet" plus an empty error toast | 📦 ✅ | `49554c9` |
+| 10 | Raw Twilio or Supabase errors are shown to users | 📦 ✅ | `b173bda` |
+| 31 | The code screen shows "999999999" without the country code | 📦 ✅ | `b173bda` |
+
+**Verified:**
+- **Jest:** `npm test` passes 41 tests in 6 suites. New tests:
+  - `authStore.signIn.test.ts`: the listener is registered once; the verified profile survives a listener that fires mid-verify; a stale listener fetch landing after sign-in is ignored (this test fails without the fix); returning users aren't renamed; new users go through `completeProfile`
+  - `authErrors.test.ts`: the Twilio account ID never reaches the user
+  - `momentStore.fetch.test.ts`: a failed fetch sets `error`
+- **Maestro:** `01-auth-signup.yaml` passes: phone only, `+66 999 999 999` shown, no name step for a returning user, lands back on create-moment
+- **Maestro:** `06-signin-errors.yaml` passes: a wrong code shows "That code didn't work…"
+- **Manual:** Profile shows the stored name ("Tester", previously the stale "kiss")
+- **Manual:** with `.env` pointed at an invalid host, the map shows "Couldn't load meals." plus "Try again"; `.env` was restored afterwards
+
+**Notes:**
+- The red toast from #9 is React Native's dev-only error overlay for `console.error`; release builds don't show it.
+- `01-auth-signup` enters the code one digit per command until #15 (Phase 3).
 
 ## Phase 2: Host flow & navigation
 
@@ -118,6 +132,14 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | 36 | Mixed 12h and 24h time formats | ⬜ | |
 | 37 | Map header safe-area gap, card/button seam, empty space on welcome/location screens | ⬜ | |
 | 38 | Duplicate titles ("Almost there", the Connections header) | ⬜ | |
+
+## New issues (found during Phase 1, not yet scheduled)
+
+| # | Issue | Status | Commit |
+|---|---|---|---|
+| 39 | `create-moment` calls `getCurrentPositionAsync` without a catch, so an unavailable location causes an unhandled promise rejection | ⬜ | |
+| 40 | expo-notifications 57 API changes: `removeNotificationSubscription` was removed (still called in `useNotifications.ts` cleanup), the handler needs `shouldShowBanner`/`shouldShowList`, and triggers need a `type` | ⬜ | |
+| 41 | `tsc` fails: TypeScript 6 rejects `baseUrl` in `tsconfig.json`, and the test files have no Jest type definitions | ⬜ | |
 
 ## Phase 7: Two-user E2E
 

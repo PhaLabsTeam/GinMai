@@ -1,7 +1,7 @@
 import { View, Text, Pressable, ActivityIndicator } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useEffect } from "react";
+import { useCallback } from "react";
 import { useAuthStore } from "../src/stores/authStore";
 
 export default function WelcomeScreen() {
@@ -11,12 +11,16 @@ export default function WelcomeScreen() {
   const user = useAuthStore((state) => state.user);
   const initialized = useAuthStore((state) => state.initialized);
 
-  // Redirect to map if user is already logged in
-  useEffect(() => {
-    if (initialized && user) {
-      router.replace("/map");
-    }
-  }, [initialized, user]);
+  // Redirect to map if user is already logged in. Only while this screen is
+  // focused: it stays mounted under the stack, and an unfocused replace() would
+  // swap out whatever screen is on top (e.g. sign-up's returnTo destination).
+  useFocusEffect(
+    useCallback(() => {
+      if (initialized && user) {
+        router.replace("/map");
+      }
+    }, [initialized, user])
+  );
 
   const handleLetsGo = () => {
     router.push("/location-permission");

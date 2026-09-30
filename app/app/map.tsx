@@ -18,6 +18,7 @@ export default function MapScreen() {
   const router = useRouter();
   const moments = useMomentStore((state) => state.moments);
   const loading = useMomentStore((state) => state.loading);
+  const fetchError = useMomentStore((state) => state.error);
   const fetchNearbyMoments = useMomentStore((state) => state.fetchNearbyMoments);
   const subscribeToMoments = useMomentStore((state) => state.subscribeToMoments);
   const [region, setRegion] = useState(CHIANG_MAI);
@@ -157,6 +158,22 @@ export default function MapScreen() {
               <Text className="text-center text-[14px] text-[#9CA3AF] mt-3">
                 Looking for meals nearby...
               </Text>
+            </View>
+          ) : fetchError && moments.length === 0 ? (
+            /* Error State - distinct from "nothing here", which would be misleading */
+            <View className="bg-[#FAFAF9] mx-4 mt-2 rounded-2xl px-5 py-6 items-center">
+              <Text className="text-center text-[18px] font-medium text-[#1C1917]">
+                Couldn't load meals.
+              </Text>
+              <Text className="text-center text-[14px] text-[#9CA3AF] mt-3 leading-5">
+                Check your connection and try again.
+              </Text>
+              <Pressable
+                onPress={handleRefresh}
+                className="mt-4 px-6 py-2.5 rounded-xl border border-[#1C1917] active:bg-[#F5F5F4]"
+              >
+                <Text className="text-[15px] text-[#1C1917]">Try again</Text>
+              </Pressable>
             </View>
           ) : moments.length === 0 ? (
             /* Empty State */

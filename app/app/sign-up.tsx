@@ -3,6 +3,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useRef, useEffect } from "react";
 import { useAuthStore } from "../src/stores/authStore";
+import { friendlyAuthError } from "../src/utils/authErrors";
 
 // Country codes for the picker
 const COUNTRY_CODES = [
@@ -18,18 +19,25 @@ const COUNTRY_CODES = [
   { code: "+31", country: "Netherlands", flag: "🇳🇱" },
 ];
 
+// "+66999999999" -> "+66 999 999 999" (country code from the picker list)
+function formatPhoneForDisplay(e164: string): string {
+  const country = COUNTRY_CODES.find((c) => e164.startsWith(c.code));
+  if (!country) return e164;
+  const local = e164.slice(country.code.length).replace(/(\d{3})(?=\d)/g, "$1 ");
+  return `${country.code} ${local}`;
+}
+
 export default function SignUpScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ returnTo?: string }>();
 
   // Auth store
-  const { sendOtp, verifyOtp, loading, error, clearError } = useAuthStore();
+  const { sendOtp, verifyOtp, completeProfile, signOut, loading, clearError } = useAuthStore();
 
   // Step management
   const [step, setStep] = useState(1);
 
-  // Step 1: Name and phone
-  const [firstName, setFirstName] = useState("");
+  // Step 1: Phone
   const [phoneNumber, setPhoneNumber] = useState("");
   const [formattedPhone, setFormattedPhone] = useState("");
   const [countryCode, setCountryCode] = useState(COUNTRY_CODES[0]); // Default to Thailand
@@ -39,6 +47,9 @@ export default function SignUpScreen() {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [resendTimer, setResendTimer] = useState(30);
   const otpRefs = useRef<(TextInput | null)[]>([]);
+
+  // Step 3: Name (new users only)
+  const [firstName, setFirstName] = useState("");
 
   // Clear error when component mounts
   useEffect(() => {
@@ -69,7 +80,8 @@ export default function SignUpScreen() {
     return countryCode.code + digits;
   };
 
-  const isStep1Valid = firstName.trim().length > 0 && phoneNumber.trim().length >= 9;
+  const isStep1Valid = phoneNumber.trim().length >= 9;
+  const isNameValid = firstName.trim().length > 0;
   const isOtpComplete = otp.every((digit) => digit !== "");
 
   const handleContinue = async () => {
@@ -86,17 +98,16 @@ export default function SignUpScreen() {
       // Focus first OTP input
       setTimeout(() => otpRefs.current[0]?.focus(), 100);
     } else {
-      Alert.alert(
-        "Couldn't send code",
-        result.error || "Please check your phone number and try again.",
-        [{ text: "OK" }]
-      );
+      Alert.alert("Couldn't send code", friendlyAuthError("send", result.error), [{ text: "OK" }]);
     }
   };
 
-  const handleOtpChange = (value: string, index: number) => {
-    console.log("[SIGNUP] OTP change - index:", index, "value:", value);
+  const finishSignIn = () => {
+    const destination = params.returnTo || "/map";
+    router.replace(destination as any);
+  };
 
+  const handleOtpChange = (value: string, index: number) => {
     if (value.length > 1) {
       value = value[value.length - 1];
     }
@@ -113,9 +124,7 @@ export default function SignUpScreen() {
     // Auto-submit when complete (6 digits)
     if (index === 5 && value) {
       const fullOtp = newOtp.join("");
-      console.log("[SIGNUP] All 6 digits entered, fullOtp:", fullOtp);
       if (fullOtp.length === 6) {
-        console.log("[SIGNUP] Auto-submitting OTP...");
         handleVerifyOtp(fullOtp);
       }
     }
@@ -128,33 +137,20 @@ export default function SignUpScreen() {
   };
 
   const handleVerifyOtp = async (code: string) => {
-    console.log("[SIGNUP] handleVerifyOtp called with code:", code);
-    console.log("[SIGNUP] formattedPhone:", formattedPhone);
-    console.log("[SIGNUP] firstName:", firstName.trim());
-
-    if (loading) {
-      console.log("[SIGNUP] Already loading, returning");
-      return;
-    }
+    if (loading) return;
 
     Keyboard.dismiss();
 
-    console.log("[SIGNUP] Calling verifyOtp...");
-    const result = await verifyOtp(formattedPhone, code, firstName.trim());
-    console.log("[SIGNUP] verifyOtp result:", result);
+    const result = await verifyOtp(formattedPhone, code);
 
     if (result.success) {
-      console.log("[SIGNUP] Success! Navigating to map...");
-      // Navigate to the return destination or map
-      const destination = params.returnTo || "/map";
-      router.replace(destination as any);
+      if (result.needsProfile) {
+        setStep(3);
+      } else {
+        finishSignIn();
+      }
     } else {
-      console.log("[SIGNUP] Failed:", result.error);
-      Alert.alert(
-        "Invalid code",
-        result.error || "Please check the code and try again.",
-        [{ text: "OK" }]
-      );
+      Alert.alert("Invalid code", friendlyAuthError("verify", result.error), [{ text: "OK" }]);
       // Clear OTP and refocus
       setOtp(["", "", "", "", "", ""]);
       otpRefs.current[0]?.focus();
@@ -171,16 +167,31 @@ export default function SignUpScreen() {
       setOtp(["", "", "", "", "", ""]);
       otpRefs.current[0]?.focus();
     } else {
-      Alert.alert(
-        "Couldn't resend code",
-        result.error || "Please try again.",
-        [{ text: "OK" }]
-      );
+      Alert.alert("Couldn't resend code", friendlyAuthError("send", result.error), [{ text: "OK" }]);
     }
   };
 
-  const handleBack = () => {
-    if (step === 2) {
+  const handleSaveName = async () => {
+    if (!isNameValid || loading) return;
+
+    Keyboard.dismiss();
+    const result = await completeProfile(formattedPhone, firstName);
+
+    if (result.success) {
+      finishSignIn();
+    } else {
+      Alert.alert("Couldn't save", friendlyAuthError("profile", result.error), [{ text: "OK" }]);
+    }
+  };
+
+  const handleBack = async () => {
+    if (step === 3) {
+      // Verified but no profile yet: leaving means starting over
+      await signOut();
+      setFirstName("");
+      setOtp(["", "", "", "", "", ""]);
+      setStep(1);
+    } else if (step === 2) {
       setStep(1);
       setOtp(["", "", "", "", "", ""]);
     } else {
@@ -203,31 +214,20 @@ export default function SignUpScreen() {
       <View className="flex-1 px-6">
         {step === 1 ? (
           <>
-            {/* Step 1: Name and Phone */}
+            {/* Step 1: Phone */}
             <View className="pt-4">
               <Text className="text-center text-[28px] font-normal text-[#1C1917]">
                 Almost there.
               </Text>
               <Text className="text-center text-[17px] text-[#6B7280] mt-2">
-                Just a name and a phone number.
+                Just a phone number.
               </Text>
             </View>
 
             {/* Form inputs */}
             <View className="mt-8">
-              {/* First name input */}
-              <TextInput
-                value={firstName}
-                onChangeText={setFirstName}
-                placeholder="First name"
-                placeholderTextColor="#9CA3AF"
-                autoCapitalize="words"
-                autoCorrect={false}
-                className="border border-[#E5E7EB] rounded-xl px-4 py-4 text-[16px] text-[#1C1917] bg-white"
-              />
-
               {/* Phone number input with country code */}
-              <View className="flex-row mt-4">
+              <View className="flex-row">
                 {/* Country code picker button */}
                 <Pressable
                   onPress={() => setShowCountryPicker(true)}
@@ -245,6 +245,8 @@ export default function SignUpScreen() {
                   placeholder="Phone number"
                   placeholderTextColor="#9CA3AF"
                   keyboardType="phone-pad"
+                  textContentType="telephoneNumber"
+                  autoFocus
                   className="flex-1 border border-[#E5E7EB] rounded-xl px-4 py-4 text-[16px] text-[#1C1917] bg-white"
                 />
               </View>
@@ -286,7 +288,7 @@ export default function SignUpScreen() {
               <Text className="text-[#6B7280] underline">terms</Text>.
             </Text>
           </>
-        ) : (
+        ) : step === 2 ? (
           <>
             {/* Step 2: OTP Verification */}
             <View className="pt-4">
@@ -294,7 +296,7 @@ export default function SignUpScreen() {
                 Enter code
               </Text>
               <Text className="text-center text-[17px] text-[#6B7280] mt-2">
-                We sent a code to {phoneNumber}
+                We sent a code to {formatPhoneForDisplay(formattedPhone)}
               </Text>
             </View>
 
@@ -358,11 +360,63 @@ export default function SignUpScreen() {
               </Pressable>
             </View>
           </>
+        ) : (
+          <>
+            {/* Step 3: Name (new users only) */}
+            <View className="pt-4">
+              <Text className="text-center text-[28px] font-normal text-[#1C1917]">
+                What should people call you?
+              </Text>
+              <Text className="text-center text-[17px] text-[#6B7280] mt-2">
+                Just your first name.
+              </Text>
+            </View>
+
+            <View className="mt-8">
+              <TextInput
+                value={firstName}
+                onChangeText={setFirstName}
+                placeholder="First name"
+                placeholderTextColor="#9CA3AF"
+                autoCapitalize="words"
+                autoCorrect={false}
+                autoFocus
+                textContentType="givenName"
+                returnKeyType="done"
+                onSubmitEditing={handleSaveName}
+                className="border border-[#E5E7EB] rounded-xl px-4 py-4 text-[16px] text-[#1C1917] bg-white"
+              />
+            </View>
+
+            <View className="mt-6">
+              <Pressable
+                onPress={handleSaveName}
+                disabled={!isNameValid || loading}
+                className={`py-4 rounded-xl items-center ${
+                  isNameValid && !loading
+                    ? "bg-[#1C1917] active:opacity-80"
+                    : "bg-[#E5E7EB]"
+                }`}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color="#9CA3AF" />
+                ) : (
+                  <Text
+                    className={`text-[17px] font-medium ${
+                      isNameValid ? "text-white" : "text-[#9CA3AF]"
+                    }`}
+                  >
+                    Continue
+                  </Text>
+                )}
+              </Pressable>
+            </View>
+          </>
         )}
       </View>
 
       {/* Floating action button */}
-      <View className="absolute bottom-8 right-6">
+      {step !== 3 && <View className="absolute bottom-8 right-6">
         <Pressable
           onPress={step === 1 ? handleContinue : () => handleVerifyOtp(otp.join(""))}
           disabled={loading || (step === 1 ? !isStep1Valid : !isOtpComplete)}
@@ -378,7 +432,7 @@ export default function SignUpScreen() {
             <Text className="text-white text-2xl font-light">›</Text>
           )}
         </Pressable>
-      </View>
+      </View>}
 
       {/* Country Code Picker Modal */}
       <Modal
