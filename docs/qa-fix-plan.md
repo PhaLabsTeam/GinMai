@@ -277,6 +277,24 @@ While getting ready for the full-table test I found that the live `moments` poli
 - `joinMoment` and `leaveMoment` no longer write to `moments`; they read back what the database counted
 - refusals map to plain words ("This meal is full.")
 
+**Verified after applying `20261002000000`:**
+- anonymous PATCH and DELETE on a Moment change 0 rows; an anonymous insert is refused
+- the legacy functions return "permission denied"
+- Ben's API join to the full table is refused ("full: this moment is full")
+- a host PATCH of `seats_taken` is ignored, and a new Moment can't start as full
+- 5 rounds of Ben and Kai racing for 1 seat: exactly 1 guest each time; the loser waited on the lock and got "full"
+- **Maestro `19-full-table`:** Tester hosts 2 seats, Sam and Kai join, and Kai's "You're in" shows "0 seats open"
+- **Maestro `19b`:** Ben's direct link shows "Full" with no Join, and Tester's live screen lists 2 guests. It also showed Kai as "Guest", which led to #61 and #62
+
+**#61 and #62, migration `20261002000001_profile_privacy.sql`:**
+- new read rule: people you share a Moment with
+- other users can read only safe columns: name, verified badge, meal counts and status
+- your own full row comes from `my_profile()`
+- users can write only the fields the app sets
+- the app loads its own profile through `my_profile()`
+
+**Found, not fixed:** expired Moments are never closed, and 19 stale "active" rows go back to January. The app filters them by `expires_at`, but signed-out visitors can still read them. The fix is to schedule `expire_moments` with pg_cron, also covering `full`.
+
 ## New issues (found during Phase 1, not yet scheduled)
 
 | # | Issue | Status | Commit |
@@ -301,7 +319,9 @@ While getting ready for the full-table test I found that the live `moments` poli
 | 57 | "Running late" was only offered after arriving | 📦 ✅ | `312a563` |
 | 58 | Signing in from a Moment, the Menu or Profile left that screen in the back history twice | 📦 ✅ | `312a563` |
 | 59 | Deleting an account erased reports about that person (so a reported user could wipe them and re-register), and left a deleted host's name on their Moments | 📦 ✅ | `6a04963` + migration `20261001000001` |
-| 60 | **Security:** the live database still had the M1 "Anyone can …" policies on `moments`, so the public anon key alone could edit or delete any Moment. Guests could only join because of that hole: the app counted seats itself from its cache, which could overbook. Legacy `join_moment`/`leave_moment` could act as any user | 🔧 (SQL to apply) | migration `20261002000000` |
+| 60 | **Security:** the live database still had the M1 "Anyone can …" policies on `moments`, so the public anon key alone could edit or delete any Moment. Guests could only join because of that hole: the app counted seats itself from its cache, which could overbook. Legacy `join_moment`/`leave_moment` could act as any user | ✅ applied, anon writes refused | `8106104` + migration `20261002000000` |
+| 61 | A host saw every guest who wasn't also hosting as "Guest": the only rule for reading another profile was "they're hosting an active Moment". Hidden in earlier tests because Sam had a stale January Moment | 🔧 (SQL to apply) | migration `20261002000001` |
+| 62 | **Privacy:** any signed-in user could read the phone number and push token of anyone whose profile they could see (a stranger read Tester's and Sam's numbers). Users could also edit their own `no_shows` and `status` | 🔧 (SQL to apply) | migration `20261002000001` |
 | 41 | `tsc` failed (477 errors): TS 6 rejects `baseUrl` and no longer auto-loads `@types`; old tests used a stale `User` shape; an unused client push path had an invalid payload type | 📦 ✅ `npm run typecheck` passes | `f50060e` |
 
 ## Phase 1.5: expo-notifications 57 (#40)

@@ -1,0 +1,33 @@
+# Shared: fresh launch, then sign in (PHONE, CODE, NAME) from "Share where
+# you're eating" and land back on the map.
+appId: com.ginmai.app
+---
+- runFlow: _launch.yaml
+- tapOn: "Let's go"
+- tapOn: "Share location"
+- extendedWaitUntil:
+    visible: "Share where you're eating.*"
+    timeout: 15000
+- tapOn: "Share where you're eating.*"
+- extendedWaitUntil:
+    visible: "Phone number"
+    timeout: 10000
+- runFlow:
+    file: _signin.yaml
+    env:
+      PHONE: ${PHONE}
+      CODE: ${CODE}
+- runFlow:
+    when:
+      visible: "What should people call you\\?"
+    commands:
+      - tapOn: "First name"
+      - inputText: ${NAME}
+      - tapOn: "Continue"
+- extendedWaitUntil:
+    visible: "Share your .*"
+    timeout: 15000
+- tapOn: "Back"
+- extendedWaitUntil:
+    visible: "Eating soon\\?|Chiang Mai"
+    timeout: 15000
