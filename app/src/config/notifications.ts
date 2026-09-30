@@ -4,18 +4,36 @@
 
 import * as Notifications from 'expo-notifications';
 
+// The Moment whose live screen is open. Guest events for it already show as an
+// in-app toast there, so their push banner would be a duplicate.
+let activeLiveMomentId: string | null = null;
+
+export function setActiveLiveMoment(momentId: string | null) {
+  activeLiveMomentId = momentId;
+}
+
+export function shouldShowInForeground(data: unknown): boolean {
+  const { type, momentId } = (data ?? {}) as { type?: string; momentId?: string };
+  const alreadyOnScreen =
+    !!momentId && momentId === activeLiveMomentId && !!type && type.startsWith('guest_');
+  return !alreadyOnScreen;
+}
+
 /**
  * Configure how notifications are displayed when app is in foreground
  */
 export function configureNotificationHandler() {
   Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      // shouldShowAlert is deprecated in SDK 57: banner = on screen, list = in Notification Center
-      shouldShowBanner: true,
-      shouldShowList: true,
-      shouldPlaySound: true,
-      shouldSetBadge: true,
-    }),
+    handleNotification: async (notification) => {
+      const show = shouldShowInForeground(notification?.request?.content?.data);
+      return {
+        // shouldShowAlert is deprecated in SDK 57: banner = on screen, list = in Notification Center
+        shouldShowBanner: show,
+        shouldShowList: true,
+        shouldPlaySound: show,
+        shouldSetBadge: true,
+      };
+    },
   });
 }
 

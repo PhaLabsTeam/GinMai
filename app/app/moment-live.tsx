@@ -1,5 +1,5 @@
 import { View, Text, Pressable, ActivityIndicator, ScrollView, Alert } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useEffect, useCallback } from "react";
 import { useMoment } from "../src/hooks/useMoment";
@@ -8,6 +8,7 @@ import { useNotificationStore } from "../src/stores/notificationStore";
 import { useAuthStore } from "../src/stores/authStore";
 import { InAppToast } from "../src/components/InAppToast";
 import { openSafetyActions } from "../src/utils/safetyActions";
+import { setActiveLiveMoment } from "../src/config/notifications";
 import { mealWord, capitalize } from "../src/utils/mealWord";
 
 export default function MomentLiveScreen() {
@@ -28,6 +29,14 @@ export default function MomentLiveScreen() {
   const { moment, loading: momentLoading } = useMoment(params.momentId);
 
   const [countdown, setCountdown] = useState("");
+
+  // While this screen is open, guest pushes for it show as the in-app toast only
+  useFocusEffect(
+    useCallback(() => {
+      setActiveLiveMoment(params.momentId ?? null);
+      return () => setActiveLiveMoment(null);
+    }, [params.momentId])
+  );
 
   // Handle guest events (joins/cancellations/arrivals)
   const handleGuestEvent = useCallback((event: "joined" | "cancelled" | "arrived" | "running_late", guest: MomentGuest) => {
