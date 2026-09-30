@@ -6,6 +6,7 @@ import { useAuthStore } from "../src/stores/authStore";
 import { friendlyAuthError } from "../src/utils/authErrors";
 import { ALL_COUNTRIES, searchCountries, countryForNumber } from "../src/data/countries";
 import { colors } from "../src/theme/colors";
+import { Icon } from "../src/components/Icon";
 
 
 const OTP_LENGTH = 6;
@@ -177,10 +178,11 @@ export default function SignUpScreen() {
       {/* Header with back button */}
       <View className="flex-row items-center px-5 py-3">
         <Pressable
+          accessibilityLabel="Back"
           onPress={handleBack}
           className="w-10 h-10 items-center justify-center"
         >
-          <Text className="text-[24px] text-ink">←</Text>
+          <Icon name="arrow-back" size={24} />
         </Pressable>
       </View>
 
@@ -208,7 +210,7 @@ export default function SignUpScreen() {
                 >
                   <Text className="text-[18px]">{countryCode.flag}</Text>
                   <Text className="text-[16px] text-ink ml-1">{countryCode.code}</Text>
-                  <Text className="text-[12px] text-ink-muted ml-1">▼</Text>
+                  <View className="ml-1"><Icon name="chevron-down" size={14} color={colors.inkMuted} /></View>
                 </Pressable>
 
                 {/* Phone number input */}
@@ -457,7 +459,7 @@ export default function SignUpScreen() {
                   <Text className="text-[16px] text-ink flex-1">{item.country}</Text>
                   <Text className="text-[16px] text-ink-secondary">{item.code}</Text>
                   {countryCode.country === item.country && (
-                    <Text className="text-success ml-2">✓</Text>
+                    <View className="ml-2"><Icon name="checkmark" size={18} color={colors.success} /></View>
                   )}
                 </Pressable>
               )}

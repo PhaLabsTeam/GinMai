@@ -5,6 +5,8 @@ import { useEffect } from "react";
 import { useAuthStore } from "../src/stores/authStore";
 import { useBlockStore } from "../src/stores/blockStore";
 import { colors } from "../src/theme/colors";
+import { Icon, Verified } from "../src/components/Icon";
+import { ScreenHeader } from "../src/components/ScreenHeader";
 
 export default function BlockedUsersScreen() {
   const router = useRouter();
@@ -58,10 +60,8 @@ export default function BlockedUsersScreen() {
     <SafeAreaView className="flex-1 bg-background">
       <ScrollView className="flex-1">
         {/* Header */}
-        <View className="p-6 pb-4">
-          <Pressable onPress={() => router.back()} className="mb-4">
-            <Text className="text-accent text-base">← Back</Text>
-          </Pressable>
+        <ScreenHeader />
+        <View className="px-6 pb-4">
 
           <Text className="text-ink text-2xl font-semibold mb-2">
             Blocked Users
@@ -82,7 +82,7 @@ export default function BlockedUsersScreen() {
         {/* Empty State */}
         {!loading && blockedUsers.length === 0 && (
           <View className="items-center justify-center py-12 px-8">
-            <Text className="text-6xl mb-4">🔓</Text>
+            <View className="mb-4"><Icon name="lock-open-outline" size={44} color={colors.inkMuted} /></View>
             <Text className="text-ink text-xl font-semibold text-center mb-2">
               No blocked users
             </Text>
@@ -103,7 +103,7 @@ export default function BlockedUsersScreen() {
                 <View className="flex-row items-center justify-between mb-3">
                   <View className="flex-row items-center flex-1">
                     <View className="w-12 h-12 rounded-full bg-subtle items-center justify-center mr-3">
-                      <Text className="text-xl">👤</Text>
+                      <Icon name="person-outline" size={20} color={colors.inkSecondary} />
                     </View>
                     <View className="flex-1">
                       <View className="flex-row items-center">
@@ -111,7 +111,7 @@ export default function BlockedUsersScreen() {
                           {blockedUser.first_name}
                         </Text>
                         {blockedUser.phone_verified && (
-                          <Text className="text-success text-lg ml-1">✓</Text>
+                          <View className="ml-1"><Verified /></View>
                         )}
                       </View>
                       <Text className="text-ink-secondary text-sm">

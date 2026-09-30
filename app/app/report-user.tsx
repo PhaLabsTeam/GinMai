@@ -6,11 +6,13 @@ import { useReportStore } from "../src/stores/reportStore";
 import { useAuthStore } from "../src/stores/authStore";
 import { confirmBlock } from "../src/utils/safetyActions";
 import { colors } from "../src/theme/colors";
+import { ScreenHeader } from "../src/components/ScreenHeader";
+import { Icon, type IconName } from "../src/components/Icon";
 
 interface ReportCategory {
   id: string;
   label: string;
-  icon: string;
+  icon: IconName;
   description: string;
 }
 
@@ -18,37 +20,37 @@ const REPORT_CATEGORIES: ReportCategory[] = [
   {
     id: "no_show",
     label: "No-show",
-    icon: "🚫",
+    icon: "time-outline",
     description: "Didn't arrive for the meal",
   },
   {
     id: "inappropriate_behavior",
     label: "Inappropriate Behavior",
-    icon: "😠",
+    icon: "hand-left-outline",
     description: "Rude, offensive, or inappropriate conduct",
   },
   {
     id: "harassment",
     label: "Harassment",
-    icon: "💬",
+    icon: "chatbubble-ellipses-outline",
     description: "Unwanted contact or intimidation",
   },
   {
     id: "fake_profile",
     label: "Fake Profile",
-    icon: "🤥",
+    icon: "person-remove-outline",
     description: "Suspicious or fraudulent account",
   },
   {
     id: "safety_concern",
     label: "Safety Concern",
-    icon: "⚠️",
+    icon: "warning-outline",
     description: "Felt unsafe or threatened",
   },
   {
     id: "other",
     label: "Other",
-    icon: "📝",
+    icon: "ellipsis-horizontal",
     description: "Something else",
   },
 ];
@@ -124,10 +126,8 @@ export default function ReportUserScreen() {
     <SafeAreaView className="flex-1 bg-background">
       <ScrollView className="flex-1">
         {/* Header */}
-        <View className="p-6 pb-4">
-          <Pressable onPress={() => router.back()} className="mb-4" disabled={submitting}>
-            <Text className="text-accent text-base">← Cancel</Text>
-          </Pressable>
+        <ScreenHeader onBack={() => !submitting && router.back()} />
+        <View className="px-6 pb-4">
 
           <Text className="text-ink text-2xl font-semibold mb-2">
             Report User
@@ -163,7 +163,7 @@ export default function ReportUserScreen() {
               }`}
             >
               <View className="flex-row items-center">
-                <Text className="text-2xl mr-3">{category.icon}</Text>
+                <View className="mr-3"><Icon name={category.icon} color={colors.inkSecondary} /></View>
                 <View className="flex-1">
                   <Text className="text-ink font-semibold mb-1">
                     {category.label}
@@ -173,7 +173,7 @@ export default function ReportUserScreen() {
                   </Text>
                 </View>
                 {selectedCategory === category.id && (
-                  <Text className="text-accent text-xl">✓</Text>
+                  <Icon name="checkmark-circle" size={22} color={colors.accent} />
                 )}
               </View>
             </Pressable>

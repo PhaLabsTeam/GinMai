@@ -12,6 +12,7 @@ import type { MomentLocal } from "../src/types";
 import { mealWord, capitalize } from "../src/utils/mealWord";
 import { maybeAskForPushPermission } from "../src/services/pushPermission";
 import { colors } from "../src/theme/colors";
+import { Icon } from "../src/components/Icon";
 
 type TimeOption = "now" | "30min" | "1hr" | "custom";
 type Duration = "quick" | "normal" | "long";
@@ -393,7 +394,7 @@ export default function CreateMomentScreen() {
       {/* Header */}
       <View className="flex-row items-center px-5 py-3">
         <Pressable onPress={handleBack} accessibilityLabel="Back" className="w-10 h-10 items-center justify-center">
-          <Text className="text-[24px] text-ink">←</Text>
+          <Icon name="arrow-back" size={24} />
         </Pressable>
       </View>
 
@@ -472,7 +473,7 @@ export default function CreateMomentScreen() {
                 {useCurrentLocation && <View className="w-2.5 h-2.5 rounded-full bg-ink" />}
               </View>
               <View className="w-5 h-5 items-center justify-center mr-2">
-                <Text className="text-[14px]">📍</Text>
+                <Icon name="location-outline" size={18} color={colors.inkSecondary} />
               </View>
               <View className="flex-1">
                 <Text className="text-[16px] text-ink">Use current location</Text>
@@ -505,7 +506,7 @@ export default function CreateMomentScreen() {
                 {!useCurrentLocation && <View className="w-2.5 h-2.5 rounded-full bg-ink" />}
               </View>
               <View className="w-5 h-5 items-center justify-center mr-2">
-                <Text className="text-[14px]">🔍</Text>
+                <Icon name="search-outline" size={18} color={colors.inkSecondary} />
               </View>
               <View className="flex-1">
                 <Text className="text-[16px] text-ink">

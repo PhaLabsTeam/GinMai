@@ -1,6 +1,6 @@
 import { View, Text, Pressable, ScrollView, ActivityIndicator, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { getBestPosition } from "../src/utils/location";
 import { useMomentStore } from "../src/stores/momentStore";
@@ -8,6 +8,7 @@ import { useAuthStore } from "../src/stores/authStore";
 import { MapComponent, mapsAvailable } from "../src/components/MapComponent";
 import { mealWord, capitalize } from "../src/utils/mealWord";
 import { colors } from "../src/theme/colors";
+import { Icon, Verified } from "../src/components/Icon";
 
 // Default to Chiang Mai center
 const CHIANG_MAI = {
@@ -28,6 +29,7 @@ export default function MapScreen() {
   const fetchUserConnections = useMomentStore((state) => state.fetchUserConnections);
   const userId = useAuthStore((state) => state.user?.id);
   const { height: windowHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
 
   // Needed for "You're in" on Moments the user joined
   useEffect(() => {
@@ -116,19 +118,19 @@ export default function MapScreen() {
       />
 
       {/* Overlay Content */}
-      <SafeAreaView className="flex-1" pointerEvents="box-none">
-        {/* Header */}
-        <View className="flex-row items-center justify-between px-5 py-3 bg-background">
+      <View className="flex-1" pointerEvents="box-none">
+        {/* Header, extended under the status bar so the map doesn't show above it */}
+        <View
+          className="flex-row items-center justify-between px-5 pb-3 bg-background"
+          style={{ paddingTop: insets.top + 12 }}
+        >
           {/* Menu button */}
           <Pressable
             onPress={() => router.push("/menu")}
+            accessibilityLabel="Menu"
             className="w-10 h-10 items-center justify-center"
           >
-            <View>
-              <View className="w-5 h-0.5 bg-ink" />
-              <View className="w-5 h-0.5 bg-ink mt-1.5" />
-              <View className="w-5 h-0.5 bg-ink mt-1.5" />
-            </View>
+            <Icon name="menu-outline" size={26} />
           </Pressable>
 
           {/* Title */}
@@ -139,12 +141,10 @@ export default function MapScreen() {
           {/* Profile button */}
           <Pressable
             onPress={() => router.push("/profile")}
+            accessibilityLabel="Profile"
             className="w-10 h-10 items-center justify-center"
           >
-            <View className="w-6 h-6 rounded-full border-2 border-ink items-center overflow-hidden">
-              <View className="w-2 h-2 bg-ink rounded-full mt-1" />
-              <View className="w-4 h-2 bg-ink rounded-t-full mt-0.5" />
-            </View>
+            <Icon name="person-circle-outline" size={28} />
           </Pressable>
         </View>
 
@@ -152,7 +152,7 @@ export default function MapScreen() {
         <View pointerEvents="box-none">
           {loading ? (
             /* Loading State */
-            <View className="bg-background mx-4 mt-2 rounded-2xl px-5 py-6 items-center">
+            <View className="bg-background mx-4 mt-2 rounded-t-2xl px-5 py-6 items-center">
               <ActivityIndicator size="small" color={colors.inkSecondary} />
               <Text className="text-center text-[14px] text-ink-muted mt-3">
                 Looking for meals nearby...
@@ -160,7 +160,7 @@ export default function MapScreen() {
             </View>
           ) : fetchError && moments.length === 0 ? (
             /* Error State - distinct from "nothing here", which would be misleading */
-            <View className="bg-background mx-4 mt-2 rounded-2xl px-5 py-6 items-center">
+            <View className="bg-background mx-4 mt-2 rounded-t-2xl px-5 py-6 items-center">
               <Text className="text-center text-[18px] font-medium text-ink">
                 Couldn't load meals.
               </Text>
@@ -176,7 +176,7 @@ export default function MapScreen() {
             </View>
           ) : moments.length === 0 ? (
             /* Empty State */
-            <View className="bg-background mx-4 mt-2 rounded-2xl px-5 py-6">
+            <View className="bg-background mx-4 mt-2 rounded-t-2xl px-5 py-6">
               <Text className="text-center text-[18px] font-medium text-ink">
                 Nothing here yet.
               </Text>
@@ -208,7 +208,7 @@ export default function MapScreen() {
                     className="flex-row items-center px-4 py-3 border border-line rounded-xl mx-4 mb-3 bg-surface active:bg-subtle"
                   >
                     {/* Food emoji placeholder */}
-                    <Text className="text-2xl mr-3">🍜</Text>
+                    <View className="w-10 h-10 rounded-full bg-subtle items-center justify-center mr-3"><Icon name="restaurant-outline" size={20} color={colors.accent} /></View>
 
                     <View className="flex-1">
                       {/* Time and place */}
@@ -228,7 +228,7 @@ export default function MapScreen() {
                         </Text>
                         {/* Show verification badge if host is authenticated */}
                         {moment.host_id && moment.host_id !== "anonymous" && (
-                          <Text className="text-[13px] text-success"> ✓</Text>
+                          <View className="ml-1"><Verified size={14} /></View>
                         )}
                         <Text className="text-[14px] text-ink-secondary">
                           {"  ·  "}{moment.seats_taken}/{moment.seats_total} seats
@@ -268,7 +268,7 @@ export default function MapScreen() {
             </Pressable>
           </View>
         </View>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }

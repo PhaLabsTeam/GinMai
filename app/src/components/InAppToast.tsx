@@ -2,6 +2,7 @@ import { View, Text, Animated, Pressable } from "react-native";
 import { useEffect, useRef } from "react";
 import { useNotificationStore, InAppNotification } from "../stores/notificationStore";
 import { colors } from "../theme/colors";
+import { Icon, type IconName } from "./Icon";
 
 export function InAppToast() {
   const notifications = useNotificationStore((state) => state.notifications);
@@ -71,18 +72,18 @@ function ToastItem({ notification, onDismiss }: ToastItemProps) {
     });
   };
 
-  const getIconForType = (type: InAppNotification["type"]) => {
+  const getIconForType = (type: InAppNotification["type"]): IconName => {
     switch (type) {
       case "guest_joined":
-        return "+1";
+        return "person-add-outline";
       case "guest_cancelled":
-        return "-1";
+        return "person-remove-outline";
       case "guest_arrived":
-        return "✓";
+        return "checkmark-circle-outline";
       case "guest_running_late":
-        return "⏰";
+        return "time-outline";
       default:
-        return "i";
+        return "information-circle-outline";
     }
   };
 
@@ -93,7 +94,7 @@ function ToastItem({ notification, onDismiss }: ToastItemProps) {
       case "guest_cancelled":
         return colors.accent; // orange
       case "guest_arrived":
-        return colors.line; // blue
+        return colors.successInk;
       case "guest_running_late":
         return colors.warning; // yellow
       default:
@@ -140,9 +141,7 @@ function ToastItem({ notification, onDismiss }: ToastItemProps) {
               marginRight: 12,
             }}
           >
-            <Text style={{ color: "white", fontSize: 14, fontWeight: "600" }}>
-              {getIconForType(notification.type)}
-            </Text>
+            <Icon name={getIconForType(notification.type)} size={20} color="white" />
           </View>
 
           {/* Content */}

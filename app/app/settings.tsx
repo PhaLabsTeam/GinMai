@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore } from "../src/stores/authStore";
 import { colors } from "../src/theme/colors";
+import { Icon } from "../src/components/Icon";
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -170,10 +171,11 @@ export default function SettingsScreen() {
       {/* Header */}
       <View className="flex-row items-center px-5 py-3">
         <Pressable
+          accessibilityLabel="Back"
           onPress={handleBack}
           className="w-10 h-10 items-center justify-center"
         >
-          <Text className="text-[24px] text-ink">←</Text>
+          <Icon name="arrow-back" size={24} />
         </Pressable>
         <Text className="text-[17px] font-medium text-ink ml-2">
           Settings
@@ -205,7 +207,7 @@ export default function SettingsScreen() {
             />
             {user.phone_verified && (
               <View className="flex-row items-center px-4 py-3 bg-success-soft rounded-xl mb-3">
-                <Text className="text-[15px] text-success">✓</Text>
+                <Icon name="checkmark-circle" size={18} color={colors.success} />
                 <Text className="text-[15px] text-success-ink ml-2">Phone verified</Text>
               </View>
             )}

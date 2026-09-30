@@ -6,6 +6,7 @@ import { useAuthStore } from "../src/stores/authStore";
 import { useMatchStore } from "../src/stores/matchStore";
 import { ReliabilityBadge } from "../src/components/ReliabilityBadge";
 import { colors } from "../src/theme/colors";
+import { Icon, Verified } from "../src/components/Icon";
 
 export default function ConnectionsScreen() {
   const router = useRouter();
@@ -55,10 +56,11 @@ export default function ConnectionsScreen() {
       {/* Header */}
       <View className="flex-row items-center justify-between px-5 py-3">
         <Pressable
+          accessibilityLabel="Back"
           onPress={handleBack}
           className="w-10 h-10 items-center justify-center"
         >
-          <Text className="text-[24px] text-ink">←</Text>
+          <Icon name="arrow-back" size={24} />
         </Pressable>
         <Text className="text-[18px] font-semibold text-ink">
           Connections
@@ -82,7 +84,7 @@ export default function ConnectionsScreen() {
         {/* Matched users list */}
         {matchedUsers.length === 0 ? (
           <View className="items-center py-12">
-            <Text className="text-[48px] mb-4">🤝</Text>
+            <View className="mb-4"><Icon name="people-outline" size={44} color={colors.inkMuted} /></View>
             <Text className="text-[17px] text-ink-muted text-center">
               No connections yet
             </Text>
@@ -106,7 +108,7 @@ export default function ConnectionsScreen() {
                         {matchedUser.firstName}
                       </Text>
                       {matchedUser.phoneVerified && (
-                        <Text className="text-[16px] text-success ml-1">✓</Text>
+                        <View className="ml-1"><Verified /></View>
                       )}
                     </View>
 

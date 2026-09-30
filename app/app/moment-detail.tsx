@@ -10,6 +10,7 @@ import * as Location from "expo-location";
 import { distanceMeters, formatWalk } from "../src/utils/distance";
 import { maybeAskForPushPermission } from "../src/services/pushPermission";
 import { colors } from "../src/theme/colors";
+import { Icon, Verified } from "../src/components/Icon";
 
 export default function MomentDetailScreen() {
   const router = useRouter();
@@ -140,7 +141,7 @@ export default function MomentDetailScreen() {
           accessibilityLabel="Back"
           className="w-10 h-10 items-center justify-center"
         >
-          <Text className="text-[24px] text-ink">←</Text>
+          <Icon name="arrow-back" size={24} />
         </Pressable>
       </View>
 
@@ -177,7 +178,7 @@ export default function MomentDetailScreen() {
 
         {/* Place info */}
         <View className="flex-row items-center mt-6">
-          <Text className="text-2xl mr-2">🍜</Text>
+          <View className="mr-2"><Icon name="restaurant-outline" size={22} color={colors.accent} /></View>
           <Text className="text-[20px] font-semibold text-ink">
             {moment.location.place_name || "Somewhere tasty"}
           </Text>
@@ -200,7 +201,7 @@ export default function MomentDetailScreen() {
           </Text>
           {/* Show verification badge if host is authenticated (has host_id) */}
           {moment.host_id && moment.host_id !== "anonymous" && (
-            <Text className="text-[15px] text-success ml-1">✓</Text>
+            <View className="ml-1"><Verified /></View>
           )}
         </View>
         {user && !isHost && moment.host_id !== "anonymous" && (

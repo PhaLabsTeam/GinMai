@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore } from "../src/stores/authStore";
 import { ReliabilityScore } from "../src/components/ReliabilityBadge";
 import { colors } from "../src/theme/colors";
+import { Icon, Verified } from "../src/components/Icon";
 
 // Mock connections - would come from database in real app
 const mockConnections = [
@@ -57,10 +58,11 @@ export default function ProfileScreen() {
         {/* Header */}
         <View className="flex-row items-center justify-between px-5 py-3">
           <Pressable
+            accessibilityLabel="Back"
             onPress={handleBack}
             className="w-10 h-10 items-center justify-center"
           >
-            <Text className="text-[24px] text-ink">←</Text>
+            <Icon name="arrow-back" size={24} />
           </Pressable>
           <View className="w-10" />
         </View>
@@ -88,10 +90,11 @@ export default function ProfileScreen() {
       {/* Header */}
       <View className="flex-row items-center justify-between px-5 py-3">
         <Pressable
+          accessibilityLabel="Back"
           onPress={handleBack}
           className="w-10 h-10 items-center justify-center"
         >
-          <Text className="text-[24px] text-ink">←</Text>
+          <Icon name="arrow-back" size={24} />
         </Pressable>
         <Pressable onPress={handleEdit}>
           <Text className="text-[16px] text-ink">Edit</Text>
@@ -106,7 +109,7 @@ export default function ProfileScreen() {
               {user.first_name}
             </Text>
             {user.phone_verified && (
-              <Text className="text-[24px] text-success ml-2">✓</Text>
+              <View className="ml-2"><Verified size={24} /></View>
             )}
           </View>
           <Text className="text-[15px] text-ink-secondary mt-1">
@@ -158,7 +161,7 @@ export default function ProfileScreen() {
             className="bg-surface rounded-2xl p-4 shadow-sm flex-row items-center justify-between active:opacity-80"
           >
             <View className="flex-row items-center">
-              <Text className="text-[32px] mr-3">🤝</Text>
+              <View className="w-10 h-10 rounded-full bg-subtle items-center justify-center mr-3"><Icon name="people-outline" /></View>
               <View>
                 <Text className="text-[17px] font-semibold text-ink">
                   Connections
@@ -168,7 +171,7 @@ export default function ProfileScreen() {
                 </Text>
               </View>
             </View>
-            <Text className="text-[24px] text-ink-muted">›</Text>
+            <Icon name="chevron-forward" size={20} color={colors.inkMuted} />
           </Pressable>
         </View>
 
@@ -182,7 +185,7 @@ export default function ProfileScreen() {
             className="bg-surface rounded-2xl p-4 shadow-sm flex-row items-center justify-between active:opacity-80"
           >
             <View className="flex-row items-center">
-              <Text className="text-[32px] mr-3">🔒</Text>
+              <View className="w-10 h-10 rounded-full bg-subtle items-center justify-center mr-3"><Icon name="shield-checkmark-outline" /></View>
               <View>
                 <Text className="text-[17px] font-semibold text-ink">
                   Safety & Privacy
@@ -192,7 +195,7 @@ export default function ProfileScreen() {
                 </Text>
               </View>
             </View>
-            <Text className="text-[24px] text-ink-muted">›</Text>
+            <Icon name="chevron-forward" size={20} color={colors.inkMuted} />
           </Pressable>
         </View>
 

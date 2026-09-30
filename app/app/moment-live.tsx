@@ -11,6 +11,7 @@ import { openSafetyActions } from "../src/utils/safetyActions";
 import { setActiveLiveMoment } from "../src/config/notifications";
 import { mealWord, capitalize } from "../src/utils/mealWord";
 import { colors } from "../src/theme/colors";
+import { Icon } from "../src/components/Icon";
 
 export default function MomentLiveScreen() {
   const router = useRouter();
@@ -224,7 +225,7 @@ export default function MomentLiveScreen() {
           accessibilityLabel="Back"
           className="w-10 h-10 items-center justify-center"
         >
-          <Text className="text-[24px] text-ink">←</Text>
+          <Icon name="arrow-back" size={24} />
         </Pressable>
       </View>
 
@@ -245,7 +246,7 @@ export default function MomentLiveScreen() {
             {/* Location pin icon */}
             <View className="w-16 h-16 rounded-full bg-accent/20 items-center justify-center mb-2">
               <View className="w-10 h-10 rounded-full bg-accent/30 items-center justify-center">
-                <Text className="text-2xl">📍</Text>
+                <Icon name="location" size={24} color={colors.accent} />
               </View>
             </View>
             <Text className="text-ink-secondary text-sm">Your table is on the map</Text>

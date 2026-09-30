@@ -52,7 +52,7 @@ export function ReliabilityBadge({
         className={`flex-row items-center ${config.containerPadding} rounded-full`}
         style={{ backgroundColor: `${badgeColor}15` }}
       >
-        <Text className={config.badgeText}>{stats.reliabilityBadge}</Text>
+        <View className="w-2 h-2 rounded-full" style={{ backgroundColor: badgeColor }} />
         <Text
           className={`${config.labelText} font-medium ml-1.5`}
           style={{ color: badgeColor }}
@@ -116,7 +116,6 @@ export function ReliabilityScore({
           Reliability
         </Text>
         <View className="flex-row items-center">
-          <Text className="text-2xl mr-2">{stats.reliabilityBadge}</Text>
           <Text
             className="text-[17px] font-semibold"
             style={{ color: badgeColor }}

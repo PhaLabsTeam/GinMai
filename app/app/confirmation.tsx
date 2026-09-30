@@ -7,6 +7,7 @@ import { useMomentStore } from "../src/stores/momentStore";
 import { useAuthStore } from "../src/stores/authStore";
 import { mealWord, capitalize } from "../src/utils/mealWord";
 import { colors } from "../src/theme/colors";
+import { Verified } from "../src/components/Icon";
 
 export default function ConfirmationScreen() {
   const router = useRouter();
@@ -165,7 +166,7 @@ export default function ConfirmationScreen() {
             with {moment.host_name}
           </Text>
           {moment.host_id && moment.host_id !== "anonymous" && (
-            <Text className="text-[15px] text-success ml-1">✓</Text>
+            <View className="ml-1"><Verified /></View>
           )}
         </View>
 

@@ -1,12 +1,15 @@
 import { View, Text, Pressable, ScrollView, Linking, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ScreenHeader } from "../src/components/ScreenHeader";
+import { Icon, type IconName } from "../src/components/Icon";
+import { colors } from "../src/theme/colors";
 
 interface EmergencyContact {
   name: string;
   number: string;
   description: string;
-  icon: string;
+  icon: IconName;
 }
 
 // Tourist Police first: English-speaking, and for visitors, which most users are
@@ -15,31 +18,31 @@ const EMERGENCY_CONTACTS: EmergencyContact[] = [
     name: "Tourist Police",
     number: "1155",
     description: "English-speaking help for visitors",
-    icon: "👮",
+    icon: "shield-outline",
   },
   {
     name: "Emergency Services",
     number: "191",
     description: "Thai Police Emergency",
-    icon: "🚨",
+    icon: "alert-circle-outline",
   },
   {
     name: "Ambulance",
     number: "1669",
     description: "Emergency Medical Services",
-    icon: "🏥",
+    icon: "medkit-outline",
   },
   {
     name: "Fire Department",
     number: "199",
     description: "Fire Emergency",
-    icon: "🚒",
+    icon: "flame-outline",
   },
   {
     name: "Chiang Mai Hospital",
     number: "+66 53 920 300",
     description: "24-hour Emergency",
-    icon: "🏥",
+    icon: "medical-outline",
   },
 ];
 
@@ -76,10 +79,8 @@ export default function SafetyScreen() {
     <SafeAreaView className="flex-1 bg-background">
       <ScrollView className="flex-1">
         {/* Header */}
-        <View className="p-6 pb-4">
-          <Pressable onPress={() => router.back()} className="mb-4">
-            <Text className="text-accent text-base">← Back</Text>
-          </Pressable>
+        <ScreenHeader />
+        <View className="px-6 pb-4">
 
           <Text className="text-ink text-2xl font-semibold mb-2">
             Emergency Contacts
@@ -108,7 +109,7 @@ export default function SafetyScreen() {
               className="bg-surface rounded-xl p-4 mb-3 border border-line"
             >
               <View className="flex-row items-center mb-2">
-                <Text className="text-3xl mr-3">{contact.icon}</Text>
+                <View className="w-10 h-10 rounded-full bg-subtle items-center justify-center mr-3"><Icon name={contact.icon} /></View>
                 <View className="flex-1">
                   <Text className="text-ink text-lg font-semibold">
                     {contact.name}
@@ -152,7 +153,7 @@ export default function SafetyScreen() {
             className="bg-surface rounded-xl p-4 border border-line flex-row items-center justify-between active:opacity-70"
           >
             <View className="flex-row items-center">
-              <Text className="text-2xl mr-3">🚫</Text>
+              <View className="w-10 h-10 rounded-full bg-subtle items-center justify-center mr-3"><Icon name="ban-outline" /></View>
               <View>
                 <Text className="text-ink font-semibold">
                   Blocked Users
@@ -162,7 +163,7 @@ export default function SafetyScreen() {
                 </Text>
               </View>
             </View>
-            <Text className="text-ink-muted text-xl">›</Text>
+            <Icon name="chevron-forward" size={20} color={colors.inkMuted} />
           </Pressable>
         </View>
 

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useAuthStore } from "../src/stores/authStore";
 import { useMomentStore } from "../src/stores/momentStore";
 import { colors } from "../src/theme/colors";
+import { Icon } from "../src/components/Icon";
 
 export default function MenuScreen() {
   const router = useRouter();
@@ -68,48 +69,6 @@ export default function MenuScreen() {
     </Pressable>
   );
 
-  // Location pin icon
-  const LocationIcon = () => (
-    <View className="w-5 h-5 items-center justify-center">
-      <View className="w-4 h-5 border-2 border-ink rounded-full rounded-b-none items-center pt-0.5">
-        <View className="w-1.5 h-1.5 bg-ink rounded-full" />
-      </View>
-      <View
-        style={{
-          width: 0,
-          height: 0,
-          borderLeftWidth: 4,
-          borderRightWidth: 4,
-          borderTopWidth: 5,
-          borderLeftColor: "transparent",
-          borderRightColor: "transparent",
-          borderTopColor: colors.ink,
-          marginTop: -1,
-        }}
-      />
-    </View>
-  );
-
-  // Shield icon
-  const ShieldIcon = () => (
-    <View className="w-5 h-6 border-2 border-ink rounded-t-lg rounded-b-full" />
-  );
-
-  // Settings/gear icon
-  const SettingsIcon = () => (
-    <View className="w-5 h-5 border-2 border-ink rounded-full items-center justify-center">
-      <View className="w-1.5 h-1.5 bg-ink rounded-full" />
-    </View>
-  );
-
-  // Profile icon
-  const ProfileIcon = () => (
-    <View className="w-5 h-5 rounded-full border-2 border-ink items-center overflow-hidden">
-      <View className="w-1.5 h-1.5 bg-ink rounded-full mt-0.5" />
-      <View className="w-3.5 h-1.5 bg-ink rounded-t-full mt-0.5" />
-    </View>
-  );
-
   return (
     <SafeAreaView className="flex-1 bg-background">
       {/* Header */}
@@ -117,9 +76,10 @@ export default function MenuScreen() {
         <Text className="text-[17px] font-medium text-ink">Menu</Text>
         <Pressable
           onPress={handleClose}
+          accessibilityLabel="Close menu"
           className="w-10 h-10 items-center justify-center"
         >
-          <Text className="text-[24px] text-ink">×</Text>
+          <Icon name="close" size={26} />
         </Pressable>
       </View>
 
@@ -129,7 +89,7 @@ export default function MenuScreen() {
       {/* Menu items */}
       <View className="px-6 pt-4">
         <MenuItem
-          icon={<LocationIcon />}
+          icon={<Icon name="restaurant-outline" />}
           label="My Moments"
           onPress={handleMyMoments}
         />
@@ -142,17 +102,17 @@ export default function MenuScreen() {
           </Text>
         )}
         <MenuItem
-          icon={<ProfileIcon />}
+          icon={<Icon name="person-circle-outline" />}
           label="Profile"
           onPress={handleProfile}
         />
         <MenuItem
-          icon={<SettingsIcon />}
+          icon={<Icon name="settings-outline" />}
           label="Settings"
           onPress={handleSettings}
         />
         <MenuItem
-          icon={<ShieldIcon />}
+          icon={<Icon name="shield-outline" />}
           label="Safety"
           onPress={handleSafety}
         />

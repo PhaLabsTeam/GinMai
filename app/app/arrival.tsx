@@ -115,7 +115,7 @@ export default function ArrivalScreen() {
         {/* Back link */}
         <Pressable onPress={handleBack} className="mt-6">
           <Text className="text-center text-[16px] text-ink-muted">
-            ← Back
+            Back
           </Text>
         </Pressable>
       </View>
