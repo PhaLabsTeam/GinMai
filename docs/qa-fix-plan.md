@@ -26,6 +26,7 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | 3 | Create & sign-in inputs (+#39) | `fix/create-flow` | 🔧 in progress, #13 waiting on the Places key | — |
 | 4 | Settings, safety, App Store readiness (+#46–#48) | `fix/app-store-readiness` | 📦 awaiting review, #17 waiting on terms URL | — |
 | 5 | Map & product-feel UX | `fix/ux-polish` | 📦 awaiting review, #30 moves to #13 (Places) | — |
+| 5.5 | Metro crash on style edits (#44) | `fix/metro-nativewind` | 📦 awaiting review | — |
 | 6 | Visual consistency | `refactor/design-consistency` | ⬜ | — |
 | 7 | Two-user end-to-end testing | `test/two-user-e2e` | ⬜ | — |
 
@@ -181,6 +182,13 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 - Found while testing: the country picker exposed the whole list to VoiceOver as one element. Fixed in `2dabaa7`.
 - Metro crashed (#44) on almost every file edit during this phase. It's worth scheduling soon.
 
+## Phase 5.5: Metro crash on style edits (#44)
+
+**Verified:**
+- After `expo start -c` and loading the app, Metro survived 10 consecutive edits to `table-sign.tsx`, including 5 that each introduced a new Tailwind class (`mt-[61px]` … `mt-[65px]`) to force a CSS rebuild. Before the upgrade, a single style edit usually killed it.
+- No `addedFiles` error in the Metro log.
+- `expo-doctor` passes 21/21, `npm test` passes 88 tests, and the app renders the same.
+
 ## Phase 6: Visual consistency
 
 | # | Issue | Status | Commit |
@@ -200,7 +208,7 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | 40 | expo-notifications 57 API changes: `removeNotificationSubscription` was removed (still called in `useNotifications.ts` cleanup), the handler needs `shouldShowBanner`/`shouldShowList`, and triggers need a `type` | 📦 ✅ | `4a8a2e2` |
 | 42 | Screens about one Moment (live, confirmation, arrival, running-late, feedback, detail) looked it up in the active-only map list, so they showed "not found" once it filled up or ended; leaving a full Moment never gave the seat back; running-late never reached the host of a full Moment | 📦 ✅ | `bc6945c` `b0d9896` |
 | 43 | `submitFeedback` destructures `checkForMatch` from the `matchStore` module, but it's a store method, so "eat again" feedback probably throws (and reports failure) and mutual-match notifications never fire. Needs confirming in Phase 7. | ⬜ | |
-| 44 | Dev only: Metro crashes (`Cannot read properties of undefined (reading 'addedFiles')`) when NativeWind 4.2.1's Tailwind watcher fires under SDK 57's Metro. NativeWind 4.2.7 may fix it. | ⬜ | |
+| 44 | Dev only: Metro crashes (`Cannot read properties of undefined (reading 'addedFiles')`) when NativeWind 4.2.1's Tailwind watcher fires under SDK 57's Metro. Fixed by upgrading to NativeWind 4.2.7. | 📦 ✅ | `88d28b2` |
 | 45 | No push is sent when a guest joins, arrives or cancels. `addNotification` can push, but nothing passes it a token, so hosts only hear about guests while the live screen is open. | ⬜ needs decision | |
 | 46 | Settings > Blocked users was a dead link | 📦 ✅ | `69dbcab` |
 | 47 | Nobody could report or block anyone; the Safety test button was the only way into the report screen, and its "Block" option was a TODO | 📦 ✅ (entry points; full flow in Phase 7) | `8fcaa4e` |
