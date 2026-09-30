@@ -3,6 +3,7 @@ import { useRouter, useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useCallback } from "react";
 import { useAuthStore } from "../src/stores/authStore";
+import { colors } from "../src/theme/colors";
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -29,14 +30,14 @@ export default function WelcomeScreen() {
   // Show loading while checking auth state
   if (!initialized) {
     return (
-      <SafeAreaView testID="welcome-loading" className="flex-1 bg-[#FAFAF9] items-center justify-center">
-        <Text className="text-center text-[56px] font-bold text-[#1C1917] leading-tight">
+      <SafeAreaView testID="welcome-loading" className="flex-1 bg-background items-center justify-center">
+        <Text className="text-center text-[56px] font-bold text-ink leading-tight">
           กินไหม
         </Text>
-        <Text className="text-center text-[22px] text-[#9CA3AF] mt-1">
+        <Text className="text-center text-[22px] text-ink-muted mt-1">
           Wanna eat?
         </Text>
-        <ActivityIndicator size="large" color="#1C1917" style={{ marginTop: 32 }} />
+        <ActivityIndicator size="large" color={colors.ink} style={{ marginTop: 32 }} />
       </SafeAreaView>
     );
   }
@@ -44,24 +45,24 @@ export default function WelcomeScreen() {
   // If user is logged in, show loading while redirecting
   if (user) {
     return (
-      <SafeAreaView className="flex-1 bg-[#FAFAF9] items-center justify-center">
-        <ActivityIndicator size="large" color="#1C1917" />
+      <SafeAreaView className="flex-1 bg-background items-center justify-center">
+        <ActivityIndicator size="large" color={colors.ink} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView testID="welcome-screen" className="flex-1 bg-[#FAFAF9]">
+    <SafeAreaView testID="welcome-screen" className="flex-1 bg-background">
       <View className="flex-1 px-8">
         {/* Main content - positioned in upper portion */}
-        <View className="pt-16">
+        <View className="flex-1 justify-center pb-24">
           {/* Thai title */}
-          <Text testID="welcome-title" className="text-center text-[56px] font-bold text-[#1C1917] leading-tight">
+          <Text testID="welcome-title" className="text-center text-[56px] font-bold text-ink leading-tight">
             กินไหม
           </Text>
 
           {/* English subtitle */}
-          <Text testID="welcome-subtitle" className="text-center text-[22px] text-[#9CA3AF] mt-1">
+          <Text testID="welcome-subtitle" className="text-center text-[22px] text-ink-muted mt-1">
             Wanna eat?
           </Text>
 
@@ -70,7 +71,7 @@ export default function WelcomeScreen() {
             <Pressable
               testID="welcome-lets-go-button"
               onPress={handleLetsGo}
-              className="bg-[#1C1917] px-14 py-4 rounded-full active:opacity-80"
+              className="bg-ink px-14 py-4 rounded-full active:opacity-80"
             >
               <Text className="text-white text-[17px] font-medium">
                 Let's go

@@ -5,6 +5,8 @@ import { useState, useRef, useEffect } from "react";
 import { useAuthStore } from "../src/stores/authStore";
 import { friendlyAuthError } from "../src/utils/authErrors";
 import { ALL_COUNTRIES, searchCountries, countryForNumber } from "../src/data/countries";
+import { colors } from "../src/theme/colors";
+import { Icon } from "../src/components/Icon";
 
 
 const OTP_LENGTH = 6;
@@ -172,14 +174,15 @@ export default function SignUpScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#FAFAF9]">
+    <SafeAreaView className="flex-1 bg-background">
       {/* Header with back button */}
       <View className="flex-row items-center px-5 py-3">
         <Pressable
+          accessibilityLabel="Back"
           onPress={handleBack}
           className="w-10 h-10 items-center justify-center"
         >
-          <Text className="text-[24px] text-[#1C1917]">←</Text>
+          <Icon name="arrow-back" size={24} />
         </Pressable>
       </View>
 
@@ -188,10 +191,10 @@ export default function SignUpScreen() {
           <>
             {/* Step 1: Phone */}
             <View className="pt-4">
-              <Text className="text-center text-[28px] font-normal text-[#1C1917]">
+              <Text className="text-center text-[28px] font-normal text-ink">
                 Almost there.
               </Text>
-              <Text className="text-center text-[17px] text-[#6B7280] mt-2">
+              <Text className="text-center text-[17px] text-ink-secondary mt-2">
                 Just a phone number.
               </Text>
             </View>
@@ -203,11 +206,11 @@ export default function SignUpScreen() {
                 {/* Country code picker button */}
                 <Pressable
                   onPress={() => setShowCountryPicker(true)}
-                  className="border border-[#E5E7EB] rounded-xl px-3 py-4 bg-white flex-row items-center mr-2"
+                  className="border border-line rounded-xl px-3 py-4 bg-surface flex-row items-center mr-2"
                 >
                   <Text className="text-[18px]">{countryCode.flag}</Text>
-                  <Text className="text-[16px] text-[#1C1917] ml-1">{countryCode.code}</Text>
-                  <Text className="text-[12px] text-[#9CA3AF] ml-1">▼</Text>
+                  <Text className="text-[16px] text-ink ml-1">{countryCode.code}</Text>
+                  <View className="ml-1"><Icon name="chevron-down" size={14} color={colors.inkMuted} /></View>
                 </Pressable>
 
                 {/* Phone number input */}
@@ -215,16 +218,16 @@ export default function SignUpScreen() {
                   value={phoneNumber}
                   onChangeText={setPhoneNumber}
                   placeholder="Phone number"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.inkMuted}
                   keyboardType="phone-pad"
                   textContentType="telephoneNumber"
                   autoFocus
-                  className="flex-1 border border-[#E5E7EB] rounded-xl px-4 py-4 text-[16px] text-[#1C1917] bg-white"
+                  className="flex-1 border border-line rounded-xl px-4 py-4 text-[16px] text-ink bg-surface"
                 />
               </View>
 
               {/* Helper text */}
-              <Text className="text-center text-[14px] text-[#9CA3AF] mt-3">
+              <Text className="text-center text-[14px] text-ink-muted mt-3">
                 We'll text you a code to verify.
               </Text>
             </View>
@@ -236,16 +239,16 @@ export default function SignUpScreen() {
                 disabled={!isStep1Valid || loading}
                 className={`py-4 rounded-xl items-center ${
                   isStep1Valid && !loading
-                    ? "bg-[#1C1917] active:opacity-80"
-                    : "bg-[#E5E7EB]"
+                    ? "bg-ink active:opacity-80"
+                    : "bg-line"
                 }`}
               >
                 {loading ? (
-                  <ActivityIndicator size="small" color="#9CA3AF" />
+                  <ActivityIndicator size="small" color={colors.inkMuted} />
                 ) : (
                   <Text
                     className={`text-[17px] font-medium ${
-                      isStep1Valid ? "text-white" : "text-[#9CA3AF]"
+                      isStep1Valid ? "text-white" : "text-ink-muted"
                     }`}
                   >
                     Continue
@@ -255,19 +258,19 @@ export default function SignUpScreen() {
             </View>
 
             {/* Terms link */}
-            <Text className="text-center text-[14px] text-[#9CA3AF] mt-4">
+            <Text className="text-center text-[14px] text-ink-muted mt-4">
               By continuing, you agree to our{" "}
-              <Text className="text-[#6B7280] underline">terms</Text>.
+              <Text className="text-ink-secondary underline">terms</Text>.
             </Text>
           </>
         ) : step === 2 ? (
           <>
             {/* Step 2: OTP Verification */}
             <View className="pt-4">
-              <Text className="text-center text-[28px] font-normal text-[#1C1917]">
+              <Text className="text-center text-[28px] font-normal text-ink">
                 Enter code
               </Text>
-              <Text className="text-center text-[17px] text-[#6B7280] mt-2">
+              <Text className="text-center text-[17px] text-ink-secondary mt-2">
                 We sent a code to {formatPhoneForDisplay(formattedPhone)}
               </Text>
             </View>
@@ -282,10 +285,10 @@ export default function SignUpScreen() {
                 <View
                   key={index}
                   className={`w-12 h-14 mx-1 items-center justify-center rounded-xl border-2 ${
-                    otp[index] || index === otp.length ? "border-[#1C1917]" : "border-[#E5E7EB]"
-                  } bg-white`}
+                    otp[index] || index === otp.length ? "border-ink" : "border-line"
+                  } bg-surface`}
                 >
-                  <Text className="text-[24px] font-medium text-[#1C1917]">{otp[index] ?? ""}</Text>
+                  <Text className="text-[24px] font-medium text-ink">{otp[index] ?? ""}</Text>
                 </View>
               ))}
               <TextInput
@@ -308,12 +311,12 @@ export default function SignUpScreen() {
             {/* Resend code */}
             <View className="mt-8">
               {resendTimer > 0 ? (
-                <Text className="text-center text-[15px] text-[#9CA3AF]">
+                <Text className="text-center text-[15px] text-ink-muted">
                   Resend code in {resendTimer}s
                 </Text>
               ) : (
                 <Pressable onPress={handleResendCode}>
-                  <Text className="text-center text-[15px] text-[#1C1917] underline">
+                  <Text className="text-center text-[15px] text-ink underline">
                     Resend code
                   </Text>
                 </Pressable>
@@ -327,16 +330,16 @@ export default function SignUpScreen() {
                 disabled={!isOtpComplete || loading}
                 className={`py-4 rounded-xl items-center ${
                   isOtpComplete && !loading
-                    ? "bg-[#1C1917] active:opacity-80"
-                    : "bg-[#E5E7EB]"
+                    ? "bg-ink active:opacity-80"
+                    : "bg-line"
                 }`}
               >
                 {loading ? (
-                  <ActivityIndicator size="small" color="#9CA3AF" />
+                  <ActivityIndicator size="small" color={colors.inkMuted} />
                 ) : (
                   <Text
                     className={`text-[17px] font-medium ${
-                      isOtpComplete ? "text-white" : "text-[#9CA3AF]"
+                      isOtpComplete ? "text-white" : "text-ink-muted"
                     }`}
                   >
                     Verify
@@ -349,10 +352,10 @@ export default function SignUpScreen() {
           <>
             {/* Step 3: Name (new users only) */}
             <View className="pt-4">
-              <Text className="text-center text-[28px] font-normal text-[#1C1917]">
+              <Text className="text-center text-[28px] font-normal text-ink">
                 What should people call you?
               </Text>
-              <Text className="text-center text-[17px] text-[#6B7280] mt-2">
+              <Text className="text-center text-[17px] text-ink-secondary mt-2">
                 Just your first name.
               </Text>
             </View>
@@ -362,14 +365,14 @@ export default function SignUpScreen() {
                 value={firstName}
                 onChangeText={setFirstName}
                 placeholder="First name"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.inkMuted}
                 autoCapitalize="words"
                 autoCorrect={false}
                 autoFocus
                 textContentType="givenName"
                 returnKeyType="done"
                 onSubmitEditing={handleSaveName}
-                className="border border-[#E5E7EB] rounded-xl px-4 py-4 text-[16px] text-[#1C1917] bg-white"
+                className="border border-line rounded-xl px-4 py-4 text-[16px] text-ink bg-surface"
               />
             </View>
 
@@ -379,16 +382,16 @@ export default function SignUpScreen() {
                 disabled={!isNameValid || loading}
                 className={`py-4 rounded-xl items-center ${
                   isNameValid && !loading
-                    ? "bg-[#1C1917] active:opacity-80"
-                    : "bg-[#E5E7EB]"
+                    ? "bg-ink active:opacity-80"
+                    : "bg-line"
                 }`}
               >
                 {loading ? (
-                  <ActivityIndicator size="small" color="#9CA3AF" />
+                  <ActivityIndicator size="small" color={colors.inkMuted} />
                 ) : (
                   <Text
                     className={`text-[17px] font-medium ${
-                      isNameValid ? "text-white" : "text-[#9CA3AF]"
+                      isNameValid ? "text-white" : "text-ink-muted"
                     }`}
                   >
                     Continue
@@ -418,9 +421,9 @@ export default function SignUpScreen() {
             onPress={() => setShowCountryPicker(false)}
             accessibilityLabel="Close"
           />
-          <View className="bg-white rounded-t-3xl max-h-[80%]">
-            <View className="p-4 border-b border-[#E5E7EB]">
-              <Text className="text-center text-[18px] font-semibold text-[#1C1917]">
+          <View className="bg-surface rounded-t-3xl max-h-[80%]">
+            <View className="p-4 border-b border-line">
+              <Text className="text-center text-[18px] font-semibold text-ink">
                 Select Country
               </Text>
             </View>
@@ -429,10 +432,10 @@ export default function SignUpScreen() {
                 value={countryQuery}
                 onChangeText={setCountryQuery}
                 placeholder="Search country or code"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.inkMuted}
                 autoCorrect={false}
                 clearButtonMode="while-editing"
-                className="border border-[#E5E7EB] rounded-xl px-4 py-3 text-[16px] text-[#1C1917] bg-white"
+                className="border border-line rounded-xl px-4 py-3 text-[16px] text-ink bg-surface"
               />
             </View>
             <FlatList
@@ -448,15 +451,15 @@ export default function SignUpScreen() {
                     setShowCountryPicker(false);
                     setCountryQuery("");
                   }}
-                  className={`flex-row items-center px-5 py-4 border-b border-[#F3F4F6] ${
-                    countryCode.country === item.country ? "bg-[#F9FAFB]" : ""
+                  className={`flex-row items-center px-5 py-4 border-b border-subtle ${
+                    countryCode.country === item.country ? "bg-subtle" : ""
                   }`}
                 >
                   <Text className="text-[24px] mr-3">{item.flag}</Text>
-                  <Text className="text-[16px] text-[#1C1917] flex-1">{item.country}</Text>
-                  <Text className="text-[16px] text-[#6B7280]">{item.code}</Text>
+                  <Text className="text-[16px] text-ink flex-1">{item.country}</Text>
+                  <Text className="text-[16px] text-ink-secondary">{item.code}</Text>
                   {countryCode.country === item.country && (
-                    <Text className="text-[#22C55E] ml-2">✓</Text>
+                    <View className="ml-2"><Icon name="checkmark" size={18} color={colors.success} /></View>
                   )}
                 </Pressable>
               )}
@@ -464,9 +467,9 @@ export default function SignUpScreen() {
             <View className="p-4 pb-8">
               <Pressable
                 onPress={() => setShowCountryPicker(false)}
-                className="bg-[#F3F4F6] py-3 rounded-xl items-center"
+                className="bg-subtle py-3 rounded-xl items-center"
               >
-                <Text className="text-[16px] text-[#6B7280]">Cancel</Text>
+                <Text className="text-[16px] text-ink-secondary">Cancel</Text>
               </Pressable>
             </View>
           </View>

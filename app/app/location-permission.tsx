@@ -18,17 +18,17 @@ export default function LocationPermissionScreen() {
   };
 
   return (
-    <SafeAreaView testID="location-permission-screen" className="flex-1 bg-[#FAFAF9]">
+    <SafeAreaView testID="location-permission-screen" className="flex-1 bg-background">
       <View className="flex-1 px-6">
         {/* Main content - positioned in upper portion */}
-        <View className="pt-10">
+        <View className="flex-1 justify-center pb-24">
           {/* Title */}
-          <Text className="text-center text-[28px] font-normal text-[#1C1917]">
+          <Text className="text-center text-[28px] font-normal text-ink">
             Where are you?
           </Text>
 
           {/* Subtitle */}
-          <Text className="text-center text-[16px] text-[#6B7280] mt-5 leading-6">
+          <Text className="text-center text-[16px] text-ink-secondary mt-5 leading-6">
             GinMai shows meals happening nearby.{"\n"}That's all we use it for.
           </Text>
 
@@ -37,7 +37,7 @@ export default function LocationPermissionScreen() {
             <Pressable
               testID="location-allow-button"
               onPress={handleShareLocation}
-              className="bg-[#1C1917] py-4 rounded-2xl items-center active:opacity-80"
+              className="bg-ink py-4 rounded-2xl items-center active:opacity-80"
             >
               <Text className="text-white text-[17px] font-medium">
                 Share location
@@ -47,7 +47,7 @@ export default function LocationPermissionScreen() {
 
           {/* Not now link */}
           <Pressable testID="location-skip-button" onPress={handleNotNow} className="mt-4">
-            <Text className="text-center text-[16px] text-[#78716C]">
+            <Text className="text-center text-[16px] text-ink-secondary">
               Not now
             </Text>
           </Pressable>

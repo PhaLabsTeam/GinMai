@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { useAuthStore } from "../src/stores/authStore";
 import { useNotifications } from "../src/hooks/useNotifications";
 import { useMomentReminders } from "../src/hooks/useMomentReminders";
+import { colors } from "../src/theme/colors";
 
 export default function RootLayout() {
   const initialize = useAuthStore((state) => state.initialize);
@@ -36,7 +37,7 @@ export default function RootLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: "#FAFAF9" },
+          contentStyle: { backgroundColor: colors.background },
           animation: "slide_from_right",
         }}
       />

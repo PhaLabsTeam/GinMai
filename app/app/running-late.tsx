@@ -6,6 +6,8 @@ import { useMoment } from "../src/hooks/useMoment";
 import { useMomentStore } from "../src/stores/momentStore";
 import { useAuthStore } from "../src/stores/authStore";
 import { mealWord, capitalize } from "../src/utils/mealWord";
+import { colors } from "../src/theme/colors";
+import { formatTime } from "../src/utils/formatTime";
 
 export default function RunningLateScreen() {
   const router = useRouter();
@@ -52,50 +54,43 @@ export default function RunningLateScreen() {
 
   if (!moment && momentLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-[#FAFAF9] items-center justify-center">
-        <ActivityIndicator size="large" color="#1C1917" />
+      <SafeAreaView className="flex-1 bg-background items-center justify-center">
+        <ActivityIndicator size="large" color={colors.ink} />
       </SafeAreaView>
     );
   }
 
   if (!moment) {
     return (
-      <SafeAreaView className="flex-1 bg-[#FAFAF9] items-center justify-center">
-        <Text className="text-[#78716C]">Moment not found</Text>
+      <SafeAreaView className="flex-1 bg-background items-center justify-center">
+        <Text className="text-ink-secondary">Moment not found</Text>
         <Pressable onPress={() => router.back()} className="mt-4">
-          <Text className="text-[#1C1917]">Go back</Text>
+          <Text className="text-ink">Go back</Text>
         </Pressable>
       </SafeAreaView>
     );
   }
 
-  const formatTime = (dateStr: string) => {
-    return new Date(dateStr).toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    });
-  };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#FAFAF9]">
+    <SafeAreaView className="flex-1 bg-background">
       <View className="flex-1 px-6 justify-center">
         {/* Header */}
         <View className="items-center mb-8">
           <Text className="text-[48px] mb-4">⏰</Text>
-          <Text className="text-center text-[28px] font-semibold text-[#1C1917] mb-2">
+          <Text className="text-center text-[28px] font-semibold text-ink mb-2">
             Your {mealWord(moment.starts_at)} starts soon
           </Text>
-          <Text className="text-center text-[17px] text-[#6B7280]">
+          <Text className="text-center text-[17px] text-ink-secondary">
             at {moment.location.place_name || moment.location.area_name || 'your location'}
           </Text>
-          <Text className="text-center text-[17px] text-[#6B7280] mt-1">
+          <Text className="text-center text-[17px] text-ink-secondary mt-1">
             {formatTime(moment.starts_at)}
           </Text>
         </View>
 
         {/* Question */}
-        <Text className="text-center text-[22px] font-medium text-[#1C1917] mb-8">
+        <Text className="text-center text-[22px] font-medium text-ink mb-8">
           Running late?
         </Text>
 
@@ -105,7 +100,7 @@ export default function RunningLateScreen() {
           <Pressable
             onPress={handleYesLate}
             disabled={marking}
-            className="bg-[#F97316] py-4 rounded-2xl items-center active:opacity-80"
+            className="bg-accent py-4 rounded-2xl items-center active:opacity-80"
           >
             <Text className="text-white text-[17px] font-semibold">
               {marking ? 'Notifying...' : "Yes, I'm running late"}
@@ -116,16 +111,16 @@ export default function RunningLateScreen() {
           <Pressable
             onPress={handleNoOnTime}
             disabled={marking}
-            className="bg-white border-2 border-[#E5E7EB] py-4 rounded-2xl items-center active:opacity-80"
+            className="bg-surface border-2 border-line py-4 rounded-2xl items-center active:opacity-80"
           >
-            <Text className="text-[#1C1917] text-[17px] font-semibold">
+            <Text className="text-ink text-[17px] font-semibold">
               No, I'm on time
             </Text>
           </Pressable>
         </View>
 
         {/* Explanation */}
-        <Text className="text-center text-[14px] text-[#9CA3AF] mt-6">
+        <Text className="text-center text-[14px] text-ink-muted mt-6">
           If you're running late, we'll let the other person know so they don't worry.
         </Text>
       </View>

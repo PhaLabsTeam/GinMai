@@ -1,12 +1,15 @@
 import { View, Text, Pressable, ScrollView, Linking, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ScreenHeader } from "../src/components/ScreenHeader";
+import { Icon, type IconName } from "../src/components/Icon";
+import { colors } from "../src/theme/colors";
 
 interface EmergencyContact {
   name: string;
   number: string;
   description: string;
-  icon: string;
+  icon: IconName;
 }
 
 // Tourist Police first: English-speaking, and for visitors, which most users are
@@ -15,31 +18,31 @@ const EMERGENCY_CONTACTS: EmergencyContact[] = [
     name: "Tourist Police",
     number: "1155",
     description: "English-speaking help for visitors",
-    icon: "👮",
+    icon: "shield-outline",
   },
   {
     name: "Emergency Services",
     number: "191",
     description: "Thai Police Emergency",
-    icon: "🚨",
+    icon: "alert-circle-outline",
   },
   {
     name: "Ambulance",
     number: "1669",
     description: "Emergency Medical Services",
-    icon: "🏥",
+    icon: "medkit-outline",
   },
   {
     name: "Fire Department",
     number: "199",
     description: "Fire Emergency",
-    icon: "🚒",
+    icon: "flame-outline",
   },
   {
     name: "Chiang Mai Hospital",
     number: "+66 53 920 300",
     description: "24-hour Emergency",
-    icon: "🏥",
+    icon: "medical-outline",
   },
 ];
 
@@ -73,28 +76,26 @@ export default function SafetyScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#FAFAF9]">
+    <SafeAreaView className="flex-1 bg-background">
       <ScrollView className="flex-1">
         {/* Header */}
-        <View className="p-6 pb-4">
-          <Pressable onPress={() => router.back()} className="mb-4">
-            <Text className="text-[#F97316] text-base">← Back</Text>
-          </Pressable>
+        <ScreenHeader />
+        <View className="px-6 pb-4">
 
-          <Text className="text-[#1C1917] text-2xl font-semibold mb-2">
+          <Text className="text-ink text-2xl font-semibold mb-2">
             Emergency Contacts
           </Text>
-          <Text className="text-[#78716C] text-base">
+          <Text className="text-ink-secondary text-base">
             Quick access to emergency services and support
           </Text>
         </View>
 
         {/* Safety Message */}
-        <View className="mx-6 mb-4 bg-[#FEF3C7] border border-[#F59E0B] rounded-xl p-4">
-          <Text className="text-[#92400E] font-medium mb-1">
+        <View className="mx-6 mb-4 bg-subtle border border-line rounded-xl p-4">
+          <Text className="text-ink font-medium mb-1">
             Your Safety Matters
           </Text>
-          <Text className="text-[#92400E] text-sm">
+          <Text className="text-ink text-sm">
             If you feel unsafe, trust your instincts. Use these contacts to get
             help right away.
           </Text>
@@ -105,15 +106,15 @@ export default function SafetyScreen() {
           {EMERGENCY_CONTACTS.map((contact, index) => (
             <View
               key={index}
-              className="bg-white rounded-xl p-4 mb-3 border border-[#E7E5E4]"
+              className="bg-surface rounded-xl p-4 mb-3 border border-line"
             >
               <View className="flex-row items-center mb-2">
-                <Text className="text-3xl mr-3">{contact.icon}</Text>
+                <View className="w-10 h-10 rounded-full bg-subtle items-center justify-center mr-3"><Icon name={contact.icon} /></View>
                 <View className="flex-1">
-                  <Text className="text-[#1C1917] text-lg font-semibold">
+                  <Text className="text-ink text-lg font-semibold">
                     {contact.name}
                   </Text>
-                  <Text className="text-[#78716C] text-sm">
+                  <Text className="text-ink-secondary text-sm">
                     {contact.description}
                   </Text>
                 </View>
@@ -122,7 +123,7 @@ export default function SafetyScreen() {
               <View className="flex-row gap-2 mt-2">
                 <Pressable
                   onPress={() => handleCall(contact.name, contact.number)}
-                  className="flex-1 bg-[#EF4444] rounded-lg py-3 active:opacity-70"
+                  className="flex-1 bg-error rounded-lg py-3 active:opacity-70"
                 >
                   <Text className="text-white text-center font-semibold">
                     Call {contact.number}
@@ -131,16 +132,16 @@ export default function SafetyScreen() {
 
                 <Pressable
                   onPress={() => copyNumber(contact.number)}
-                  className="bg-[#E7E5E4] rounded-lg px-4 py-3 active:opacity-70"
+                  className="bg-line rounded-lg px-4 py-3 active:opacity-70"
                 >
-                  <Text className="text-[#1C1917] text-center">Copy</Text>
+                  <Text className="text-ink text-center">Copy</Text>
                 </Pressable>
               </View>
             </View>
           ))}
 
           {/* Users come from everywhere, so no single embassy is right to list */}
-          <Text className="text-[#78716C] text-sm leading-5 mt-1">
+          <Text className="text-ink-secondary text-sm leading-5 mt-1">
             Visiting from abroad? Save your embassy's number in Bangkok before you need it.
           </Text>
         </View>
@@ -149,42 +150,42 @@ export default function SafetyScreen() {
         <View className="px-6 mb-4">
           <Pressable
             onPress={() => router.push("/blocked-users")}
-            className="bg-white rounded-xl p-4 border border-[#E7E5E4] flex-row items-center justify-between active:opacity-70"
+            className="bg-surface rounded-xl p-4 border border-line flex-row items-center justify-between active:opacity-70"
           >
             <View className="flex-row items-center">
-              <Text className="text-2xl mr-3">🚫</Text>
+              <View className="w-10 h-10 rounded-full bg-subtle items-center justify-center mr-3"><Icon name="ban-outline" /></View>
               <View>
-                <Text className="text-[#1C1917] font-semibold">
+                <Text className="text-ink font-semibold">
                   Blocked Users
                 </Text>
-                <Text className="text-[#78716C] text-sm">
+                <Text className="text-ink-secondary text-sm">
                   Manage who you've blocked
                 </Text>
               </View>
             </View>
-            <Text className="text-[#9CA3AF] text-xl">›</Text>
+            <Icon name="chevron-forward" size={20} color={colors.inkMuted} />
           </Pressable>
         </View>
 
         {/* Safety Tips */}
-        <View className="mx-6 mb-6 bg-white rounded-xl p-4 border border-[#E7E5E4]">
-          <Text className="text-[#1C1917] font-semibold mb-3">
+        <View className="mx-6 mb-6 bg-surface rounded-xl p-4 border border-line">
+          <Text className="text-ink font-semibold mb-3">
             Safety Tips
           </Text>
           <View className="space-y-2">
-            <Text className="text-[#78716C] text-sm leading-5">
+            <Text className="text-ink-secondary text-sm leading-5">
               • Meet in public places with other people around
             </Text>
-            <Text className="text-[#78716C] text-sm leading-5">
+            <Text className="text-ink-secondary text-sm leading-5">
               • Tell a friend or family member where you're going
             </Text>
-            <Text className="text-[#78716C] text-sm leading-5">
+            <Text className="text-ink-secondary text-sm leading-5">
               • Share your live location before meeting
             </Text>
-            <Text className="text-[#78716C] text-sm leading-5">
+            <Text className="text-ink-secondary text-sm leading-5">
               • Trust your instincts - if something feels off, leave
             </Text>
-            <Text className="text-[#78716C] text-sm leading-5">
+            <Text className="text-ink-secondary text-sm leading-5">
               • Keep your phone charged and accessible
             </Text>
           </View>

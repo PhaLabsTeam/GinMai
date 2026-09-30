@@ -6,6 +6,8 @@ import { useMoment } from "../src/hooks/useMoment";
 import { useMomentStore } from "../src/stores/momentStore";
 import { useAuthStore } from "../src/stores/authStore";
 import { mealWord, capitalize } from "../src/utils/mealWord";
+import { colors } from "../src/theme/colors";
+import { Verified } from "../src/components/Icon";
 
 export default function ConfirmationScreen() {
   const router = useRouter();
@@ -80,18 +82,18 @@ export default function ConfirmationScreen() {
 
   if (!moment && momentLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-[#FAFAF9] items-center justify-center">
-        <ActivityIndicator size="large" color="#1C1917" />
+      <SafeAreaView className="flex-1 bg-background items-center justify-center">
+        <ActivityIndicator size="large" color={colors.ink} />
       </SafeAreaView>
     );
   }
 
   if (!moment) {
     return (
-      <SafeAreaView className="flex-1 bg-[#FAFAF9] items-center justify-center">
-        <Text className="text-[#78716C]">Moment not found</Text>
+      <SafeAreaView className="flex-1 bg-background items-center justify-center">
+        <Text className="text-ink-secondary">Moment not found</Text>
         <Pressable onPress={() => router.replace("/map")} className="mt-4">
-          <Text className="text-[#1C1917]">Go back to map</Text>
+          <Text className="text-ink">Go back to map</Text>
         </Pressable>
       </SafeAreaView>
     );
@@ -103,34 +105,34 @@ export default function ConfirmationScreen() {
   const locationHint = moment.location.area_name || "Nearby";
 
   return (
-    <SafeAreaView className="flex-1 bg-[#FAFAF9]">
+    <SafeAreaView className="flex-1 bg-background">
       <View className="flex-1 px-6">
         {/* Header text */}
         <View className="pt-8">
-          <Text className="text-center text-[32px] font-normal text-[#1C1917]">
+          <Text className="text-center text-[32px] font-normal text-ink">
             You're in.
           </Text>
-          <Text className="text-center text-[17px] text-[#6B7280] mt-2">
+          <Text className="text-center text-[17px] text-ink-secondary mt-2">
             Say hi when you arrive.
           </Text>
         </View>
 
         {/* Countdown timer */}
         <View className="mt-8">
-          <Text className="text-center text-[56px] font-light text-[#1C1917] tracking-wider">
+          <Text className="text-center text-[56px] font-light text-ink tracking-wider">
             {formatNumber(countdown.hours)}:{formatNumber(countdown.minutes)}:{formatNumber(countdown.seconds)}
           </Text>
-          <Text className="text-center text-[16px] text-[#9CA3AF] mt-1">
+          <Text className="text-center text-[16px] text-ink-muted mt-1">
             until {mealWord(moment.starts_at)}
           </Text>
         </View>
 
         {/* Map placeholder card */}
-        <View className="mt-10 bg-[#F3F4F6] rounded-2xl h-44 items-center justify-center">
+        <View className="mt-10 bg-subtle rounded-2xl h-44 items-center justify-center">
           {/* Location pin icon */}
           <View className="w-12 h-12 items-center justify-center">
-            <View className="w-8 h-10 bg-[#4B5563] rounded-full rounded-b-none items-center pt-1.5">
-              <View className="w-3 h-3 bg-[#F3F4F6] rounded-full" />
+            <View className="w-8 h-10 bg-ink-secondary rounded-full rounded-b-none items-center pt-1.5">
+              <View className="w-3 h-3 bg-subtle rounded-full" />
             </View>
             <View
               style={{
@@ -141,7 +143,7 @@ export default function ConfirmationScreen() {
                 borderTopWidth: 10,
                 borderLeftColor: "transparent",
                 borderRightColor: "transparent",
-                borderTopColor: "#4B5563",
+                borderTopColor: colors.inkSecondary,
                 marginTop: -1,
               }}
             />
@@ -149,22 +151,22 @@ export default function ConfirmationScreen() {
         </View>
 
         {/* Place name */}
-        <Text className="text-center text-[18px] font-semibold text-[#1C1917] mt-5">
+        <Text className="text-center text-[18px] font-semibold text-ink mt-5">
           {moment.location.place_name || moment.location.area_name || "Your destination"}
         </Text>
 
         {/* Location hint */}
-        <Text className="text-center text-[15px] text-[#6B7280] mt-1">
+        <Text className="text-center text-[15px] text-ink-secondary mt-1">
           {locationHint}
         </Text>
 
         {/* Host info */}
         <View className="flex-row items-center justify-center mt-4">
-          <Text className="text-[16px] text-[#1C1917]">
+          <Text className="text-[16px] text-ink">
             with {moment.host_name}
           </Text>
           {moment.host_id && moment.host_id !== "anonymous" && (
-            <Text className="text-[15px] text-[#22C55E] ml-1">✓</Text>
+            <View className="ml-1"><Verified /></View>
           )}
         </View>
 
@@ -173,10 +175,10 @@ export default function ConfirmationScreen() {
           <Pressable
             onPress={handleArrival}
             disabled={arriving}
-            className="bg-[#1C1917] py-4 rounded-2xl items-center active:opacity-80"
+            className="bg-ink py-4 rounded-2xl items-center active:opacity-80"
           >
             {arriving ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
+              <ActivityIndicator size="small" color={colors.surface} />
             ) : (
               <Text className="text-white text-[17px] font-medium">
                 I'm here
@@ -188,9 +190,9 @@ export default function ConfirmationScreen() {
         {/* Cancel link */}
         <Pressable onPress={handleCancel} disabled={leaving} className="mt-4">
           {leaving ? (
-            <ActivityIndicator size="small" color="#6B7280" />
+            <ActivityIndicator size="small" color={colors.inkSecondary} />
           ) : (
-            <Text className="text-center text-[16px] text-[#6B7280]">
+            <Text className="text-center text-[16px] text-ink-secondary">
               Can't make it anymore →
             </Text>
           )}

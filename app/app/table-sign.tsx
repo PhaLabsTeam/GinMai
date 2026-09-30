@@ -12,7 +12,7 @@ export default function TableSignScreen() {
   useKeepAwake();
 
   return (
-    <View className="flex-1 bg-[#F97316]">
+    <View className="flex-1 bg-accent">
       <StatusBar style="light" />
 
       {/* Full screen tap to dismiss */}

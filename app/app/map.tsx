@@ -1,12 +1,15 @@
 import { View, Text, Pressable, ScrollView, ActivityIndicator, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { getBestPosition } from "../src/utils/location";
 import { useMomentStore } from "../src/stores/momentStore";
 import { useAuthStore } from "../src/stores/authStore";
 import { MapComponent, mapsAvailable } from "../src/components/MapComponent";
 import { mealWord, capitalize } from "../src/utils/mealWord";
+import { colors } from "../src/theme/colors";
+import { Icon, Verified } from "../src/components/Icon";
+import { formatTime } from "../src/utils/formatTime";
 
 // Default to Chiang Mai center
 const CHIANG_MAI = {
@@ -27,6 +30,7 @@ export default function MapScreen() {
   const fetchUserConnections = useMomentStore((state) => state.fetchUserConnections);
   const userId = useAuthStore((state) => state.user?.id);
   const { height: windowHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
 
   // Needed for "You're in" on Moments the user joined
   useEffect(() => {
@@ -83,7 +87,7 @@ export default function MapScreen() {
   };
 
   return (
-    <View className="flex-1 bg-[#FAFAF9]">
+    <View className="flex-1 bg-background">
       {/* Full-screen Map */}
       <MapComponent
         region={region}
@@ -98,14 +102,14 @@ export default function MapScreen() {
         showsUserLocation
         style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
         fallback={
-          <View className="absolute top-0 left-0 right-0 bottom-0 bg-[#F3F4F6]">
+          <View className="absolute top-0 left-0 right-0 bottom-0 bg-subtle">
             <View className="flex-1 items-center justify-center px-8">
-              <Text className="text-[#6B7280] text-lg text-center">Chiang Mai</Text>
-              <Text className="text-[#9CA3AF] text-sm text-center mt-2">
+              <Text className="text-ink-secondary text-lg text-center">Chiang Mai</Text>
+              <Text className="text-ink-muted text-sm text-center mt-2">
                 Map view unavailable
               </Text>
               {moments.length > 0 && (
-                <Text className="text-[#1C1917] text-base font-medium mt-4">
+                <Text className="text-ink text-base font-medium mt-4">
                   {moments.length} meal{moments.length !== 1 ? "s" : ""} happening nearby
                 </Text>
               )}
@@ -115,35 +119,33 @@ export default function MapScreen() {
       />
 
       {/* Overlay Content */}
-      <SafeAreaView className="flex-1" pointerEvents="box-none">
-        {/* Header */}
-        <View className="flex-row items-center justify-between px-5 py-3 bg-[#FAFAF9]">
+      <View className="flex-1" pointerEvents="box-none">
+        {/* Header, extended under the status bar so the map doesn't show above it */}
+        <View
+          className="flex-row items-center justify-between px-5 pb-3 bg-background"
+          style={{ paddingTop: insets.top + 12 }}
+        >
           {/* Menu button */}
           <Pressable
             onPress={() => router.push("/menu")}
+            accessibilityLabel="Menu"
             className="w-10 h-10 items-center justify-center"
           >
-            <View>
-              <View className="w-5 h-0.5 bg-[#1C1917]" />
-              <View className="w-5 h-0.5 bg-[#1C1917] mt-1.5" />
-              <View className="w-5 h-0.5 bg-[#1C1917] mt-1.5" />
-            </View>
+            <Icon name="menu-outline" size={26} />
           </Pressable>
 
           {/* Title */}
-          <Text className="text-[17px] font-medium text-[#1C1917]">
+          <Text className="text-[17px] font-medium text-ink">
             Chiang Mai
           </Text>
 
           {/* Profile button */}
           <Pressable
             onPress={() => router.push("/profile")}
+            accessibilityLabel="Profile"
             className="w-10 h-10 items-center justify-center"
           >
-            <View className="w-6 h-6 rounded-full border-2 border-[#1C1917] items-center overflow-hidden">
-              <View className="w-2 h-2 bg-[#1C1917] rounded-full mt-1" />
-              <View className="w-4 h-2 bg-[#1C1917] rounded-t-full mt-0.5" />
-            </View>
+            <Icon name="person-circle-outline" size={28} />
           </Pressable>
         </View>
 
@@ -151,45 +153,45 @@ export default function MapScreen() {
         <View pointerEvents="box-none">
           {loading ? (
             /* Loading State */
-            <View className="bg-[#FAFAF9] mx-4 mt-2 rounded-2xl px-5 py-6 items-center">
-              <ActivityIndicator size="small" color="#78716C" />
-              <Text className="text-center text-[14px] text-[#9CA3AF] mt-3">
+            <View className="bg-background mx-4 mt-2 rounded-t-2xl px-5 py-6 items-center">
+              <ActivityIndicator size="small" color={colors.inkSecondary} />
+              <Text className="text-center text-[14px] text-ink-muted mt-3">
                 Looking for meals nearby...
               </Text>
             </View>
           ) : fetchError && moments.length === 0 ? (
             /* Error State - distinct from "nothing here", which would be misleading */
-            <View className="bg-[#FAFAF9] mx-4 mt-2 rounded-2xl px-5 py-6 items-center">
-              <Text className="text-center text-[18px] font-medium text-[#1C1917]">
+            <View className="bg-background mx-4 mt-2 rounded-t-2xl px-5 py-6 items-center">
+              <Text className="text-center text-[18px] font-medium text-ink">
                 Couldn't load meals.
               </Text>
-              <Text className="text-center text-[14px] text-[#9CA3AF] mt-3 leading-5">
+              <Text className="text-center text-[14px] text-ink-muted mt-3 leading-5">
                 Check your connection and try again.
               </Text>
               <Pressable
                 onPress={handleRefresh}
-                className="mt-4 px-6 py-2.5 rounded-xl border border-[#1C1917] active:bg-[#F5F5F4]"
+                className="mt-4 px-6 py-2.5 rounded-xl border border-ink active:bg-subtle"
               >
-                <Text className="text-[15px] text-[#1C1917]">Try again</Text>
+                <Text className="text-[15px] text-ink">Try again</Text>
               </Pressable>
             </View>
           ) : moments.length === 0 ? (
             /* Empty State */
-            <View className="bg-[#FAFAF9] mx-4 mt-2 rounded-2xl px-5 py-6">
-              <Text className="text-center text-[18px] font-medium text-[#1C1917]">
+            <View className="bg-background mx-4 mt-2 rounded-t-2xl px-5 py-6">
+              <Text className="text-center text-[18px] font-medium text-ink">
                 Nothing here yet.
               </Text>
-              <Text className="text-center text-[14px] text-[#9CA3AF] mt-3 leading-5">
+              <Text className="text-center text-[14px] text-ink-muted mt-3 leading-5">
                 Chiang Mai is full of people eating {mealWord()}.{"\n"}Someone just needs to make the first seat visible.
               </Text>
             </View>
           ) : (
             /* Moments List */
             <ScrollView
-              className="bg-[#FAFAF9] mx-4 mt-2 rounded-t-2xl"
+              className="bg-background mx-4 mt-2 rounded-t-2xl"
               style={{ maxHeight: windowHeight * 0.45 }}
             >
-              <Text className="text-center text-[15px] text-[#78716C] py-4">
+              <Text className="text-center text-[15px] text-ink-secondary py-4">
                 Eating soon?
               </Text>
               {moments.map((moment) => {
@@ -204,32 +206,32 @@ export default function MapScreen() {
                   <Pressable
                     key={moment.id}
                     onPress={() => router.push(`/moment-detail?momentId=${moment.id}`)}
-                    className="flex-row items-center px-4 py-3 border border-[#E5E7EB] rounded-xl mx-4 mb-3 bg-white active:bg-[#F9FAFB]"
+                    className="flex-row items-center px-4 py-3 border border-line rounded-xl mx-4 mb-3 bg-surface active:bg-subtle"
                   >
                     {/* Food emoji placeholder */}
-                    <Text className="text-2xl mr-3">🍜</Text>
+                    <View className="w-10 h-10 rounded-full bg-subtle items-center justify-center mr-3"><Icon name="restaurant-outline" size={20} color={colors.accent} /></View>
 
                     <View className="flex-1">
                       {/* Time and place */}
                       <View className="flex-row items-center">
-                        <Text className="text-[15px] font-semibold text-[#1C1917]">
-                          {new Date(moment.starts_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        <Text className="text-[15px] font-semibold text-ink">
+                          {formatTime(moment.starts_at)}
                         </Text>
-                        <Text className="text-[15px] text-[#1C1917] ml-2">
+                        <Text className="text-[15px] text-ink ml-2">
                           · {moment.location.place_name || moment.location.area_name || "Somewhere tasty"}
                         </Text>
                       </View>
 
                       {/* Host and details */}
                       <View className="flex-row items-center mt-1">
-                        <Text className="text-[14px] text-[#78716C]">
+                        <Text className="text-[14px] text-ink-secondary">
                           {moment.host_name}
                         </Text>
                         {/* Show verification badge if host is authenticated */}
                         {moment.host_id && moment.host_id !== "anonymous" && (
-                          <Text className="text-[13px] text-[#22C55E]"> ✓</Text>
+                          <View className="ml-1"><Verified size={14} /></View>
                         )}
-                        <Text className="text-[14px] text-[#78716C]">
+                        <Text className="text-[14px] text-ink-secondary">
                           {"  ·  "}{moment.seats_taken}/{moment.seats_total} seats
                         </Text>
                       </View>
@@ -237,16 +239,16 @@ export default function MapScreen() {
 
                     {/* Your own / joined Moments first, then Full */}
                     {isMine ? (
-                      <View className="bg-[#FFF7ED] px-2 py-1 rounded-md">
-                        <Text className="text-[12px] text-[#C2410C] font-medium">You're hosting</Text>
+                      <View className="bg-accent-soft px-2 py-1 rounded-md">
+                        <Text className="text-[12px] text-accent-ink font-medium">You're hosting</Text>
                       </View>
                     ) : isJoined ? (
-                      <View className="bg-[#ECFDF5] px-2 py-1 rounded-md">
-                        <Text className="text-[12px] text-[#15803D] font-medium">You're in</Text>
+                      <View className="bg-success-soft px-2 py-1 rounded-md">
+                        <Text className="text-[12px] text-success-ink font-medium">You're in</Text>
                       </View>
                     ) : isFull && (
-                      <View className="bg-[#F3F4F6] px-2 py-1 rounded-md">
-                        <Text className="text-[12px] text-[#6B7280] font-medium">Full</Text>
+                      <View className="bg-subtle px-2 py-1 rounded-md">
+                        <Text className="text-[12px] text-ink-secondary font-medium">Full</Text>
                       </View>
                     )}
                   </Pressable>
@@ -256,18 +258,18 @@ export default function MapScreen() {
           )}
 
           {/* Share button - positioned at bottom of content area */}
-          <View className="bg-[#FAFAF9] mx-4 mb-4 rounded-b-2xl px-4 pb-4">
+          <View className="bg-background mx-4 mb-4 rounded-b-2xl px-4 pb-4">
             <Pressable
               onPress={handleShareMeal}
-              className="border border-[#1C1917] py-3.5 rounded-xl items-center active:bg-[#F5F5F4]"
+              className="border border-ink py-3.5 rounded-xl items-center active:bg-subtle"
             >
-              <Text className="text-[16px] text-[#1C1917]">
+              <Text className="text-[16px] text-ink">
                 Share where you're eating →
               </Text>
             </Pressable>
           </View>
         </View>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }

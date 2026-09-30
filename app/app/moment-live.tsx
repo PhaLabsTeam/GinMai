@@ -10,6 +10,9 @@ import { InAppToast } from "../src/components/InAppToast";
 import { openSafetyActions } from "../src/utils/safetyActions";
 import { setActiveLiveMoment } from "../src/config/notifications";
 import { mealWord, capitalize } from "../src/utils/mealWord";
+import { colors } from "../src/theme/colors";
+import { Icon } from "../src/components/Icon";
+import { formatTime } from "../src/utils/formatTime";
 
 export default function MomentLiveScreen() {
   const router = useRouter();
@@ -185,34 +188,27 @@ export default function MomentLiveScreen() {
   // Show loading while waiting for moment to appear in store
   if (!moment && momentLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-[#FAFAF9] items-center justify-center">
-        <ActivityIndicator size="large" color="#1C1917" />
-        <Text className="text-[#78716C] mt-4">Loading your moment...</Text>
+      <SafeAreaView className="flex-1 bg-background items-center justify-center">
+        <ActivityIndicator size="large" color={colors.ink} />
+        <Text className="text-ink-secondary mt-4">Loading your moment...</Text>
       </SafeAreaView>
     );
   }
 
   if (!moment) {
     return (
-      <SafeAreaView className="flex-1 bg-[#FAFAF9] items-center justify-center">
-        <Text className="text-[#78716C]">Moment not found</Text>
+      <SafeAreaView className="flex-1 bg-background items-center justify-center">
+        <Text className="text-ink-secondary">Moment not found</Text>
         <Pressable onPress={() => router.replace("/map")} className="mt-4">
-          <Text className="text-[#1C1917]">Go back to map</Text>
+          <Text className="text-ink">Go back to map</Text>
         </Pressable>
       </SafeAreaView>
     );
   }
 
-  const formatTime = (dateStr: string) => {
-    return new Date(dateStr).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
-  };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#FAFAF9]">
+    <SafeAreaView className="flex-1 bg-background">
       {/* In-app notification toast */}
       <InAppToast />
 
@@ -223,47 +219,47 @@ export default function MomentLiveScreen() {
           accessibilityLabel="Back"
           className="w-10 h-10 items-center justify-center"
         >
-          <Text className="text-[24px] text-[#1C1917]">←</Text>
+          <Icon name="arrow-back" size={24} />
         </Pressable>
       </View>
 
       <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
         {/* Header text */}
         <View className="pt-2">
-          <Text className="text-center text-[32px] font-normal text-[#1C1917]">
+          <Text className="text-center text-[32px] font-normal text-ink">
             {capitalize(mealWord(moment.starts_at))} visible.
           </Text>
-          <Text className="text-center text-[17px] text-[#6B7280] mt-2">
+          <Text className="text-center text-[17px] text-ink-secondary mt-2">
             You're just eating as planned.
           </Text>
         </View>
 
         {/* Location display - static to avoid native map crash during navigation */}
-        <View className="mt-8 rounded-2xl h-40 overflow-hidden bg-[#F3F4F6]">
+        <View className="mt-8 rounded-2xl h-40 overflow-hidden bg-subtle">
           <View className="flex-1 items-center justify-center">
             {/* Location pin icon */}
-            <View className="w-16 h-16 rounded-full bg-[#F97316]/20 items-center justify-center mb-2">
-              <View className="w-10 h-10 rounded-full bg-[#F97316]/30 items-center justify-center">
-                <Text className="text-2xl">📍</Text>
+            <View className="w-16 h-16 rounded-full bg-accent/20 items-center justify-center mb-2">
+              <View className="w-10 h-10 rounded-full bg-accent/30 items-center justify-center">
+                <Icon name="location" size={24} color={colors.accent} />
               </View>
             </View>
-            <Text className="text-[#6B7280] text-sm">Your table is on the map</Text>
+            <Text className="text-ink-secondary text-sm">Your table is on the map</Text>
           </View>
         </View>
 
         {/* Place name */}
-        <Text className="text-center text-[18px] font-semibold text-[#1C1917] mt-5">
+        <Text className="text-center text-[18px] font-semibold text-ink mt-5">
           {moment.location.place_name || moment.location.area_name || "Your location"}
         </Text>
 
         {/* Time and seats */}
-        <Text className="text-center text-[16px] text-[#6B7280] mt-1">
+        <Text className="text-center text-[16px] text-ink-secondary mt-1">
           {formatTime(moment.starts_at)} · {moment.seats_total} {moment.seats_total === 1 ? "seat" : "seats"}
         </Text>
 
         {/* Countdown (if not started yet) */}
         {countdown && countdown !== "Now" && (
-          <Text className="text-center text-[14px] text-[#9CA3AF] mt-2">
+          <Text className="text-center text-[14px] text-ink-muted mt-2">
             Starts in {countdown}
           </Text>
         )}
@@ -273,12 +269,12 @@ export default function MomentLiveScreen() {
           {guests.length > 0 ? (
             <>
               {/* Joining count */}
-              <Text className="text-center text-[15px] text-[#22C55E] font-medium mb-3">
+              <Text className="text-center text-[15px] text-success font-medium mb-3">
                 {guests.length} {guests.length === 1 ? "person" : "people"} joining
               </Text>
 
               {/* Guest list */}
-              <View className="bg-white rounded-2xl px-4 py-3 shadow-sm">
+              <View className="bg-surface rounded-2xl px-4 py-3 shadow-sm">
                 {guests.map((guest, index) => (
                   <Pressable
                     key={guest.id}
@@ -287,22 +283,22 @@ export default function MomentLiveScreen() {
                     }
                     accessibilityHint="Report or block"
                     className={`flex-row items-center py-2 active:opacity-70 ${
-                      index < guests.length - 1 ? "border-b border-[#F3F4F6]" : ""
+                      index < guests.length - 1 ? "border-b border-subtle" : ""
                     }`}
                   >
                     {/* Avatar circle */}
-                    <View className="w-9 h-9 rounded-full bg-[#F3F4F6] items-center justify-center mr-3">
-                      <Text className="text-[#6B7280] text-[14px] font-medium">
+                    <View className="w-9 h-9 rounded-full bg-subtle items-center justify-center mr-3">
+                      <Text className="text-ink-secondary text-[14px] font-medium">
                         {guest.firstName.charAt(0).toUpperCase()}
                       </Text>
                     </View>
                     {/* Name */}
-                    <Text className="text-[15px] text-[#1C1917] flex-1">
+                    <Text className="text-[15px] text-ink flex-1">
                       {guest.firstName}
                     </Text>
                     {/* Confirmed badge */}
-                    <View className="bg-[#ECFDF5] px-2 py-1 rounded-full">
-                      <Text className="text-[12px] text-[#22C55E] font-medium">
+                    <View className="bg-success-soft px-2 py-1 rounded-full">
+                      <Text className="text-[12px] text-success font-medium">
                         Confirmed
                       </Text>
                     </View>
@@ -311,7 +307,7 @@ export default function MomentLiveScreen() {
               </View>
             </>
           ) : (
-            <Text className="text-center text-[15px] text-[#9CA3AF]">
+            <Text className="text-center text-[15px] text-ink-muted">
               Waiting for guests...
             </Text>
           )}
@@ -320,9 +316,9 @@ export default function MomentLiveScreen() {
         {/* Cancel link */}
         <Pressable onPress={handleCancel} disabled={cancelling} className="mt-4">
           {cancelling ? (
-            <ActivityIndicator size="small" color="#6B7280" />
+            <ActivityIndicator size="small" color={colors.inkSecondary} />
           ) : (
-            <Text className="text-center text-[16px] text-[#6B7280]">
+            <Text className="text-center text-[16px] text-ink-secondary">
               Cancel this meal →
             </Text>
           )}
@@ -332,7 +328,7 @@ export default function MomentLiveScreen() {
         <View className="mt-8">
           <Pressable
             onPress={handleShowTableSign}
-            className="bg-[#1C1917] py-4 rounded-2xl items-center active:opacity-80"
+            className="bg-ink py-4 rounded-2xl items-center active:opacity-80"
           >
             <Text className="text-white text-[17px] font-medium">
               Show table sign

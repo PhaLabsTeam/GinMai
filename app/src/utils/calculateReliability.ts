@@ -1,3 +1,5 @@
+import { colors } from '../theme/colors';
+
 /**
  * Calculate user reliability score based on their connection history
  */
@@ -75,16 +77,16 @@ export function calculateReliability(
 export function getReliabilityBadgeColor(label: ReliabilityStats['reliabilityLabel']): string {
   switch (label) {
     case 'Reliable':
-      return '#22C55E'; // Green
+      return colors.success;
     case 'Good':
-      return '#3B82F6'; // Blue
+      return colors.inkSecondary;
     case 'Fair':
-      return '#F59E0B'; // Amber
+      return colors.warning;
     case 'Warning':
-      return '#EF4444'; // Red
+      return colors.error;
     case 'New':
     default:
-      return '#9CA3AF'; // Gray
+      return colors.inkMuted;
   }
 }
 
