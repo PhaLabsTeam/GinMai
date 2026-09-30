@@ -11,6 +11,7 @@ import { useAuthStore } from "../src/stores/authStore";
 import type { MomentLocal } from "../src/types";
 import { mealWord, capitalize } from "../src/utils/mealWord";
 import { maybeAskForPushPermission } from "../src/services/pushPermission";
+import { colors } from "../src/theme/colors";
 
 type TimeOption = "now" | "30min" | "1hr" | "custom";
 type Duration = "quick" | "normal" | "long";
@@ -303,17 +304,17 @@ export default function CreateMomentScreen() {
     <Pressable
       onPress={onPress}
       className={`flex-row items-center px-4 py-4 rounded-xl border ${
-        selected ? "border-[#1C1917]" : "border-[#E5E7EB]"
+        selected ? "border-ink" : "border-line"
       } mb-3`}
     >
       <View
         className={`w-5 h-5 rounded-full border-2 ${
-          selected ? "border-[#1C1917]" : "border-[#D1D5DB]"
+          selected ? "border-ink" : "border-line-strong"
         } items-center justify-center mr-3`}
       >
-        {selected && <View className="w-2.5 h-2.5 rounded-full bg-[#1C1917]" />}
+        {selected && <View className="w-2.5 h-2.5 rounded-full bg-ink" />}
       </View>
-      <Text className="text-[16px] text-[#1C1917]">{label}</Text>
+      <Text className="text-[16px] text-ink">{label}</Text>
     </Pressable>
   );
 
@@ -321,12 +322,12 @@ export default function CreateMomentScreen() {
     <Pressable
       onPress={() => setSeats(value)}
       className={`w-14 h-14 rounded-xl items-center justify-center ${
-        seats === value ? "bg-[#1C1917]" : "border border-[#E5E7EB]"
+        seats === value ? "bg-ink" : "border border-line"
       }`}
     >
       <Text
         className={`text-[18px] font-medium ${
-          seats === value ? "text-white" : "text-[#1C1917]"
+          seats === value ? "text-white" : "text-ink"
         }`}
       >
         {value}
@@ -348,19 +349,19 @@ export default function CreateMomentScreen() {
     <Pressable
       onPress={() => setDuration(value)}
       className={`flex-1 py-3 rounded-xl items-center ${
-        duration === value ? "bg-[#1C1917]" : "border border-[#E5E7EB]"
+        duration === value ? "bg-ink" : "border border-line"
       } ${isFirst ? "" : "ml-3"}`}
     >
       <Text
         className={`text-[15px] font-medium ${
-          duration === value ? "text-white" : "text-[#1C1917]"
+          duration === value ? "text-white" : "text-ink"
         }`}
       >
         {label}
       </Text>
       <Text
         className={`text-[12px] ${
-          duration === value ? "text-white/70" : "text-[#9CA3AF]"
+          duration === value ? "text-white/70" : "text-ink-muted"
         }`}
       >
         {sublabel}
@@ -371,8 +372,8 @@ export default function CreateMomentScreen() {
   // Show loading while checking auth
   if (!authInitialized) {
     return (
-      <SafeAreaView className="flex-1 bg-[#FAFAF9] items-center justify-center">
-        <ActivityIndicator size="large" color="#1C1917" />
+      <SafeAreaView className="flex-1 bg-background items-center justify-center">
+        <ActivityIndicator size="large" color={colors.ink} />
       </SafeAreaView>
     );
   }
@@ -380,19 +381,19 @@ export default function CreateMomentScreen() {
   // Don't render if user is not authenticated (will redirect)
   if (!user) {
     return (
-      <SafeAreaView className="flex-1 bg-[#FAFAF9] items-center justify-center">
-        <ActivityIndicator size="large" color="#1C1917" />
-        <Text className="text-[#78716C] mt-4">Redirecting to sign up...</Text>
+      <SafeAreaView className="flex-1 bg-background items-center justify-center">
+        <ActivityIndicator size="large" color={colors.ink} />
+        <Text className="text-ink-secondary mt-4">Redirecting to sign up...</Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-[#FAFAF9]">
+    <SafeAreaView className="flex-1 bg-background">
       {/* Header */}
       <View className="flex-row items-center px-5 py-3">
         <Pressable onPress={handleBack} accessibilityLabel="Back" className="w-10 h-10 items-center justify-center">
-          <Text className="text-[24px] text-[#1C1917]">←</Text>
+          <Text className="text-[24px] text-ink">←</Text>
         </Pressable>
       </View>
 
@@ -407,14 +408,14 @@ export default function CreateMomentScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {/* Title */}
-        <Text className="text-center text-[26px] font-normal text-[#1C1917] mb-8">
+        <Text className="text-center text-[26px] font-normal text-ink mb-8">
           {step === 1 ? `Share your ${mealWord(getSelectedTime())}` : "Almost there"}
         </Text>
 
         {step === 1 ? (
           <>
             {/* When? */}
-            <Text className="text-[15px] text-[#6B7280] mb-3">When?</Text>
+            <Text className="text-[15px] text-ink-secondary mb-3">When?</Text>
 
             <RadioOption
               selected={timeOption === "now"}
@@ -454,35 +455,35 @@ export default function CreateMomentScreen() {
             )}
 
             {/* Where? */}
-            <Text className="text-[15px] text-[#6B7280] mt-6 mb-3">Where?</Text>
+            <Text className="text-[15px] text-ink-secondary mt-6 mb-3">Where?</Text>
 
             {/* Current location option */}
             <Pressable
               onPress={selectCurrentLocation}
               className={`flex-row items-center px-4 py-4 rounded-xl border ${
-                useCurrentLocation ? "border-[#1C1917]" : "border-[#E5E7EB]"
+                useCurrentLocation ? "border-ink" : "border-line"
               } mb-3`}
             >
               <View
                 className={`w-5 h-5 rounded-full border-2 ${
-                  useCurrentLocation ? "border-[#1C1917]" : "border-[#D1D5DB]"
+                  useCurrentLocation ? "border-ink" : "border-line-strong"
                 } items-center justify-center mr-3`}
               >
-                {useCurrentLocation && <View className="w-2.5 h-2.5 rounded-full bg-[#1C1917]" />}
+                {useCurrentLocation && <View className="w-2.5 h-2.5 rounded-full bg-ink" />}
               </View>
               <View className="w-5 h-5 items-center justify-center mr-2">
                 <Text className="text-[14px]">📍</Text>
               </View>
               <View className="flex-1">
-                <Text className="text-[16px] text-[#1C1917]">Use current location</Text>
+                <Text className="text-[16px] text-ink">Use current location</Text>
                 {useCurrentLocation && locationStatus === "locating" && (
-                  <Text className="text-[14px] text-[#9CA3AF]">Finding you…</Text>
+                  <Text className="text-[14px] text-ink-muted">Finding you…</Text>
                 )}
                 {useCurrentLocation && locationStatus === "ready" && (
-                  <Text className="text-[14px] text-[#9CA3AF]">{currentAreaName ?? "Found you"}</Text>
+                  <Text className="text-[14px] text-ink-muted">{currentAreaName ?? "Found you"}</Text>
                 )}
                 {useCurrentLocation && locationStatus === "unavailable" && (
-                  <Text className="text-[14px] text-[#78716C]">
+                  <Text className="text-[14px] text-ink-secondary">
                     Couldn't find you. Tap to retry, or search for a place.
                   </Text>
                 )}
@@ -493,25 +494,25 @@ export default function CreateMomentScreen() {
             <Pressable
               onPress={() => setShowSearch(true)}
               className={`flex-row items-center px-4 py-4 rounded-xl border ${
-                !useCurrentLocation ? "border-[#1C1917]" : "border-[#E5E7EB]"
+                !useCurrentLocation ? "border-ink" : "border-line"
               } mb-2`}
             >
               <View
                 className={`w-5 h-5 rounded-full border-2 ${
-                  !useCurrentLocation ? "border-[#1C1917]" : "border-[#D1D5DB]"
+                  !useCurrentLocation ? "border-ink" : "border-line-strong"
                 } items-center justify-center mr-3`}
               >
-                {!useCurrentLocation && <View className="w-2.5 h-2.5 rounded-full bg-[#1C1917]" />}
+                {!useCurrentLocation && <View className="w-2.5 h-2.5 rounded-full bg-ink" />}
               </View>
               <View className="w-5 h-5 items-center justify-center mr-2">
                 <Text className="text-[14px]">🔍</Text>
               </View>
               <View className="flex-1">
-                <Text className="text-[16px] text-[#1C1917]">
+                <Text className="text-[16px] text-ink">
                   {!useCurrentLocation && placeName ? placeName : "Search for a place"}
                 </Text>
                 {!useCurrentLocation && placeName && (
-                  <Text className="text-[14px] text-[#9CA3AF]">Tap to change</Text>
+                  <Text className="text-[14px] text-ink-muted">Tap to change</Text>
                 )}
               </View>
             </Pressable>
@@ -519,31 +520,31 @@ export default function CreateMomentScreen() {
             {/* Search input and results */}
             {showSearch && (
               <View className="mt-2">
-                <View className="flex-row items-center border border-[#E5E7EB] rounded-xl px-4 py-3">
+                <View className="flex-row items-center border border-line rounded-xl px-4 py-3">
                   <TextInput
                     value={searchQuery}
                     onChangeText={handleSearch}
                     placeholder="Search restaurants, cafes..."
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={colors.inkMuted}
                     autoFocus
-                    className="flex-1 text-[16px] text-[#1C1917]"
+                    className="flex-1 text-[16px] text-ink"
                   />
-                  {searching && <ActivityIndicator size="small" color="#9CA3AF" />}
+                  {searching && <ActivityIndicator size="small" color={colors.inkMuted} />}
                 </View>
 
                 {/* Search results */}
                 {searchResults.length > 0 && (
-                  <View className="mt-2 border border-[#E5E7EB] rounded-xl overflow-hidden">
+                  <View className="mt-2 border border-line rounded-xl overflow-hidden">
                     {searchResults.map((result, index) => (
                       <Pressable
                         key={`${result.lat}-${result.lng}-${index}`}
                         onPress={() => selectSearchResult(result)}
-                        className={`px-4 py-3 active:bg-[#F9FAFB] ${
-                          index < searchResults.length - 1 ? "border-b border-[#E5E7EB]" : ""
+                        className={`px-4 py-3 active:bg-subtle ${
+                          index < searchResults.length - 1 ? "border-b border-line" : ""
                         }`}
                       >
-                        <Text className="text-[15px] text-[#1C1917]">{result.name}</Text>
-                        <Text className="text-[13px] text-[#9CA3AF]">{result.address}</Text>
+                        <Text className="text-[15px] text-ink">{result.name}</Text>
+                        <Text className="text-[13px] text-ink-muted">{result.address}</Text>
                       </Pressable>
                     ))}
                   </View>
@@ -551,7 +552,7 @@ export default function CreateMomentScreen() {
 
                 {/* No results message */}
                 {searchQuery.length >= 3 && !searching && searchResults.length === 0 && (
-                  <Text className="text-[14px] text-[#9CA3AF] mt-2 text-center">
+                  <Text className="text-[14px] text-ink-muted mt-2 text-center">
                     No places found. Try a different search.
                   </Text>
                 )}
@@ -561,7 +562,7 @@ export default function CreateMomentScreen() {
         ) : (
           <>
             {/* Seats */}
-            <Text className="text-[15px] text-[#6B7280] mb-3">How many seats?</Text>
+            <Text className="text-[15px] text-ink-secondary mb-3">How many seats?</Text>
             <View className="flex-row justify-between mb-8">
               <SeatButton value={1} />
               <SeatButton value={2} />
@@ -570,7 +571,7 @@ export default function CreateMomentScreen() {
             </View>
 
             {/* Duration */}
-            <Text className="text-[15px] text-[#6B7280] mb-3">How long?</Text>
+            <Text className="text-[15px] text-ink-secondary mb-3">How long?</Text>
             <View className="flex-row mb-8">
               <DurationButton value="quick" label="Quick" sublabel="~30 min" isFirst />
               <DurationButton value="normal" label="Normal" sublabel="~1 hour" />
@@ -578,22 +579,22 @@ export default function CreateMomentScreen() {
             </View>
 
             {/* Note */}
-            <Text className="text-[15px] text-[#6B7280] mb-3">
+            <Text className="text-[15px] text-ink-secondary mb-3">
               Note (optional)
             </Text>
             <TextInput
               value={note}
               onChangeText={(text) => setNote(text.slice(0, 140))}
               placeholder="First week in CM. Nothing fancy."
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.inkMuted}
               multiline
               // Return closes the keyboard; a note doesn't need line breaks
               returnKeyType="done"
               submitBehavior="blurAndSubmit"
-              className="border border-[#E5E7EB] rounded-xl px-4 py-3 text-[16px] text-[#1C1917] min-h-[100px]"
+              className="border border-line rounded-xl px-4 py-3 text-[16px] text-ink min-h-[100px]"
               style={{ textAlignVertical: "top" }}
             />
-            <Text className="text-[12px] text-[#9CA3AF] mt-1 text-right">
+            <Text className="text-[12px] text-ink-muted mt-1 text-right">
               {note.length}/140
             </Text>
           </>
@@ -605,10 +606,10 @@ export default function CreateMomentScreen() {
         <Pressable
           onPress={step === 1 ? handleNext : handleMakeVisible}
           disabled={loading}
-          className={`bg-[#1C1917] py-4 rounded-2xl items-center ${loading ? "opacity-60" : "active:opacity-80"}`}
+          className={`bg-ink py-4 rounded-2xl items-center ${loading ? "opacity-60" : "active:opacity-80"}`}
         >
           {loading ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
+            <ActivityIndicator size="small" color={colors.surface} />
           ) : (
             <Text className="text-white text-[17px] font-medium">
               {step === 1 ? "Next" : "Make visible"}

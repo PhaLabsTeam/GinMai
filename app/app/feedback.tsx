@@ -6,6 +6,7 @@ import { useMoment } from "../src/hooks/useMoment";
 import { useMomentStore } from "../src/stores/momentStore";
 import { useAuthStore } from "../src/stores/authStore";
 import { mealWord, capitalize } from "../src/utils/mealWord";
+import { colors } from "../src/theme/colors";
 
 type FeedbackOption = "great" | "okay" | "nope" | null;
 
@@ -92,15 +93,15 @@ export default function FeedbackScreen() {
   // Simple face icon components
   const HappyFace = () => (
     <View className="w-12 h-12 items-center justify-center">
-      <View className="w-12 h-12 rounded-full border-2 border-[#1C1917] items-center justify-center">
+      <View className="w-12 h-12 rounded-full border-2 border-ink items-center justify-center">
         {/* Eyes */}
         <View className="flex-row justify-center" style={{ marginTop: -4 }}>
-          <View className="w-1.5 h-1.5 bg-[#1C1917] rounded-full mx-1.5" />
-          <View className="w-1.5 h-1.5 bg-[#1C1917] rounded-full mx-1.5" />
+          <View className="w-1.5 h-1.5 bg-ink rounded-full mx-1.5" />
+          <View className="w-1.5 h-1.5 bg-ink rounded-full mx-1.5" />
         </View>
         {/* Smile */}
         <View
-          className="w-5 h-2.5 border-b-2 border-[#1C1917] rounded-b-full"
+          className="w-5 h-2.5 border-b-2 border-ink rounded-b-full"
           style={{ marginTop: 2 }}
         />
       </View>
@@ -109,15 +110,15 @@ export default function FeedbackScreen() {
 
   const NeutralFace = () => (
     <View className="w-12 h-12 items-center justify-center">
-      <View className="w-12 h-12 rounded-full border-2 border-[#1C1917] items-center justify-center">
+      <View className="w-12 h-12 rounded-full border-2 border-ink items-center justify-center">
         {/* Eyes */}
         <View className="flex-row justify-center" style={{ marginTop: -4 }}>
-          <View className="w-1.5 h-1.5 bg-[#1C1917] rounded-full mx-1.5" />
-          <View className="w-1.5 h-1.5 bg-[#1C1917] rounded-full mx-1.5" />
+          <View className="w-1.5 h-1.5 bg-ink rounded-full mx-1.5" />
+          <View className="w-1.5 h-1.5 bg-ink rounded-full mx-1.5" />
         </View>
         {/* Straight mouth */}
         <View
-          className="w-5 h-0.5 bg-[#1C1917]"
+          className="w-5 h-0.5 bg-ink"
           style={{ marginTop: 4 }}
         />
       </View>
@@ -126,15 +127,15 @@ export default function FeedbackScreen() {
 
   const SadFace = () => (
     <View className="w-12 h-12 items-center justify-center">
-      <View className="w-12 h-12 rounded-full border-2 border-[#1C1917] items-center justify-center">
+      <View className="w-12 h-12 rounded-full border-2 border-ink items-center justify-center">
         {/* Eyes */}
         <View className="flex-row justify-center" style={{ marginTop: -2 }}>
-          <View className="w-1.5 h-1.5 bg-[#1C1917] rounded-full mx-1.5" />
-          <View className="w-1.5 h-1.5 bg-[#1C1917] rounded-full mx-1.5" />
+          <View className="w-1.5 h-1.5 bg-ink rounded-full mx-1.5" />
+          <View className="w-1.5 h-1.5 bg-ink rounded-full mx-1.5" />
         </View>
         {/* Frown */}
         <View
-          className="w-5 h-2.5 border-t-2 border-[#1C1917] rounded-t-full"
+          className="w-5 h-2.5 border-t-2 border-ink rounded-t-full"
           style={{ marginTop: 6 }}
         />
       </View>
@@ -154,28 +155,28 @@ export default function FeedbackScreen() {
       onPress={() => handleFeedback(option)}
       disabled={submitting}
       className={`flex-1 items-center py-5 rounded-xl border ${
-        feedback === option ? "border-[#1C1917] bg-[#F9FAFB]" : "border-[#E5E7EB]"
-      } mx-1.5 active:bg-[#F9FAFB]`}
+        feedback === option ? "border-ink bg-subtle" : "border-line"
+      } mx-1.5 active:bg-subtle`}
     >
       {submitting && feedback === option ? (
-        <ActivityIndicator size="small" color="#1C1917" />
+        <ActivityIndicator size="small" color={colors.ink} />
       ) : (
         <>
           <Face />
-          <Text className="text-[15px] text-[#1C1917] mt-2">{label}</Text>
+          <Text className="text-[15px] text-ink mt-2">{label}</Text>
         </>
       )}
     </Pressable>
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-[#FAFAF9]">
+    <SafeAreaView className="flex-1 bg-background">
       <View className="flex-1 px-6">
         {step === 1 ? (
           <>
             {/* Step 1: How was the meal? */}
             <View className="pt-8">
-              <Text className="text-center text-[32px] font-normal text-[#1C1917]">
+              <Text className="text-center text-[32px] font-normal text-ink">
                 How was {mealWord(moment?.starts_at ?? new Date())}?
               </Text>
             </View>
@@ -189,7 +190,7 @@ export default function FeedbackScreen() {
 
             {/* Skip link */}
             <Pressable onPress={handleSkip} className="mt-6">
-              <Text className="text-center text-[16px] text-[#9CA3AF]">
+              <Text className="text-center text-[16px] text-ink-muted">
                 Skip
               </Text>
             </Pressable>
@@ -198,10 +199,10 @@ export default function FeedbackScreen() {
           <>
             {/* Step 2: Eat with them again? */}
             <View className="pt-8">
-              <Text className="text-center text-[32px] font-normal text-[#1C1917]">
+              <Text className="text-center text-[32px] font-normal text-ink">
                 Eat with {hostName} again?
               </Text>
-              <Text className="text-center text-[17px] text-[#6B7280] mt-2">
+              <Text className="text-center text-[17px] text-ink-secondary mt-2">
                 If you both say yes, you'll be connected.
               </Text>
             </View>
@@ -211,10 +212,10 @@ export default function FeedbackScreen() {
               <Pressable
                 onPress={() => handleEatAgain(true)}
                 disabled={submitting}
-                className="bg-[#1C1917] py-4 rounded-xl items-center active:opacity-80 mb-3"
+                className="bg-ink py-4 rounded-xl items-center active:opacity-80 mb-3"
               >
                 {submitting ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <ActivityIndicator size="small" color={colors.surface} />
                 ) : (
                   <Text className="text-white text-[17px] font-medium">
                     Yes, I'd eat with them again
@@ -225,12 +226,12 @@ export default function FeedbackScreen() {
               <Pressable
                 onPress={() => handleEatAgain(false)}
                 disabled={submitting}
-                className="border border-[#E5E7EB] py-4 rounded-xl items-center active:bg-[#F9FAFB]"
+                className="border border-line py-4 rounded-xl items-center active:bg-subtle"
               >
                 {submitting ? (
-                  <ActivityIndicator size="small" color="#1C1917" />
+                  <ActivityIndicator size="small" color={colors.ink} />
                 ) : (
-                  <Text className="text-[17px] text-[#1C1917]">
+                  <Text className="text-[17px] text-ink">
                     No thanks
                   </Text>
                 )}
@@ -239,7 +240,7 @@ export default function FeedbackScreen() {
 
             {/* Skip link */}
             <Pressable onPress={handleSkip} className="mt-6">
-              <Text className="text-center text-[16px] text-[#9CA3AF]">
+              <Text className="text-center text-[16px] text-ink-muted">
                 Skip
               </Text>
             </Pressable>

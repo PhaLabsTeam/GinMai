@@ -60,7 +60,7 @@ export function ReliabilityBadge({
           {stats.reliabilityLabel}
         </Text>
         {showStats && stats.totalMeals > 0 && (
-          <Text className={`${config.statsText} text-[#6B7280] ml-1.5`}>
+          <Text className={`${config.statsText} text-ink-secondary ml-1.5`}>
             ({stats.mealsCompleted}/{stats.totalMeals})
           </Text>
         )}
@@ -68,7 +68,7 @@ export function ReliabilityBadge({
 
       {/* Description */}
       {showDescription && (
-        <Text className="text-xs text-[#6B7280] mt-1">
+        <Text className="text-xs text-ink-secondary mt-1">
           {getReliabilityDescription(stats.reliabilityLabel)}
         </Text>
       )}
@@ -96,12 +96,12 @@ export function ReliabilityScore({
   // With no meals there's nothing to score: "100%" would be made up
   if (stats.totalMeals === 0) {
     return (
-      <View className="bg-white rounded-2xl p-4 shadow-sm">
+      <View className="bg-surface rounded-2xl p-4 shadow-sm">
         <View className="flex-row items-center justify-between">
-          <Text className="text-[17px] font-semibold text-[#1C1917]">Reliability</Text>
-          <Text className="text-[17px] font-semibold text-[#78716C]">New</Text>
+          <Text className="text-[17px] font-semibold text-ink">Reliability</Text>
+          <Text className="text-[17px] font-semibold text-ink-secondary">New</Text>
         </View>
-        <Text className="text-[13px] text-[#9CA3AF] mt-2">
+        <Text className="text-[13px] text-ink-muted mt-2">
           Your record starts with your first meal.
         </Text>
       </View>
@@ -109,10 +109,10 @@ export function ReliabilityScore({
   }
 
   return (
-    <View className="bg-white rounded-2xl p-4 shadow-sm">
+    <View className="bg-surface rounded-2xl p-4 shadow-sm">
       {/* Header */}
       <View className="flex-row items-center justify-between mb-3">
-        <Text className="text-[17px] font-semibold text-[#1C1917]">
+        <Text className="text-[17px] font-semibold text-ink">
           Reliability
         </Text>
         <View className="flex-row items-center">
@@ -129,37 +129,37 @@ export function ReliabilityScore({
       {/* Stats breakdown */}
       <View className="space-y-2">
         <View className="flex-row justify-between">
-          <Text className="text-[15px] text-[#6B7280]">
+          <Text className="text-[15px] text-ink-secondary">
             Meals completed
           </Text>
-          <Text className="text-[15px] font-medium text-[#1C1917]">
+          <Text className="text-[15px] font-medium text-ink">
             {stats.mealsCompleted}
           </Text>
         </View>
 
         {stats.noShows > 0 && (
           <View className="flex-row justify-between">
-            <Text className="text-[15px] text-[#6B7280]">
+            <Text className="text-[15px] text-ink-secondary">
               No-shows
             </Text>
-            <Text className="text-[15px] font-medium text-[#EF4444]">
+            <Text className="text-[15px] font-medium text-error">
               {stats.noShows}
             </Text>
           </View>
         )}
 
         <View className="flex-row justify-between">
-          <Text className="text-[15px] text-[#6B7280]">
+          <Text className="text-[15px] text-ink-secondary">
             Total meals
           </Text>
-          <Text className="text-[15px] font-medium text-[#1C1917]">
+          <Text className="text-[15px] font-medium text-ink">
             {stats.totalMeals}
           </Text>
         </View>
       </View>
 
       {/* Description */}
-      <Text className="text-[13px] text-[#9CA3AF] mt-3 italic">
+      <Text className="text-[13px] text-ink-muted mt-3 italic">
         {getReliabilityDescription(stats.reliabilityLabel)}
       </Text>
     </View>

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useReportStore } from "../src/stores/reportStore";
 import { useAuthStore } from "../src/stores/authStore";
 import { confirmBlock } from "../src/utils/safetyActions";
+import { colors } from "../src/theme/colors";
 
 interface ReportCategory {
   id: string;
@@ -120,25 +121,25 @@ export default function ReportUserScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#FAFAF9]">
+    <SafeAreaView className="flex-1 bg-background">
       <ScrollView className="flex-1">
         {/* Header */}
         <View className="p-6 pb-4">
           <Pressable onPress={() => router.back()} className="mb-4" disabled={submitting}>
-            <Text className="text-[#F97316] text-base">← Cancel</Text>
+            <Text className="text-accent text-base">← Cancel</Text>
           </Pressable>
 
-          <Text className="text-[#1C1917] text-2xl font-semibold mb-2">
+          <Text className="text-ink text-2xl font-semibold mb-2">
             Report User
           </Text>
-          <Text className="text-[#78716C] text-base">
+          <Text className="text-ink-secondary text-base">
             {params.userName ? `Report ${params.userName}` : "Help us keep GinMai safe"}
           </Text>
         </View>
 
         {/* Privacy Notice */}
-        <View className="mx-6 mb-6 bg-[#DBEAFE] border border-[#3B82F6] rounded-xl p-4">
-          <Text className="text-[#1E40AF] text-sm">
+        <View className="mx-6 mb-6 bg-subtle border border-line rounded-xl p-4">
+          <Text className="text-ink-secondary text-sm">
             Reports are confidential. The user won't know who reported them.
             We'll review within 24 hours.
           </Text>
@@ -146,7 +147,7 @@ export default function ReportUserScreen() {
 
         {/* Category Selection */}
         <View className="px-6 mb-6">
-          <Text className="text-[#1C1917] font-semibold mb-3">
+          <Text className="text-ink font-semibold mb-3">
             What happened?
           </Text>
 
@@ -155,24 +156,24 @@ export default function ReportUserScreen() {
               key={category.id}
               onPress={() => setSelectedCategory(category.id)}
               disabled={submitting}
-              className={`bg-white rounded-xl p-4 mb-3 border-2 ${
+              className={`bg-surface rounded-xl p-4 mb-3 border-2 ${
                 selectedCategory === category.id
-                  ? "border-[#F97316]"
-                  : "border-[#E7E5E4]"
+                  ? "border-accent"
+                  : "border-line"
               }`}
             >
               <View className="flex-row items-center">
                 <Text className="text-2xl mr-3">{category.icon}</Text>
                 <View className="flex-1">
-                  <Text className="text-[#1C1917] font-semibold mb-1">
+                  <Text className="text-ink font-semibold mb-1">
                     {category.label}
                   </Text>
-                  <Text className="text-[#78716C] text-sm">
+                  <Text className="text-ink-secondary text-sm">
                     {category.description}
                   </Text>
                 </View>
                 {selectedCategory === category.id && (
-                  <Text className="text-[#F97316] text-xl">✓</Text>
+                  <Text className="text-accent text-xl">✓</Text>
                 )}
               </View>
             </Pressable>
@@ -181,13 +182,13 @@ export default function ReportUserScreen() {
 
         {/* Description (Optional) */}
         <View className="px-6 mb-6">
-          <Text className="text-[#1C1917] font-semibold mb-2">
+          <Text className="text-ink font-semibold mb-2">
             Additional details (optional)
           </Text>
           <TextInput
-            className="bg-white border border-[#E7E5E4] rounded-xl p-4 text-[#1C1917] min-h-[120px]"
+            className="bg-surface border border-line rounded-xl p-4 text-ink min-h-[120px]"
             placeholder="Tell us more about what happened..."
-            placeholderTextColor="#A8A29E"
+            placeholderTextColor={colors.inkMuted}
             multiline
             textAlignVertical="top"
             value={description}
@@ -195,7 +196,7 @@ export default function ReportUserScreen() {
             editable={!submitting}
             maxLength={500}
           />
-          <Text className="text-[#78716C] text-xs mt-1 text-right">
+          <Text className="text-ink-secondary text-xs mt-1 text-right">
             {description.length}/500
           </Text>
         </View>
@@ -207,8 +208,8 @@ export default function ReportUserScreen() {
             disabled={!selectedCategory || submitting}
             className={`rounded-xl py-4 ${
               !selectedCategory || submitting
-                ? "bg-[#E7E5E4]"
-                : "bg-[#F97316] active:opacity-80"
+                ? "bg-line"
+                : "bg-accent active:opacity-80"
             }`}
           >
             {submitting ? (
@@ -216,7 +217,7 @@ export default function ReportUserScreen() {
             ) : (
               <Text
                 className={`text-center font-semibold text-base ${
-                  !selectedCategory ? "text-[#A8A29E]" : "text-white"
+                  !selectedCategory ? "text-ink-muted" : "text-white"
                 }`}
               >
                 Submit Report
@@ -224,7 +225,7 @@ export default function ReportUserScreen() {
             )}
           </Pressable>
 
-          <Text className="text-[#78716C] text-xs text-center mt-4">
+          <Text className="text-ink-secondary text-xs text-center mt-4">
             False reports may result in account suspension
           </Text>
         </View>

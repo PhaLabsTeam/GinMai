@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useMoment } from "../src/hooks/useMoment";
 import { useMomentStore } from "../src/stores/momentStore";
 import { useAuthStore } from "../src/stores/authStore";
+import { colors } from "../src/theme/colors";
 
 export default function ArrivalScreen() {
   const router = useRouter();
@@ -50,22 +51,22 @@ export default function ArrivalScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#FAFAF9]">
+    <SafeAreaView className="flex-1 bg-background">
       <View className="flex-1 px-6">
         {/* Header text */}
         <View className="pt-8">
-          <Text className="text-center text-[32px] font-normal text-[#1C1917]">
+          <Text className="text-center text-[32px] font-normal text-ink">
             You're here.
           </Text>
-          <Text className="text-center text-[17px] text-[#6B7280] mt-2">
+          <Text className="text-center text-[17px] text-ink-secondary mt-2">
             Look for the GinMai sign on the table.
           </Text>
         </View>
 
         {/* กิน sign card */}
         <View className="items-center mt-10">
-          <View className="w-36 h-36 border-2 border-[#1C1917] rounded-2xl items-center justify-center">
-            <Text className="text-[56px] font-medium text-[#1C1917]">
+          <View className="w-36 h-36 border-2 border-ink rounded-2xl items-center justify-center">
+            <Text className="text-[56px] font-medium text-ink">
               กิน
             </Text>
           </View>
@@ -75,7 +76,7 @@ export default function ArrivalScreen() {
         <View className="mt-10">
           <Pressable
             onPress={handleFoundThem}
-            className="bg-[#1C1917] py-4 rounded-2xl items-center active:opacity-80"
+            className="bg-ink py-4 rounded-2xl items-center active:opacity-80"
           >
             <Text className="text-white text-[17px] font-medium">
               Found them!
@@ -89,12 +90,12 @@ export default function ArrivalScreen() {
           <Pressable
             onPress={handleRunningLate}
             disabled={notifying}
-            className="border border-[#E5E7EB] py-4 rounded-xl items-center active:bg-[#F9FAFB] mb-3"
+            className="border border-line py-4 rounded-xl items-center active:bg-subtle mb-3"
           >
             {notifying ? (
-              <ActivityIndicator size="small" color="#1C1917" />
+              <ActivityIndicator size="small" color={colors.ink} />
             ) : (
-              <Text className="text-[16px] text-[#1C1917]">
+              <Text className="text-[16px] text-ink">
                 Running a few minutes late →
               </Text>
             )}
@@ -103,9 +104,9 @@ export default function ArrivalScreen() {
           {/* Can't find them button */}
           <Pressable
             onPress={handleCantFind}
-            className="border border-[#E5E7EB] py-4 rounded-xl items-center active:bg-[#F9FAFB]"
+            className="border border-line py-4 rounded-xl items-center active:bg-subtle"
           >
-            <Text className="text-[16px] text-[#1C1917]">
+            <Text className="text-[16px] text-ink">
               Can't find them →
             </Text>
           </Pressable>
@@ -113,7 +114,7 @@ export default function ArrivalScreen() {
 
         {/* Back link */}
         <Pressable onPress={handleBack} className="mt-6">
-          <Text className="text-center text-[16px] text-[#9CA3AF]">
+          <Text className="text-center text-[16px] text-ink-muted">
             ← Back
           </Text>
         </Pressable>

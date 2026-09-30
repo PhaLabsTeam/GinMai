@@ -9,6 +9,7 @@ import { openSafetyActions } from "../src/utils/safetyActions";
 import * as Location from "expo-location";
 import { distanceMeters, formatWalk } from "../src/utils/distance";
 import { maybeAskForPushPermission } from "../src/services/pushPermission";
+import { colors } from "../src/theme/colors";
 
 export default function MomentDetailScreen() {
   const router = useRouter();
@@ -52,18 +53,18 @@ export default function MomentDetailScreen() {
 
   if (!moment && momentLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-[#FAFAF9] items-center justify-center">
-        <ActivityIndicator size="large" color="#1C1917" />
+      <SafeAreaView className="flex-1 bg-background items-center justify-center">
+        <ActivityIndicator size="large" color={colors.ink} />
       </SafeAreaView>
     );
   }
 
   if (!moment) {
     return (
-      <SafeAreaView className="flex-1 bg-[#FAFAF9] items-center justify-center">
-        <Text className="text-[#78716C]">Moment not found</Text>
+      <SafeAreaView className="flex-1 bg-background items-center justify-center">
+        <Text className="text-ink-secondary">Moment not found</Text>
         <Pressable onPress={() => router.back()} className="mt-4">
-          <Text className="text-[#1C1917]">Go back</Text>
+          <Text className="text-ink">Go back</Text>
         </Pressable>
       </SafeAreaView>
     );
@@ -131,7 +132,7 @@ export default function MomentDetailScreen() {
     : null;
 
   return (
-    <SafeAreaView className="flex-1 bg-[#FAFAF9]">
+    <SafeAreaView className="flex-1 bg-background">
       {/* Header with back button */}
       <View className="flex-row items-center px-5 py-3">
         <Pressable
@@ -139,17 +140,17 @@ export default function MomentDetailScreen() {
           accessibilityLabel="Back"
           className="w-10 h-10 items-center justify-center"
         >
-          <Text className="text-[24px] text-[#1C1917]">←</Text>
+          <Text className="text-[24px] text-ink">←</Text>
         </Pressable>
       </View>
 
       <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
         {/* Map placeholder card */}
-        <View className="bg-[#F3F4F6] rounded-2xl h-44 items-center justify-center">
+        <View className="bg-subtle rounded-2xl h-44 items-center justify-center">
           {/* Location pin icon */}
           <View className="w-12 h-12 items-center justify-center">
-            <View className="w-8 h-10 bg-[#4B5563] rounded-full rounded-b-none items-center pt-1.5">
-              <View className="w-3 h-3 bg-[#F3F4F6] rounded-full" />
+            <View className="w-8 h-10 bg-ink-secondary rounded-full rounded-b-none items-center pt-1.5">
+              <View className="w-3 h-3 bg-subtle rounded-full" />
             </View>
             <View
               style={{
@@ -160,7 +161,7 @@ export default function MomentDetailScreen() {
                 borderTopWidth: 10,
                 borderLeftColor: "transparent",
                 borderRightColor: "transparent",
-                borderTopColor: "#4B5563",
+                borderTopColor: colors.inkSecondary,
                 marginTop: -1,
               }}
             />
@@ -169,7 +170,7 @@ export default function MomentDetailScreen() {
 
         {/* Walking distance */}
         {walkingDistance && (
-          <Text className="text-center text-[15px] text-[#6B7280] mt-3">
+          <Text className="text-center text-[15px] text-ink-secondary mt-3">
             {walkingDistance}
           </Text>
         )}
@@ -177,29 +178,29 @@ export default function MomentDetailScreen() {
         {/* Place info */}
         <View className="flex-row items-center mt-6">
           <Text className="text-2xl mr-2">🍜</Text>
-          <Text className="text-[20px] font-semibold text-[#1C1917]">
+          <Text className="text-[20px] font-semibold text-ink">
             {moment.location.place_name || "Somewhere tasty"}
           </Text>
         </View>
 
         {/* Area */}
-        <Text className="text-[16px] text-[#6B7280] mt-1">
+        <Text className="text-[16px] text-ink-secondary mt-1">
           {moment.location.area_name || "Chiang Mai"}
         </Text>
 
         {/* Time range */}
-        <Text className="text-[16px] text-[#1C1917] mt-4">
+        <Text className="text-[16px] text-ink mt-4">
           {formatTime(moment.starts_at)} – ~{getEndTime()}
         </Text>
 
         {/* Host name with verification badge */}
         <View className="flex-row items-center mt-1">
-          <Text className="text-[16px] text-[#1C1917]">
+          <Text className="text-[16px] text-ink">
             {moment.host_name}
           </Text>
           {/* Show verification badge if host is authenticated (has host_id) */}
           {moment.host_id && moment.host_id !== "anonymous" && (
-            <Text className="text-[15px] text-[#22C55E] ml-1">✓</Text>
+            <Text className="text-[15px] text-success ml-1">✓</Text>
           )}
         </View>
         {user && !isHost && moment.host_id !== "anonymous" && (
@@ -210,53 +211,53 @@ export default function MomentDetailScreen() {
             hitSlop={8}
             className="self-start mt-2"
           >
-            <Text className="text-[13px] text-[#78716C]">Report or block</Text>
+            <Text className="text-[13px] text-ink-secondary">Report or block</Text>
           </Pressable>
         )}
 
         {/* Note */}
         {moment.note && (
-          <View className="bg-[#F9FAFB] rounded-xl px-4 py-4 mt-5">
-            <Text className="text-[15px] text-[#4B5563] leading-6">
+          <View className="bg-subtle rounded-xl px-4 py-4 mt-5">
+            <Text className="text-[15px] text-ink-secondary leading-6">
               "{moment.note}"
             </Text>
           </View>
         )}
 
         {/* Seats */}
-        <Text className="text-[15px] text-[#6B7280] mt-5">
+        <Text className="text-[15px] text-ink-secondary mt-5">
           {seatsOpen} {seatsOpen === 1 ? "seat" : "seats"} open
         </Text>
       </ScrollView>
 
       {/* Join button */}
-      <View className="px-6 pb-6 pt-3 border-t border-[#F3F4F6]">
+      <View className="px-6 pb-6 pt-3 border-t border-subtle">
         {isHost ? (
           <Pressable
             onPress={() => router.push(`/moment-live?momentId=${moment.id}`)}
-            className="bg-[#1C1917] py-4 rounded-2xl items-center active:opacity-80"
+            className="bg-ink py-4 rounded-2xl items-center active:opacity-80"
           >
             <Text className="text-white text-[17px] font-medium">Manage your moment →</Text>
           </Pressable>
         ) : hasJoined ? (
           <Pressable
             onPress={handleJoin}
-            className="bg-[#22C55E] py-4 rounded-2xl items-center active:opacity-80"
+            className="bg-success py-4 rounded-2xl items-center active:opacity-80"
           >
             <Text className="text-white text-[17px] font-medium">You're in →</Text>
           </Pressable>
         ) : isFull ? (
-          <View className="bg-[#E5E7EB] py-4 rounded-2xl items-center">
-            <Text className="text-[#9CA3AF] text-[17px] font-medium">Full</Text>
+          <View className="bg-line py-4 rounded-2xl items-center">
+            <Text className="text-ink-muted text-[17px] font-medium">Full</Text>
           </View>
         ) : (
           <Pressable
             onPress={handleJoin}
             disabled={joining}
-            className={`bg-[#1C1917] py-4 rounded-2xl items-center ${joining ? "opacity-60" : "active:opacity-80"}`}
+            className={`bg-ink py-4 rounded-2xl items-center ${joining ? "opacity-60" : "active:opacity-80"}`}
           >
             {joining ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
+              <ActivityIndicator size="small" color={colors.surface} />
             ) : (
               <Text className="text-white text-[17px] font-medium">Join</Text>
             )}

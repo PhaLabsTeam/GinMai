@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import { configureNotificationHandler } from '../config/notifications';
+import { colors } from '../theme/colors';
 
 type NotificationSubscription = ReturnType<typeof Notifications.addNotificationReceivedListener>;
 
@@ -82,7 +83,7 @@ export async function registerForPushNotificationsAsync(askIfNeeded = false): Pr
         name: 'default',
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#F97316',
+        lightColor: colors.accent,
         sound: 'default',
       });
     }

@@ -1,6 +1,7 @@
 import { View, Text, Animated, Pressable } from "react-native";
 import { useEffect, useRef } from "react";
 import { useNotificationStore, InAppNotification } from "../stores/notificationStore";
+import { colors } from "../theme/colors";
 
 export function InAppToast() {
   const notifications = useNotificationStore((state) => state.notifications);
@@ -88,15 +89,15 @@ function ToastItem({ notification, onDismiss }: ToastItemProps) {
   const getBackgroundColor = (type: InAppNotification["type"]) => {
     switch (type) {
       case "guest_joined":
-        return "#22C55E"; // success green
+        return colors.success; // success green
       case "guest_cancelled":
-        return "#F97316"; // orange
+        return colors.accent; // orange
       case "guest_arrived":
-        return "#3B82F6"; // blue
+        return colors.line; // blue
       case "guest_running_late":
-        return "#EAB308"; // yellow
+        return colors.warning; // yellow
       default:
-        return "#1C1917"; // dark
+        return colors.ink; // dark
     }
   };
 

@@ -1,5 +1,6 @@
 import { View, Platform } from "react-native";
 import React, { useEffect, useRef } from "react";
+import { colors } from "../theme/colors";
 
 // Conditionally import MapView and Marker only on native
 let MapView: any = null;
@@ -111,7 +112,7 @@ export function MapComponent({
                     width: 16,
                     height: 16,
                     borderRadius: 8,
-                    backgroundColor: "#F97316",
+                    backgroundColor: colors.accent,
                   }}
                 />
               </View>

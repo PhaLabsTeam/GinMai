@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useEffect } from "react";
 import { useAuthStore } from "../src/stores/authStore";
 import { useBlockStore } from "../src/stores/blockStore";
+import { colors } from "../src/theme/colors";
 
 export default function BlockedUsersScreen() {
   const router = useRouter();
@@ -54,18 +55,18 @@ export default function BlockedUsersScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#FAFAF9]">
+    <SafeAreaView className="flex-1 bg-background">
       <ScrollView className="flex-1">
         {/* Header */}
         <View className="p-6 pb-4">
           <Pressable onPress={() => router.back()} className="mb-4">
-            <Text className="text-[#F97316] text-base">← Back</Text>
+            <Text className="text-accent text-base">← Back</Text>
           </Pressable>
 
-          <Text className="text-[#1C1917] text-2xl font-semibold mb-2">
+          <Text className="text-ink text-2xl font-semibold mb-2">
             Blocked Users
           </Text>
-          <Text className="text-[#78716C] text-base">
+          <Text className="text-ink-secondary text-base">
             People you've blocked can't see your moments or interact with you
           </Text>
         </View>
@@ -73,8 +74,8 @@ export default function BlockedUsersScreen() {
         {/* Loading State */}
         {loading && blockedUsers.length === 0 && (
           <View className="items-center justify-center py-12">
-            <ActivityIndicator size="large" color="#1C1917" />
-            <Text className="text-[#78716C] mt-4">Loading blocked users...</Text>
+            <ActivityIndicator size="large" color={colors.ink} />
+            <Text className="text-ink-secondary mt-4">Loading blocked users...</Text>
           </View>
         )}
 
@@ -82,10 +83,10 @@ export default function BlockedUsersScreen() {
         {!loading && blockedUsers.length === 0 && (
           <View className="items-center justify-center py-12 px-8">
             <Text className="text-6xl mb-4">🔓</Text>
-            <Text className="text-[#1C1917] text-xl font-semibold text-center mb-2">
+            <Text className="text-ink text-xl font-semibold text-center mb-2">
               No blocked users
             </Text>
-            <Text className="text-[#78716C] text-center">
+            <Text className="text-ink-secondary text-center">
               When you block someone, they'll appear here
             </Text>
           </View>
@@ -97,23 +98,23 @@ export default function BlockedUsersScreen() {
             {blockedUsers.map((blockedUser) => (
               <View
                 key={blockedUser.id}
-                className="bg-white rounded-xl p-4 mb-3 border border-[#E7E5E4]"
+                className="bg-surface rounded-xl p-4 mb-3 border border-line"
               >
                 <View className="flex-row items-center justify-between mb-3">
                   <View className="flex-row items-center flex-1">
-                    <View className="w-12 h-12 rounded-full bg-[#F3F4F6] items-center justify-center mr-3">
+                    <View className="w-12 h-12 rounded-full bg-subtle items-center justify-center mr-3">
                       <Text className="text-xl">👤</Text>
                     </View>
                     <View className="flex-1">
                       <View className="flex-row items-center">
-                        <Text className="text-[#1C1917] text-lg font-semibold">
+                        <Text className="text-ink text-lg font-semibold">
                           {blockedUser.first_name}
                         </Text>
                         {blockedUser.phone_verified && (
-                          <Text className="text-[#22C55E] text-lg ml-1">✓</Text>
+                          <Text className="text-success text-lg ml-1">✓</Text>
                         )}
                       </View>
-                      <Text className="text-[#78716C] text-sm">
+                      <Text className="text-ink-secondary text-sm">
                         Blocked {formatBlockedDate(blockedUser.created_at)}
                       </Text>
                     </View>
@@ -122,10 +123,10 @@ export default function BlockedUsersScreen() {
 
                 <Pressable
                   onPress={() => handleUnblock(blockedUser.blocked_id, blockedUser.first_name)}
-                  className="bg-[#E7E5E4] rounded-lg py-3 active:opacity-70"
+                  className="bg-line rounded-lg py-3 active:opacity-70"
                   disabled={loading}
                 >
-                  <Text className="text-[#1C1917] text-center font-semibold">
+                  <Text className="text-ink text-center font-semibold">
                     Unblock
                   </Text>
                 </Pressable>
@@ -135,11 +136,11 @@ export default function BlockedUsersScreen() {
         )}
 
         {/* Info Box */}
-        <View className="mx-6 mt-6 mb-8 bg-[#DBEAFE] border border-[#3B82F6] rounded-xl p-4">
-          <Text className="text-[#1E40AF] font-medium mb-2">
+        <View className="mx-6 mt-6 mb-8 bg-subtle border border-line rounded-xl p-4">
+          <Text className="text-ink-secondary font-medium mb-2">
             About blocking
           </Text>
-          <Text className="text-[#1E40AF] text-sm leading-5">
+          <Text className="text-ink-secondary text-sm leading-5">
             • Blocked users can't see your moments{"\n"}
             • You won't see their moments{"\n"}
             • They won't be notified that you blocked them{"\n"}

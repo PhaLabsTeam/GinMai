@@ -2,6 +2,7 @@ import { View, Text, Pressable, ScrollView, Switch, Alert, ActivityIndicator, Pl
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore } from "../src/stores/authStore";
+import { colors } from "../src/theme/colors";
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -114,22 +115,22 @@ export default function SettingsScreen() {
   }) => (
     <Pressable
       onPress={onPress}
-      className="flex-row items-center justify-between px-4 py-4 bg-white rounded-xl mb-3 active:bg-[#F9FAFB]"
+      className="flex-row items-center justify-between px-4 py-4 bg-surface rounded-xl mb-3 active:bg-subtle"
     >
       <View className="flex-1">
         {sublabel && (
-          <Text className="text-[13px] text-[#9CA3AF]">{sublabel}</Text>
+          <Text className="text-[13px] text-ink-muted">{sublabel}</Text>
         )}
         <Text
           className={`text-[16px] ${
-            isDestructive ? "text-[#EF4444]" : "text-[#1C1917]"
+            isDestructive ? "text-error" : "text-ink"
           }`}
         >
           {label}
         </Text>
       </View>
       {showArrow && (
-        <Text className={`text-[18px] ${isDestructive ? "text-[#EF4444]" : "text-[#9CA3AF]"}`}>
+        <Text className={`text-[18px] ${isDestructive ? "text-error" : "text-ink-muted"}`}>
           →
         </Text>
       )}
@@ -147,34 +148,34 @@ export default function SettingsScreen() {
     value: boolean;
     onValueChange: (value: boolean) => void;
   }) => (
-    <View className="flex-row items-center justify-between px-4 py-4 bg-white rounded-xl mb-3">
-      <Text className="text-[16px] text-[#1C1917]">{label}</Text>
+    <View className="flex-row items-center justify-between px-4 py-4 bg-surface rounded-xl mb-3">
+      <Text className="text-[16px] text-ink">{label}</Text>
       <Switch
         testID={testID}
         accessibilityLabel={label}
         value={value}
         onValueChange={onValueChange}
-        trackColor={{ false: "#E5E7EB", true: "#1C1917" }}
-        thumbColor="#FFFFFF"
+        trackColor={{ false: colors.line, true: colors.ink }}
+        thumbColor={colors.surface}
       />
     </View>
   );
 
   const SectionHeader = ({ title }: { title: string }) => (
-    <Text className="text-[14px] text-[#6B7280] mb-3 mt-2">{title}</Text>
+    <Text className="text-[14px] text-ink-secondary mb-3 mt-2">{title}</Text>
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-[#FAFAF9]">
+    <SafeAreaView className="flex-1 bg-background">
       {/* Header */}
       <View className="flex-row items-center px-5 py-3">
         <Pressable
           onPress={handleBack}
           className="w-10 h-10 items-center justify-center"
         >
-          <Text className="text-[24px] text-[#1C1917]">←</Text>
+          <Text className="text-[24px] text-ink">←</Text>
         </Pressable>
-        <Text className="text-[17px] font-medium text-[#1C1917] ml-2">
+        <Text className="text-[17px] font-medium text-ink ml-2">
           Settings
         </Text>
       </View>
@@ -203,18 +204,18 @@ export default function SettingsScreen() {
               showArrow={false}
             />
             {user.phone_verified && (
-              <View className="flex-row items-center px-4 py-3 bg-[#F0FDF4] rounded-xl mb-3">
-                <Text className="text-[15px] text-[#22C55E]">✓</Text>
-                <Text className="text-[15px] text-[#166534] ml-2">Phone verified</Text>
+              <View className="flex-row items-center px-4 py-3 bg-success-soft rounded-xl mb-3">
+                <Text className="text-[15px] text-success">✓</Text>
+                <Text className="text-[15px] text-success-ink ml-2">Phone verified</Text>
               </View>
             )}
           </>
         ) : (
           <Pressable
             onPress={() => router.push("/sign-up")}
-            className="px-4 py-4 bg-white rounded-xl mb-3"
+            className="px-4 py-4 bg-surface rounded-xl mb-3"
           >
-            <Text className="text-[16px] text-[#1C1917]">Sign in to see your profile →</Text>
+            <Text className="text-[16px] text-ink">Sign in to see your profile →</Text>
           </Pressable>
         )}
 
@@ -248,13 +249,13 @@ export default function SettingsScreen() {
             <Pressable
               onPress={handleLogout}
               disabled={loading}
-              className="flex-row items-center justify-between px-4 py-4 bg-white rounded-xl mb-3 active:bg-[#F9FAFB]"
+              className="flex-row items-center justify-between px-4 py-4 bg-surface rounded-xl mb-3 active:bg-subtle"
             >
-              <Text className="text-[16px] text-[#1C1917]">Log out</Text>
+              <Text className="text-[16px] text-ink">Log out</Text>
               {loading ? (
-                <ActivityIndicator size="small" color="#9CA3AF" />
+                <ActivityIndicator size="small" color={colors.inkMuted} />
               ) : (
-                <Text className="text-[18px] text-[#9CA3AF]">→</Text>
+                <Text className="text-[18px] text-ink-muted">→</Text>
               )}
             </Pressable>
           </>

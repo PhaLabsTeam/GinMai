@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
 import { useAuthStore } from "../src/stores/authStore";
 import { useMomentStore } from "../src/stores/momentStore";
+import { colors } from "../src/theme/colors";
 
 export default function MenuScreen() {
   const router = useRouter();
@@ -63,15 +64,15 @@ export default function MenuScreen() {
       className="flex-row items-center py-4 active:opacity-60"
     >
       <View className="w-8 items-center">{icon}</View>
-      <Text className="text-[17px] text-[#1C1917] ml-3">{label}</Text>
+      <Text className="text-[17px] text-ink ml-3">{label}</Text>
     </Pressable>
   );
 
   // Location pin icon
   const LocationIcon = () => (
     <View className="w-5 h-5 items-center justify-center">
-      <View className="w-4 h-5 border-2 border-[#1C1917] rounded-full rounded-b-none items-center pt-0.5">
-        <View className="w-1.5 h-1.5 bg-[#1C1917] rounded-full" />
+      <View className="w-4 h-5 border-2 border-ink rounded-full rounded-b-none items-center pt-0.5">
+        <View className="w-1.5 h-1.5 bg-ink rounded-full" />
       </View>
       <View
         style={{
@@ -82,7 +83,7 @@ export default function MenuScreen() {
           borderTopWidth: 5,
           borderLeftColor: "transparent",
           borderRightColor: "transparent",
-          borderTopColor: "#1C1917",
+          borderTopColor: colors.ink,
           marginTop: -1,
         }}
       />
@@ -91,39 +92,39 @@ export default function MenuScreen() {
 
   // Shield icon
   const ShieldIcon = () => (
-    <View className="w-5 h-6 border-2 border-[#1C1917] rounded-t-lg rounded-b-full" />
+    <View className="w-5 h-6 border-2 border-ink rounded-t-lg rounded-b-full" />
   );
 
   // Settings/gear icon
   const SettingsIcon = () => (
-    <View className="w-5 h-5 border-2 border-[#1C1917] rounded-full items-center justify-center">
-      <View className="w-1.5 h-1.5 bg-[#1C1917] rounded-full" />
+    <View className="w-5 h-5 border-2 border-ink rounded-full items-center justify-center">
+      <View className="w-1.5 h-1.5 bg-ink rounded-full" />
     </View>
   );
 
   // Profile icon
   const ProfileIcon = () => (
-    <View className="w-5 h-5 rounded-full border-2 border-[#1C1917] items-center overflow-hidden">
-      <View className="w-1.5 h-1.5 bg-[#1C1917] rounded-full mt-0.5" />
-      <View className="w-3.5 h-1.5 bg-[#1C1917] rounded-t-full mt-0.5" />
+    <View className="w-5 h-5 rounded-full border-2 border-ink items-center overflow-hidden">
+      <View className="w-1.5 h-1.5 bg-ink rounded-full mt-0.5" />
+      <View className="w-3.5 h-1.5 bg-ink rounded-t-full mt-0.5" />
     </View>
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-[#FAFAF9]">
+    <SafeAreaView className="flex-1 bg-background">
       {/* Header */}
       <View className="flex-row items-center justify-between px-5 py-3">
-        <Text className="text-[17px] font-medium text-[#1C1917]">Menu</Text>
+        <Text className="text-[17px] font-medium text-ink">Menu</Text>
         <Pressable
           onPress={handleClose}
           className="w-10 h-10 items-center justify-center"
         >
-          <Text className="text-[24px] text-[#1C1917]">×</Text>
+          <Text className="text-[24px] text-ink">×</Text>
         </Pressable>
       </View>
 
       {/* Divider */}
-      <View className="h-px bg-[#F3F4F6]" />
+      <View className="h-px bg-subtle" />
 
       {/* Menu items */}
       <View className="px-6 pt-4">
@@ -133,10 +134,10 @@ export default function MenuScreen() {
           onPress={handleMyMoments}
         />
         {findingMoment && (
-          <ActivityIndicator size="small" color="#78716C" style={{ alignSelf: "flex-start", marginLeft: 44 }} />
+          <ActivityIndicator size="small" color={colors.inkSecondary} style={{ alignSelf: "flex-start", marginLeft: 44 }} />
         )}
         {noActiveMoment && (
-          <Text className="text-[14px] text-[#78716C] ml-11 -mt-2 mb-2">
+          <Text className="text-[14px] text-ink-secondary ml-11 -mt-2 mb-2">
             Nothing planned right now.
           </Text>
         )}
@@ -158,11 +159,11 @@ export default function MenuScreen() {
       </View>
 
       {/* Divider */}
-      <View className="h-px bg-[#F3F4F6] mt-4" />
+      <View className="h-px bg-subtle mt-4" />
 
       {/* Version info */}
       <View className="py-6">
-        <Text className="text-center text-[14px] text-[#9CA3AF]">
+        <Text className="text-center text-[14px] text-ink-muted">
           GinMai · Version 1.0
         </Text>
       </View>
