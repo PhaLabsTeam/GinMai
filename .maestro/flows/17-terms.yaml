@@ -1,0 +1,19 @@
+# The terms link in sign-up opens the Terms of Use (#17)
+appId: com.ginmai.app
+---
+- runFlow: _launch.yaml
+- tapOn: "Let's go"
+- tapOn: "Share location"
+- extendedWaitUntil:
+    visible: "Share where you're eating.*"
+    timeout: 15000
+- tapOn: "Share where you're eating.*"
+- tapOn: "terms"
+- extendedWaitUntil:
+    visible: "Terms of Use"
+    timeout: 5000
+- assertVisible: "The short version"
+- scrollUntilVisible:
+    element: "14\\. Law and disputes"
+- tapOn: "Back"
+- assertVisible: "Just a phone number\\."

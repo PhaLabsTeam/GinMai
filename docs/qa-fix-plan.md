@@ -32,6 +32,7 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | 7 | Two-user end-to-end testing | `test/two-user-e2e` | 📦 awaiting review | — |
 | 7.5 | Google Places search (#13, #30, #52) | `feat/places-search` | 📦 awaiting review | — |
 | 7.6 | TypeScript clean (#41) | `fix/typescript` | 📦 awaiting review | — |
+| 7.7 | Terms of Use (#17) | `feat/terms` | 📦 awaiting review | — |
 
 **Needed from the team**
 - Google Places API key (before Phase 3)
@@ -133,7 +134,7 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 |---|---|---|---|
 | 6 | Settings toggles don't save and have no effect; "Auto-accept" has nothing to control | 📦 ✅ | `69dbcab` |
 | 7 | "Delete account" does nothing (App Store requirement) | 📦 ✅ (unit + SQL; not run on device) | `69dbcab` |
-| 17 | The "terms" link isn't tappable, and no terms exist | ⬜ waiting on terms URL | |
+| 17 | The "terms" link wasn't tappable and no terms existed | 📦 ✅ (draft: placeholders + legal review pending) | `3b6f982` |
 | 18 | Test "Report Inappropriate Behavior" button shows on the Safety screen | 📦 ✅ | `8fcaa4e` |
 | 19 | The Safety banner promises location sharing that doesn't exist | 📦 ✅ | `8fcaa4e` |
 | 20 | Notification permission is requested at launch | 📦 ✅ | `58a2156` |
