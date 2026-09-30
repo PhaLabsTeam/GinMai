@@ -69,7 +69,7 @@ export default function ProfileScreen() {
             Sign in to see your profile
           </Text>
           <Text className="text-[16px] text-[#6B7280] text-center mt-3">
-            Track your meals, connect with people you've eaten with, and build your GinMai story.
+            See the meals you've shared and the people you'd eat with again.
           </Text>
           <Pressable
             onPress={handleSignIn}

@@ -1,29 +1,17 @@
-import { View, Text, Pressable, TextInput, Keyboard, Alert, ActivityIndicator, Modal, FlatList } from "react-native";
+import { View, Text, Pressable, TextInput, Keyboard, Alert, ActivityIndicator, Modal, FlatList, KeyboardAvoidingView, Platform } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useRef, useEffect } from "react";
 import { useAuthStore } from "../src/stores/authStore";
 import { friendlyAuthError } from "../src/utils/authErrors";
+import { ALL_COUNTRIES, searchCountries, countryForNumber } from "../src/data/countries";
 
-// Country codes for the picker
-const COUNTRY_CODES = [
-  { code: "+66", country: "Thailand", flag: "🇹🇭" },
-  { code: "+1", country: "USA/Canada", flag: "🇺🇸" },
-  { code: "+44", country: "UK", flag: "🇬🇧" },
-  { code: "+61", country: "Australia", flag: "🇦🇺" },
-  { code: "+65", country: "Singapore", flag: "🇸🇬" },
-  { code: "+81", country: "Japan", flag: "🇯🇵" },
-  { code: "+82", country: "South Korea", flag: "🇰🇷" },
-  { code: "+49", country: "Germany", flag: "🇩🇪" },
-  { code: "+33", country: "France", flag: "🇫🇷" },
-  { code: "+31", country: "Netherlands", flag: "🇳🇱" },
-];
 
 const OTP_LENGTH = 6;
 
 // "+66999999999" -> "+66 999 999 999" (country code from the picker list)
 function formatPhoneForDisplay(e164: string): string {
-  const country = COUNTRY_CODES.find((c) => e164.startsWith(c.code));
+  const country = countryForNumber(e164);
   if (!country) return e164;
   const local = e164.slice(country.code.length).replace(/(\d{3})(?=\d)/g, "$1 ");
   return `${country.code} ${local}`;
@@ -42,8 +30,9 @@ export default function SignUpScreen() {
   // Step 1: Phone
   const [phoneNumber, setPhoneNumber] = useState("");
   const [formattedPhone, setFormattedPhone] = useState("");
-  const [countryCode, setCountryCode] = useState(COUNTRY_CODES[0]); // Default to Thailand
+  const [countryCode, setCountryCode] = useState(ALL_COUNTRIES[0]); // Default to Thailand
   const [showCountryPicker, setShowCountryPicker] = useState(false);
+  const [countryQuery, setCountryQuery] = useState("");
 
   // Step 2: OTP (6 digits for Supabase)
   const [otp, setOtp] = useState("");
@@ -418,33 +407,55 @@ export default function SignUpScreen() {
         animationType="slide"
         onRequestClose={() => setShowCountryPicker(false)}
       >
-        <Pressable
-          className="flex-1 bg-black/50 justify-end"
-          onPress={() => setShowCountryPicker(false)}
+        <KeyboardAvoidingView
+          className="flex-1 justify-end"
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
-          <View className="bg-white rounded-t-3xl max-h-[60%]">
+          {/* Backdrop is a sibling behind the sheet, not its parent: a wrapping
+              Pressable exposed the whole sheet as one accessibility element */}
+          <Pressable
+            className="absolute inset-0 bg-black/50"
+            onPress={() => setShowCountryPicker(false)}
+            accessibilityLabel="Close"
+          />
+          <View className="bg-white rounded-t-3xl max-h-[80%]">
             <View className="p-4 border-b border-[#E5E7EB]">
               <Text className="text-center text-[18px] font-semibold text-[#1C1917]">
                 Select Country
               </Text>
             </View>
+            <View className="px-4 pt-3">
+              <TextInput
+                value={countryQuery}
+                onChangeText={setCountryQuery}
+                placeholder="Search country or code"
+                placeholderTextColor="#9CA3AF"
+                autoCorrect={false}
+                clearButtonMode="while-editing"
+                className="border border-[#E5E7EB] rounded-xl px-4 py-3 text-[16px] text-[#1C1917] bg-white"
+              />
+            </View>
             <FlatList
-              data={COUNTRY_CODES}
-              keyExtractor={(item) => item.code}
+              data={searchCountries(countryQuery)}
+              // Dial codes aren't unique (+1, +7), country names are
+              keyExtractor={(item) => item.country}
+              keyboardShouldPersistTaps="handled"
               renderItem={({ item }) => (
                 <Pressable
+                  accessibilityLabel={`${item.country} ${item.code}`}
                   onPress={() => {
                     setCountryCode(item);
                     setShowCountryPicker(false);
+                    setCountryQuery("");
                   }}
                   className={`flex-row items-center px-5 py-4 border-b border-[#F3F4F6] ${
-                    countryCode.code === item.code ? "bg-[#F9FAFB]" : ""
+                    countryCode.country === item.country ? "bg-[#F9FAFB]" : ""
                   }`}
                 >
                   <Text className="text-[24px] mr-3">{item.flag}</Text>
                   <Text className="text-[16px] text-[#1C1917] flex-1">{item.country}</Text>
                   <Text className="text-[16px] text-[#6B7280]">{item.code}</Text>
-                  {countryCode.code === item.code && (
+                  {countryCode.country === item.country && (
                     <Text className="text-[#22C55E] ml-2">✓</Text>
                   )}
                 </Pressable>
@@ -459,7 +470,7 @@ export default function SignUpScreen() {
               </Pressable>
             </View>
           </View>
-        </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );

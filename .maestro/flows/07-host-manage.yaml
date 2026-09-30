@@ -9,6 +9,12 @@ appId: com.ginmai.app
 - tapOn: "In 30 minutes"
 - tapOn: "Next"
 - tapOn: "Make visible"
+# First Moment asks about notifications (#20)
+- runFlow:
+    when:
+      visible: "Want a heads-up\\?"
+    commands:
+      - tapOn: "Not now"
 - extendedWaitUntil:
     visible: ".* visible\\."
     timeout: 15000
