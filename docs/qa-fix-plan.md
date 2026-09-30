@@ -34,7 +34,7 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | 7.6 | TypeScript clean (#41) | `fix/typescript` | 📦 awaiting review | — |
 | 7.7 | Terms of Use (#17) | `feat/terms` | 📦 awaiting review | — |
 | 7.8 | Privacy Policy, deletion retention (#59) | `feat/privacy-policy` | 📦 awaiting review | — |
-| 7.9 | Full table (#42), lock down moments (#60) | `test/full-table` | 🔧 in progress | — |
+| 7.9 | Full table (#42), moments lock-down (#60), profile privacy (#61, #62), ended Moments (#63) | `test/full-table` | 📦 awaiting review | — |
 
 **Needed from the team**
 - Google Places API key (before Phase 3)
@@ -297,6 +297,11 @@ While getting ready for the full-table test I found that the live `moments` poli
 
 **Ended Moments (#63):** `expire_moments()` was never scheduled and skipped full tables, so 19 ended Moments going back to January were still "active" or "full" and readable by signed-out visitors. Migration `20261002000003_expire_moments.sql` covers `full` too, runs every 5 minutes with pg_cron, and closes the backlog.
 
+**Final run, with all four migrations applied:**
+- flows `19-full-table`, `19b-full-table-after`, `15-two-user` and `18-delete-account` pass
+- no ended Moments are readable by signed-out visitors
+- Jest: 113 tests pass; typecheck: 0 errors
+
 **Cleanup:** `_reset-tester` now cancels through My Moments, because the map list never shows a full Moment, so full ones were never cleaned up.
 
 ## New issues (found during Phase 1, not yet scheduled)
@@ -323,10 +328,10 @@ While getting ready for the full-table test I found that the live `moments` poli
 | 57 | "Running late" was only offered after arriving | 📦 ✅ | `312a563` |
 | 58 | Signing in from a Moment, the Menu or Profile left that screen in the back history twice | 📦 ✅ | `312a563` |
 | 59 | Deleting an account erased reports about that person (so a reported user could wipe them and re-register), and left a deleted host's name on their Moments | 📦 ✅ | `6a04963` + migration `20261001000001` |
-| 60 | **Security:** the live database still had the M1 "Anyone can …" policies on `moments`, so the public anon key alone could edit or delete any Moment. Guests could only join because of that hole: the app counted seats itself from its cache, which could overbook. Legacy `join_moment`/`leave_moment` could act as any user | ✅ applied, anon writes refused | `8106104` + migration `20261002000000` |
-| 61 | A host saw every guest who wasn't also hosting as "Guest": the only rule for reading another profile was "they're hosting an active Moment". Hidden in earlier tests because Sam had a stale January Moment | 🔧 (SQL to apply) | migration `20261002000001` |
-| 63 | Ended Moments were never closed (19 stale "active"/"full" rows back to January, readable by signed-out visitors) | 🔧 (SQL to apply) | migration `20261002000003` |
-| 62 | **Privacy:** any signed-in user could read the phone number and push token of anyone whose profile they could see (a stranger read Tester's and Sam's numbers). Users could also edit their own `no_shows` and `status` | 🔧 (SQL to apply) | migration `20261002000001` |
+| 60 | **Security:** the live database still had the M1 "Anyone can …" policies on `moments`, so the public anon key alone could edit or delete any Moment. Guests could only join because of that hole: the app counted seats itself from its cache, which could overbook. Legacy `join_moment`/`leave_moment` could act as any user | 📦 ✅ | `8106104` + migration `20261002000000` |
+| 61 | A host saw every guest who wasn't also hosting as "Guest": the only rule for reading another profile was "they're hosting an active Moment". Hidden in earlier tests because Sam had a stale January Moment | 📦 ✅ | migration `20261002000001` |
+| 63 | Ended Moments were never closed (19 stale "active"/"full" rows back to January, readable by signed-out visitors) | 📦 ✅ | migration `20261002000003` |
+| 62 | **Privacy:** any signed-in user could read the phone number and push token of anyone whose profile they could see (a stranger read Tester's and Sam's numbers). Users could also edit their own `no_shows` and `status` | 📦 ✅ | migration `20261002000001` |
 | 41 | `tsc` failed (477 errors): TS 6 rejects `baseUrl` and no longer auto-loads `@types`; old tests used a stale `User` shape; an unused client push path had an invalid payload type | 📦 ✅ `npm run typecheck` passes | `f50060e` |
 
 ## Phase 1.5: expo-notifications 57 (#40)
@@ -364,7 +369,6 @@ Done ahead of Phase 2 because it was a runtime regression from the SDK upgrade.
 
 **Still open:**
 - Real push delivery on a device (needs the APNs key)
-- A full table of 2 guests (#42 live case)
 - Delete account on a spare number (#7)
 
 
@@ -375,7 +379,7 @@ Done ahead of Phase 2 because it was a runtime regression from the SDK upgrade.
 | Running late | ✅ (moved before arrival, #57) | |
 | Feedback / "eat again" match | ✅ (match made by trigger) | |
 | Guest moment-detail view | ✅ | |
-| Host's live screen stays up when the table fills (#42) | ⬜ (needs 2 guests) | |
+| Host's live screen stays up when the table fills (#42) | ✅ | flows 19, 19b |
 | "Eat again" feedback and mutual match (#43) | ✅ | |
 | Report / block another user, blocked join rejected (#47, #48) | ✅ | |
 | Leave and re-join a Moment (#49) | ✅ | |
