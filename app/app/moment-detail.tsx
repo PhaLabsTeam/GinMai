@@ -12,6 +12,7 @@ import { maybeAskForPushPermission } from "../src/services/pushPermission";
 import { colors } from "../src/theme/colors";
 import { Icon, Verified } from "../src/components/Icon";
 import { formatTime } from "../src/utils/formatTime";
+import { momentPlaceTitle } from "../src/utils/neighborhoods";
 
 export default function MomentDetailScreen() {
   const router = useRouter();
@@ -176,13 +177,13 @@ export default function MomentDetailScreen() {
         <View className="flex-row items-center mt-6">
           <View className="mr-2"><Icon name="restaurant-outline" size={22} color={colors.accent} /></View>
           <Text className="text-[20px] font-semibold text-ink">
-            {moment.location.place_name || "Somewhere tasty"}
+            {momentPlaceTitle(moment.location)}
           </Text>
         </View>
 
         {/* Area */}
         <Text className="text-[16px] text-ink-secondary mt-1">
-          {moment.location.area_name || "Chiang Mai"}
+          {moment.location.place_name ? moment.location.area_name || "Chiang Mai" : "Chiang Mai"}
         </Text>
 
         {/* Time range */}

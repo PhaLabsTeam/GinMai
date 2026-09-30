@@ -13,6 +13,7 @@ import { mealWord, capitalize } from "../src/utils/mealWord";
 import { colors } from "../src/theme/colors";
 import { Icon } from "../src/components/Icon";
 import { formatTime } from "../src/utils/formatTime";
+import { momentPlaceTitle } from "../src/utils/neighborhoods";
 
 export default function MomentLiveScreen() {
   const router = useRouter();
@@ -247,7 +248,7 @@ export default function MomentLiveScreen() {
 
         {/* Place name */}
         <Text className="text-center text-[18px] font-semibold text-ink mt-5">
-          {moment.location.place_name || moment.location.area_name || "Your location"}
+          {momentPlaceTitle(moment.location)}
         </Text>
 
         {/* Time and seats */}

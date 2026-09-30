@@ -1,0 +1,48 @@
+# Real restaurant search (#13), neighbourhood names (#30), place titles (#52).
+appId: com.ginmai.app
+---
+- runFlow: _reset-tester.yaml
+- runFlow: 01-auth-signup.yaml
+
+# Current location reads as the local name, not the official subdistrict (#30)
+- extendedWaitUntil:
+    visible: ".*Nimman.*"
+    timeout: 20000
+- assertNotVisible: ".*Suthep.*"
+
+# Search finds the actual restaurant (#13)
+- tapOn: "In 30 minutes"
+- tapOn: ".*Search for a place.*"
+- inputText: "khao soi mae"
+- extendedWaitUntil:
+    visible: "Khao Soi Maesai,.*"
+    timeout: 15000
+- tapOn: "Khao Soi Maesai,.*"
+- extendedWaitUntil:
+    visible: ".*Khao Soi Maesai.*"
+    timeout: 10000
+- tapOn: "Next"
+- tapOn: "Make visible"
+- runFlow:
+    when:
+      visible: "Want a heads-up\\?"
+    commands:
+      - tapOn: "Not now"
+- extendedWaitUntil:
+    visible: "Khao Soi Maesai"
+    timeout: 15000
+
+# On the map list with its neighbourhood
+- tapOn: "Back"
+- extendedWaitUntil:
+    visible: ".*Khao Soi Maesai.*"
+    timeout: 15000
+
+# Clean up
+- tapOn: "Menu"
+- tapOn: "My Moments"
+- tapOn: ".*Cancel this meal.*"
+- tapOn: "Cancel meal"
+- extendedWaitUntil:
+    visible: "Chiang Mai"
+    timeout: 15000
