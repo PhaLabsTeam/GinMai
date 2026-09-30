@@ -20,7 +20,7 @@ export default function MenuScreen() {
 
   const handleMyMoments = async () => {
     if (!user) {
-      router.push("/sign-up?returnTo=/menu");
+      router.replace("/sign-up?returnTo=/menu");
       return;
     }
     if (findingMoment) return;

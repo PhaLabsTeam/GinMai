@@ -448,7 +448,10 @@ export const useMomentStore = create<MomentState>((set, get) => ({
       if (connectionError) {
         // Check if it's a duplicate
         if (connectionError.code === "23505") {
-          throw new Error("You've already joined this moment");
+          // Already in (e.g. tapped Join before connections loaded): not an error
+          await get().fetchUserConnections(userId);
+          set({ loading: false });
+          return { success: true };
         }
         // prevent_blocked_join trigger: either side has blocked the other
         if (connectionError.message?.includes("blocked")) {

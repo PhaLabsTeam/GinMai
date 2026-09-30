@@ -46,7 +46,7 @@ export default function ProfileScreen() {
   };
 
   const handleSignIn = () => {
-    router.push("/sign-up?returnTo=/profile");
+    router.replace("/sign-up?returnTo=/profile");
   };
 
   // Format joined date

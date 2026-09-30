@@ -1,0 +1,34 @@
+# Shared: fresh launch, sign in as Tester, cancel every Moment Tester is hosting
+appId: com.ginmai.app
+---
+- runFlow: _launch.yaml
+- tapOn: "Let's go"
+- tapOn: "Share location"
+- extendedWaitUntil:
+    visible: "Share where you're eating.*"
+    timeout: 15000
+- tapOn: "Share where you're eating.*"
+- extendedWaitUntil:
+    visible: "Phone number"
+    timeout: 10000
+- runFlow:
+    file: _signin.yaml
+    env:
+      PHONE: "999999999"
+      CODE: "123456"
+- extendedWaitUntil:
+    visible: "Share your .*"
+    timeout: 15000
+- tapOn: "Back"
+- repeat:
+    while:
+      visible: ".*You're hosting.*"
+    commands:
+      - tapOn: "Menu"
+      - tapOn: "My Moments"
+      - tapOn: ".*Cancel this meal.*"
+      - tapOn: "Cancel meal"
+      - extendedWaitUntil:
+          visible: "Chiang Mai"
+          timeout: 15000
+- runFlow: _logout.yaml

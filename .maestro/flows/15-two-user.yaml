@@ -3,6 +3,9 @@
 # Covers #43, #49, #50, #51, #53 and the arrival / running-late paths.
 appId: com.ginmai.app
 ---
+# Start clean: no leftover Moments from earlier runs
+- runFlow: _reset-tester.yaml
+
 # Tester hosts a Moment starting now
 - runFlow: 01-auth-signup.yaml
 - tapOn: "Now.*"
@@ -75,19 +78,20 @@ appId: com.ginmai.app
     visible: "You're in\\."
     timeout: 15000
 
-# Arrive; try running late; find them; rate Tester and say "eat again" (#43)
+# Running late is offered before arriving (#57), then arrive
+- tapOn: ".*Running a few minutes late.*"
+- extendedWaitUntil:
+    visible: ".*knows you're running late"
+    timeout: 10000
 - tapOn: "I'm here"
 - extendedWaitUntil:
     visible: "You're here\\."
     timeout: 15000
-- tapOn: ".*Running a few minutes late.*"
-- extendedWaitUntil:
-    visible: "Host notified"
-    timeout: 10000
-- tapOn: "OK"
+- assertNotVisible: ".*Running a few minutes late.*"
 - extendedWaitUntil:
     visible: "Found them!"
     timeout: 10000
+# Rate Tester and say "eat again" (#43)
 - tapOn: "Found them!"
 - extendedWaitUntil:
     visible: "How was .*\\?"
@@ -125,7 +129,7 @@ appId: com.ginmai.app
     point: "9%,10%"
 - tapOn: "My Moments"
 - extendedWaitUntil:
-    visible: ".*How was it\\?.*"
+    visible: "How was it with Sam\\?"
     timeout: 15000
 - tapOn: "How was it with Sam\\?"
 - tapOn:
@@ -142,6 +146,20 @@ appId: com.ginmai.app
     point: "9%,10%"
 - tapOn: "Profile"
 - tapOn: ".*Connections.*"
+# Made by the create_match_on_mutual_feedback trigger (#43, #55)
 - extendedWaitUntil:
-    visible: ".*Sam.*"
+    visible: "You've connected with \\d+ (person|people)\\."
+    timeout: 15000
+- assertVisible: "Sam"
+- assertVisible: "\\d+ meals? together"
+
+# Clean up: cancel Tester's Moment
+- tapOn: "Back"
+- tapOn: "Back"
+- tapOn: "Menu"
+- tapOn: "My Moments"
+- tapOn: ".*Cancel this meal.*"
+- tapOn: "Cancel meal"
+- extendedWaitUntil:
+    visible: "Chiang Mai"
     timeout: 15000
