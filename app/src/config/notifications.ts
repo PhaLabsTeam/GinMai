@@ -10,7 +10,9 @@ import * as Notifications from 'expo-notifications';
 export function configureNotificationHandler() {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
-      shouldShowAlert: true,
+      // shouldShowAlert is deprecated in SDK 57: banner = on screen, list = in Notification Center
+      shouldShowBanner: true,
+      shouldShowList: true,
       shouldPlaySound: true,
       shouldSetBadge: true,
     }),
