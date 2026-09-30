@@ -1,0 +1,88 @@
+# Map and product-feel fixes (#22, #23, #25, #26, #27, #28b, #29).
+appId: com.ginmai.app
+---
+- runFlow: _launch.yaml
+- tapOn: "Let's go"
+- tapOn: "Share location"
+- extendedWaitUntil:
+    visible: "Share where you're eating.*"
+    timeout: 15000
+
+# Country search in sign-up (#28b)
+- tapOn: "Share where you're eating.*"
+- tapOn: ".*\\+66.*"
+- waitForAnimationToEnd
+- tapOn: "Search country or code"
+- inputText: "viet"
+- assertVisible: "Vietnam \\+84"
+- assertNotVisible: "Germany \\+49"
+# Clear and search again, then pick Thailand for the test number
+- eraseText: 10
+- inputText: "thai"
+- assertVisible: "Thailand \\+66"
+- assertNotVisible: "Vietnam \\+84"
+- tapOn: "Thailand \\+66"
+- assertVisible: ".*\\+66.*"
+
+- tapOn: "Phone number"
+- inputText: "999999999"
+- tapOn: "Continue"
+- extendedWaitUntil:
+    visible: "Enter code"
+    timeout: 15000
+- inputText: "123456"
+- extendedWaitUntil:
+    visible: "Share your .*"
+    timeout: 15000
+
+# Host a Moment
+- tapOn: "In 30 minutes"
+- tapOn: "Next"
+- tapOn: "Make visible"
+- runFlow:
+    when:
+      visible: "Want a heads-up\\?"
+    commands:
+      - tapOn: "Not now"
+- extendedWaitUntil:
+    visible: ".* visible\\."
+    timeout: 15000
+
+# Live screen wording (#29) and table sign with the host's name (#25)
+- assertVisible: "Your table is on the map"
+- tapOn: "Show table sign"
+- assertVisible: "Tester.s table.*"
+- tapOn: "Tester.s table.*"
+
+# Map list labels your own Moment (#23)
+- tapOn: "Back"
+- extendedWaitUntil:
+    visible: "Eating soon\\?"
+    timeout: 15000
+- assertVisible: ".*You're hosting.*"
+
+# Profile: "New" instead of a made-up 100% (#26); Connections copy (#27)
+- tapOn:
+    point: "9%,10%"
+- tapOn: "Profile"
+- assertVisible: "New"
+- assertNotVisible: "100%"
+- tapOn: ".*Connections.*"
+- assertVisible: ".*they'll show up here\\."
+- assertNotVisible: ".*build your network.*"
+
+# Clean up: cancel the test Moment
+- swipe:
+    start: "1%,50%"
+    end: "80%,50%"
+- swipe:
+    start: "1%,50%"
+    end: "80%,50%"
+- tapOn:
+    point: "9%,10%"
+- tapOn: "My Moments"
+- extendedWaitUntil:
+    visible: "Waiting for guests.*"
+    timeout: 15000
+- tapOn: "Cancel this meal.*"
+- tapOn: "Cancel meal"
