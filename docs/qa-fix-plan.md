@@ -28,7 +28,7 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | 5 | Map & product-feel UX | `fix/ux-polish` | 📦 awaiting review, #30 moves to #13 (Places) | — |
 | 5.5 | Metro crash on style edits (#44) | `fix/metro-nativewind` | 📦 awaiting review | — |
 | 5.6 | Host and guest push notifications (#45) | `feat/host-push-notifications` | 📦 awaiting review | — |
-| 6 | Visual consistency | `refactor/design-consistency` | ⬜ | — |
+| 6 | Visual consistency | `refactor/design-consistency` | 📦 awaiting review | — |
 | 7 | Two-user end-to-end testing | `test/two-user-e2e` | ⬜ | — |
 
 **Needed from the team**
@@ -213,12 +213,12 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 
 | # | Issue | Status | Commit |
 |---|---|---|---|
-| 33 | Hard-coded off-token colors; the accent color is unused | ⬜ | |
-| 34 | The Safety screen uses a different visual style | ⬜ | |
-| 35 | Emoji and line icons are mixed; back arrows are inconsistent | ⬜ | |
-| 36 | Mixed 12h and 24h time formats | ⬜ | |
-| 37 | Map header safe-area gap, card/button seam, empty space on welcome/location screens | ⬜ | |
-| 38 | Duplicate titles ("Almost there", the Connections header) | ⬜ | |
+| 33 | Hard-coded off-token colors; the accent color is unused | 📦 ✅ | `b3a7722` |
+| 34 | The Safety screen uses a different visual style | 📦 ✅ | `2a6708a` |
+| 35 | Emoji and line icons are mixed; back arrows are inconsistent | 📦 ✅ | `2a6708a` |
+| 36 | Mixed 12h and 24h time formats | 📦 ✅ | `c096e0b` |
+| 37 | Map header safe-area gap, card/button seam, empty space on welcome/location screens | 📦 ✅ | `2a6708a` `c3305d6` |
+| 38 | Duplicate titles ("Almost there", the Connections header) | 📦 ✅ | `c3305d6` |
 
 ## New issues (found during Phase 1, not yet scheduled)
 
@@ -247,6 +247,17 @@ Done ahead of Phase 2 because it was a runtime regression from the SDK upgrade.
 - **Jest:** new `useNotifications.test.tsx` checks that listeners are removed without the removed API, that the handler uses banner/list, and that triggers are typed. All 3 tests fail against the old code. The full suite passes: 44 tests in 7 suites.
 - **Simulator:** with the old code, each fast refresh logged `TypeError: undefined is not a function` from the listener cleanup. With the fix, two fast refreshes logged 0 errors.
 - **Simulator:** a foreground push sent with `xcrun simctl push` shows a banner, and the app logs "Notification received".
+
+**Verified:**
+- **Colors:** no hard-coded hex values remain outside `src/theme/colors.ts`, and none of the off-token grays (`#9CA3AF`, `#6B7280`, `#1F2937`) are left. `tailwind.config.js` and `colors.ts` are kept in sync by a test.
+- **Jest:** `npm test` passes 96 tests (new `theme/colors` and `formatTime` suites)
+- **Maestro:** `06`, `07`, `08`, `11` and `13` pass after the restyle
+- **Screenshots:**
+  - map header without the gap, and no card/button seam
+  - outline icons in the menu, Profile and Safety
+  - welcome and location screens centred
+  - compact time picker, with "Where?" still in view
+- **Accessibility:** decorative icons are hidden from VoiceOver, so rows read "Profile" and not ", Profile"; icon-only buttons are labelled
 
 ## Phase 7: Two-user E2E
 
