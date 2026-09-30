@@ -1,0 +1,66 @@
+# A host can always get back to their Moment and must confirm before
+# cancelling it (#3, #4, #11, #16).
+appId: com.ginmai.app
+---
+# Signed in, on create-moment
+- runFlow: 01-auth-signup.yaml
+
+# Create a Moment with the default options
+- tapOn: "In 30 minutes"
+- tapOn: "Next"
+- tapOn: "Make visible"
+- extendedWaitUntil:
+    visible: ".* visible\\."
+    timeout: 15000
+
+# Live screen has a way back now (#3)
+- tapOn: "Back"
+- extendedWaitUntil:
+    visible: "Eating soon\\?"
+    timeout: 15000
+
+# Reopen it from the list: hosts get "Manage your moment" (#3)
+- tapOn: ".*Tester.*"
+# Real walking estimate, no made-up price (#5)
+- assertVisible: "\\d+ min walk"
+- assertNotVisible: ".*฿.*"
+- tapOn: "Manage your moment.*"
+- assertVisible: "Waiting for guests.*"
+- tapOn: "Back"
+- tapOn: "Back"
+
+# Menu > My Moments also finds it (#3)
+- tapOn:
+    point: "9%,10%"
+- tapOn: "My Moments"
+- extendedWaitUntil:
+    visible: "Waiting for guests.*"
+    timeout: 15000
+
+# Cancelling asks first (#4)
+- tapOn: "Cancel this meal.*"
+- assertVisible: "Cancel this meal\\?"
+- tapOn: "Keep it"
+- assertVisible: "Waiting for guests.*"
+- tapOn: "Cancel this meal.*"
+- tapOn: "Cancel meal"
+- extendedWaitUntil:
+    visible: "Nothing here yet\\."
+    timeout: 15000
+
+# Nothing active any more
+- tapOn:
+    point: "9%,10%"
+- tapOn: "My Moments"
+- extendedWaitUntil:
+    visible: "Nothing planned right now\\."
+    timeout: 15000
+- swipe:
+    start: "1%,50%"
+    end: "80%,50%"
+
+# Menu > Safety opens the Safety screen (#16)
+- tapOn:
+    point: "9%,10%"
+- tapOn: "Safety"
+- assertVisible: "Emergency Contacts"

@@ -3,6 +3,10 @@
 # Metro and dismiss the dev-menu intro. Both steps no-op in a release build.
 appId: com.ginmai.app
 ---
+# Nimman, Chiang Mai. Without a fix, create-moment can't get coordinates (#39)
+- setLocation:
+    latitude: 18.7960
+    longitude: 98.9680
 - launchApp:
     clearState: true
     permissions:
@@ -34,3 +38,9 @@ appId: com.ginmai.app
       - tapOn:
           point: "91%,11%"
 - assertVisible: "Let's go"
+# Dev-only error toast (console.error) can cover bottom buttons
+- runFlow:
+    when:
+      visible: "Tap to dismiss|Dismiss"
+    commands:
+      - tapOn: "Dismiss"

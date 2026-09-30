@@ -52,16 +52,6 @@ export default function LocationPermissionScreen() {
             </Text>
           </Pressable>
         </View>
-
-        {/* Floating action button */}
-        <View className="absolute bottom-8 right-0">
-          <Pressable
-            onPress={handleShareLocation}
-            className="w-14 h-14 bg-[#1F2937] rounded-full items-center justify-center active:opacity-80"
-          >
-            <Text className="text-white text-2xl font-light">›</Text>
-          </Pressable>
-        </View>
       </View>
     </SafeAreaView>
   );

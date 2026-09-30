@@ -1,22 +1,44 @@
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useState } from "react";
+import { useAuthStore } from "../src/stores/authStore";
+import { useMomentStore } from "../src/stores/momentStore";
 
 export default function MenuScreen() {
   const router = useRouter();
+  const user = useAuthStore((state) => state.user);
+  const fetchMyActiveMoment = useMomentStore((state) => state.fetchMyActiveMoment);
+  const [findingMoment, setFindingMoment] = useState(false);
+  const [noActiveMoment, setNoActiveMoment] = useState(false);
 
   const handleClose = () => {
     router.back();
   };
 
-  const handleMyMoments = () => {
-    // Navigate to my moments / moment-live if active
-    router.push("/map");
+  const handleMyMoments = async () => {
+    if (!user) {
+      router.push("/sign-up?returnTo=/menu");
+      return;
+    }
+    if (findingMoment) return;
+
+    setFindingMoment(true);
+    setNoActiveMoment(false);
+    const active = await fetchMyActiveMoment(user.id);
+    setFindingMoment(false);
+
+    if (!active) {
+      setNoActiveMoment(true);
+    } else if (active.role === "host") {
+      router.push(`/moment-live?momentId=${active.moment.id}`);
+    } else {
+      router.push(`/confirmation?momentId=${active.moment.id}`);
+    }
   };
 
   const handleSafety = () => {
-    // Navigate to safety screen (not yet implemented)
-    router.back();
+    router.push("/safety");
   };
 
   const handleSettings = () => {
@@ -110,6 +132,14 @@ export default function MenuScreen() {
           label="My Moments"
           onPress={handleMyMoments}
         />
+        {findingMoment && (
+          <ActivityIndicator size="small" color="#78716C" style={{ alignSelf: "flex-start", marginLeft: 44 }} />
+        )}
+        {noActiveMoment && (
+          <Text className="text-[14px] text-[#78716C] ml-11 -mt-2 mb-2">
+            Nothing planned right now.
+          </Text>
+        )}
         <MenuItem
           icon={<ProfileIcon />}
           label="Profile"
@@ -135,16 +165,6 @@ export default function MenuScreen() {
         <Text className="text-center text-[14px] text-[#9CA3AF]">
           GinMai · Version 1.0
         </Text>
-      </View>
-
-      {/* Floating action button */}
-      <View className="absolute bottom-8 right-6">
-        <Pressable
-          onPress={() => router.replace("/map")}
-          className="w-14 h-14 bg-[#1F2937] rounded-full items-center justify-center active:opacity-80 shadow-lg"
-        >
-          <Text className="text-white text-2xl font-light">›</Text>
-        </Pressable>
       </View>
     </SafeAreaView>
   );

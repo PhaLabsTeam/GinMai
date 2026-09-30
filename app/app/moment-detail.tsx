@@ -2,20 +2,43 @@ import { View, Text, Pressable, ScrollView, Alert, ActivityIndicator } from "rea
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useEffect } from "react";
+import { useMoment } from "../src/hooks/useMoment";
 import { useMomentStore } from "../src/stores/momentStore";
 import { useAuthStore } from "../src/stores/authStore";
+import * as Location from "expo-location";
+import { distanceMeters, formatWalk } from "../src/utils/distance";
 
 export default function MomentDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ momentId: string }>();
-  const moments = useMomentStore((state) => state.moments);
   const joinMoment = useMomentStore((state) => state.joinMoment);
   const hasJoinedMoment = useMomentStore((state) => state.hasJoinedMoment);
   const fetchUserConnections = useMomentStore((state) => state.fetchUserConnections);
   const user = useAuthStore((state) => state.user);
   const [joining, setJoining] = useState(false);
+  const [userPosition, setUserPosition] = useState<{ lat: number; lng: number } | null>(null);
 
-  const moment = moments.find((m) => m.id === params.momentId);
+  // Last known position is enough for a walking estimate and doesn't wait on GPS
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { status } = await Location.getForegroundPermissionsAsync();
+        if (status !== "granted") return;
+        const position = await Location.getLastKnownPositionAsync();
+        if (position && !cancelled) {
+          setUserPosition({ lat: position.coords.latitude, lng: position.coords.longitude });
+        }
+      } catch (e) {
+        console.log("Location unavailable for walking estimate:", e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const { moment, loading: momentLoading } = useMoment(params.momentId);
   const hasJoined = params.momentId ? hasJoinedMoment(params.momentId) : false;
 
   // Fetch user's connections when user is available
@@ -24,6 +47,14 @@ export default function MomentDetailScreen() {
       fetchUserConnections(user.id);
     }
   }, [user?.id, fetchUserConnections]);
+
+  if (!moment && momentLoading) {
+    return (
+      <SafeAreaView className="flex-1 bg-[#FAFAF9] items-center justify-center">
+        <ActivityIndicator size="large" color="#1C1917" />
+      </SafeAreaView>
+    );
+  }
 
   if (!moment) {
     return (
@@ -91,8 +122,10 @@ export default function MomentDetailScreen() {
     }
   };
 
-  // Simulated walking distance (would be calculated from actual location)
-  const walkingDistance = "8 min walk";
+  // Hidden when we don't know where the user is
+  const walkingDistance = userPosition
+    ? formatWalk(distanceMeters(userPosition, moment.location))
+    : null;
 
   return (
     <SafeAreaView className="flex-1 bg-[#FAFAF9]">
@@ -100,6 +133,7 @@ export default function MomentDetailScreen() {
       <View className="flex-row items-center px-5 py-3">
         <Pressable
           onPress={() => router.back()}
+          accessibilityLabel="Back"
           className="w-10 h-10 items-center justify-center"
         >
           <Text className="text-[24px] text-[#1C1917]">←</Text>
@@ -131,9 +165,11 @@ export default function MomentDetailScreen() {
         </View>
 
         {/* Walking distance */}
-        <Text className="text-center text-[15px] text-[#6B7280] mt-3">
-          {walkingDistance}
-        </Text>
+        {walkingDistance && (
+          <Text className="text-center text-[15px] text-[#6B7280] mt-3">
+            {walkingDistance}
+          </Text>
+        )}
 
         {/* Place info */}
         <View className="flex-row items-center mt-6">
@@ -173,18 +209,21 @@ export default function MomentDetailScreen() {
           </View>
         )}
 
-        {/* Seats and price */}
+        {/* Seats */}
         <Text className="text-[15px] text-[#6B7280] mt-5">
-          {seatsOpen} {seatsOpen === 1 ? "seat" : "seats"} open{"  "}·{"  "}~฿150
+          {seatsOpen} {seatsOpen === 1 ? "seat" : "seats"} open
         </Text>
       </ScrollView>
 
       {/* Join button */}
       <View className="px-6 pb-6 pt-3 border-t border-[#F3F4F6]">
         {isHost ? (
-          <View className="bg-[#E5E7EB] py-4 rounded-2xl items-center">
-            <Text className="text-[#9CA3AF] text-[17px] font-medium">Your moment</Text>
-          </View>
+          <Pressable
+            onPress={() => router.push(`/moment-live?momentId=${moment.id}`)}
+            className="bg-[#1C1917] py-4 rounded-2xl items-center active:opacity-80"
+          >
+            <Text className="text-white text-[17px] font-medium">Manage your moment →</Text>
+          </Pressable>
         ) : hasJoined ? (
           <Pressable
             onPress={handleJoin}
@@ -210,25 +249,6 @@ export default function MomentDetailScreen() {
           </Pressable>
         )}
       </View>
-
-      {/* Floating action button - hide if host or full (but show if already joined) */}
-      {!isHost && (!isFull || hasJoined) && (
-        <View className="absolute bottom-24 right-6">
-          <Pressable
-            onPress={handleJoin}
-            disabled={joining}
-            className={`w-14 h-14 rounded-full items-center justify-center shadow-lg ${
-              hasJoined ? "bg-[#22C55E]" : "bg-[#1F2937]"
-            } ${joining ? "opacity-60" : "active:opacity-80"}`}
-          >
-            {joining ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <Text className="text-white text-2xl font-light">›</Text>
-            )}
-          </Pressable>
-        </View>
-      )}
     </SafeAreaView>
   );
 }

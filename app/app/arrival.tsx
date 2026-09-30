@@ -2,19 +2,19 @@ import { View, Text, Pressable, ActivityIndicator, Platform, Alert } from "react
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
+import { useMoment } from "../src/hooks/useMoment";
 import { useMomentStore } from "../src/stores/momentStore";
 import { useAuthStore } from "../src/stores/authStore";
 
 export default function ArrivalScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ momentId: string }>();
-  const moments = useMomentStore((state) => state.moments);
   const notifyHostRunningLate = useMomentStore((state) => state.notifyHostRunningLate);
   const user = useAuthStore((state) => state.user);
 
   const [notifying, setNotifying] = useState(false);
 
-  const moment = moments.find((m) => m.id === params.momentId);
+  const { moment, loading: momentLoading } = useMoment(params.momentId);
   const hostName = moment?.host_name || "them";
 
   const handleFoundThem = () => {
@@ -116,16 +116,6 @@ export default function ArrivalScreen() {
           <Text className="text-center text-[16px] text-[#9CA3AF]">
             ← Back
           </Text>
-        </Pressable>
-      </View>
-
-      {/* Floating action button */}
-      <View className="absolute bottom-8 right-6">
-        <Pressable
-          onPress={handleFoundThem}
-          className="w-14 h-14 bg-[#1F2937] rounded-full items-center justify-center active:opacity-80 shadow-lg"
-        >
-          <Text className="text-white text-2xl font-light">›</Text>
         </Pressable>
       </View>
     </SafeAreaView>

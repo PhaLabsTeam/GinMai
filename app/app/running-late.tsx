@@ -1,7 +1,8 @@
-import { View, Text, Pressable } from "react-native";
+import { ActivityIndicator, View, Text, Pressable } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
+import { useMoment } from "../src/hooks/useMoment";
 import { useMomentStore } from "../src/stores/momentStore";
 import { useAuthStore } from "../src/stores/authStore";
 
@@ -10,10 +11,9 @@ export default function RunningLateScreen() {
   const params = useLocalSearchParams<{ momentId: string }>();
   const [marking, setMarking] = useState(false);
 
-  const moments = useMomentStore((state) => state.moments);
   const user = useAuthStore((state) => state.user);
 
-  const moment = moments.find((m) => m.id === params.momentId);
+  const { moment, loading: momentLoading } = useMoment(params.momentId);
 
   const markRunningLate = useMomentStore((state) => state.markRunningLate);
 
@@ -48,6 +48,14 @@ export default function RunningLateScreen() {
     // User is on time, just close
     router.back();
   };
+
+  if (!moment && momentLoading) {
+    return (
+      <SafeAreaView className="flex-1 bg-[#FAFAF9] items-center justify-center">
+        <ActivityIndicator size="large" color="#1C1917" />
+      </SafeAreaView>
+    );
+  }
 
   if (!moment) {
     return (
