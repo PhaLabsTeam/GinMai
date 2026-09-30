@@ -1,5 +1,5 @@
 import { View, Platform } from "react-native";
-import React from "react";
+import React, { useEffect, useRef } from "react";
 
 // Conditionally import MapView and Marker only on native
 let MapView: any = null;
@@ -32,6 +32,8 @@ interface MapComponentProps {
     onPress?: () => void;
   }>;
   onMapReady?: () => void;
+  // MapKit's own fix for the blue dot; often available before expo-location's
+  onUserLocationChange?: (coords: { latitude: number; longitude: number }) => void;
   showsUserLocation?: boolean;
   scrollEnabled?: boolean;
   zoomEnabled?: boolean;
@@ -43,22 +45,37 @@ export function MapComponent({
   region,
   markers = [],
   onMapReady,
+  onUserLocationChange,
   showsUserLocation = false,
   scrollEnabled = true,
   zoomEnabled = true,
   style,
   fallback,
 }: MapComponentProps) {
+  const mapRef = useRef<any>(null);
+
+  // Not a controlled `region`: that snapped the map back whenever the screen
+  // re-rendered after the user panned. Only move it when the app asks to.
+  const { latitude, longitude, latitudeDelta, longitudeDelta } = region;
+  useEffect(() => {
+    mapRef.current?.animateToRegion({ latitude, longitude, latitudeDelta, longitudeDelta }, 400);
+  }, [latitude, longitude, latitudeDelta, longitudeDelta]);
+
   if (!mapsAvailable || !MapView) {
     return fallback ? <>{fallback}</> : null;
   }
 
   return (
     <MapView
+      ref={mapRef}
       style={style || { flex: 1 }}
       initialRegion={region}
-      region={region}
       onMapReady={onMapReady}
+      onUserLocationChange={
+        onUserLocationChange
+          ? (e: any) => e?.nativeEvent?.coordinate && onUserLocationChange(e.nativeEvent.coordinate)
+          : undefined
+      }
       showsUserLocation={showsUserLocation}
       showsMyLocationButton={false}
       scrollEnabled={scrollEnabled}

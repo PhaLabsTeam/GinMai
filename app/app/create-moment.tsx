@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useEffect, useCallback, useRef } from "react";
 import * as Location from "expo-location";
+import { getBestPosition } from "../src/utils/location";
 import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { resolvePickedTime, defaultPickerTime, MAX_HOURS_AHEAD } from "../src/utils/pickTime";
 import { useMomentStore } from "../src/stores/momentStore";
@@ -71,34 +72,25 @@ export default function CreateMomentScreen() {
   const [duration, setDuration] = useState<Duration>("normal");
   const [note, setNote] = useState("");
 
-  // Find the user. A cold GPS can fail on the first request, so fall back to the
-  // last known fix; if there's neither, say so instead of guessing a location.
+  // Find the user; if there's no fix at all, say so instead of guessing a location
   const locateUser = useCallback(async () => {
     setLocationStatus("locating");
-    try {
-      const { status } = await Location.getForegroundPermissionsAsync();
-      if (status !== "granted") throw new Error("Location permission not granted");
-
-      const position =
-        (await Location.getCurrentPositionAsync({}).catch(() => null)) ??
-        (await Location.getLastKnownPositionAsync());
-      if (!position) throw new Error("No position available");
-
-      const { latitude, longitude } = position.coords;
-      setCurrentCoords({ lat: latitude, lng: longitude });
-      setLocationStatus("ready");
-
-      // The area name is a nicety; the Moment works without it
-      try {
-        const [address] = await Location.reverseGeocodeAsync({ latitude, longitude });
-        setCurrentAreaName(address?.district || address?.subregion || address?.city || null);
-      } catch (e) {
-        console.log("Reverse geocode failed:", e);
-      }
-    } catch (e) {
-      console.log("Couldn't get current location:", e);
+    const position = await getBestPosition();
+    if (!position) {
       setCurrentCoords(null);
       setLocationStatus("unavailable");
+      return;
+    }
+
+    setCurrentCoords(position);
+    setLocationStatus("ready");
+
+    // The area name is a nicety; the Moment works without it
+    try {
+      const [address] = await Location.reverseGeocodeAsync({ latitude: position.lat, longitude: position.lng });
+      setCurrentAreaName(address?.district || address?.subregion || address?.city || null);
+    } catch (e) {
+      console.log("Reverse geocode failed:", e);
     }
   }, []);
 

@@ -1,9 +1,10 @@
-import { View, Text, Pressable, ScrollView, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, ScrollView, ActivityIndicator, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useEffect, useState, useCallback } from "react";
-import * as Location from "expo-location";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { getBestPosition } from "../src/utils/location";
 import { useMomentStore } from "../src/stores/momentStore";
+import { useAuthStore } from "../src/stores/authStore";
 import { MapComponent, mapsAvailable } from "../src/components/MapComponent";
 import { mealWord, capitalize } from "../src/utils/mealWord";
 
@@ -22,50 +23,45 @@ export default function MapScreen() {
   const fetchError = useMomentStore((state) => state.error);
   const fetchNearbyMoments = useMomentStore((state) => state.fetchNearbyMoments);
   const subscribeToMoments = useMomentStore((state) => state.subscribeToMoments);
+  const userConnections = useMomentStore((state) => state.userConnections);
+  const fetchUserConnections = useMomentStore((state) => state.fetchUserConnections);
+  const userId = useAuthStore((state) => state.user?.id);
+  const { height: windowHeight } = useWindowDimensions();
+
+  // Needed for "You're in" on Moments the user joined
+  useEffect(() => {
+    if (userId) fetchUserConnections(userId);
+  }, [userId, fetchUserConnections]);
   const [region, setRegion] = useState(CHIANG_MAI);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [mapReady, setMapReady] = useState(false);
 
-  // Get user location and fetch moments
+  // Get user location and fetch moments. Without a fix, start at the city
+  // centre; MapKit's first user-location update recentres once (below).
+  const recentredOnUser = useRef(false);
   useEffect(() => {
     (async () => {
-      try {
-        const { status } = await Location.getForegroundPermissionsAsync();
-        console.log("Location permission status:", status);
-
-        if (status === "granted") {
-          console.log("Getting current position...");
-          const location = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Balanced,
-          });
-          const lat = location.coords.latitude;
-          const lng = location.coords.longitude;
-          console.log("Got location:", lat, lng);
-
-          setRegion({
-            latitude: lat,
-            longitude: lng,
-            latitudeDelta: 0.05,
-            longitudeDelta: 0.05,
-          });
-          setUserLocation({ lat, lng });
-
-          // Fetch moments near user's location
-          fetchNearbyMoments(lat, lng);
-        } else {
-          console.log("Location not granted, using Chiang Mai default");
-          // Use Chiang Mai center as default
-          setRegion(CHIANG_MAI);
-          fetchNearbyMoments(CHIANG_MAI.latitude, CHIANG_MAI.longitude);
-        }
-      } catch (e) {
-        console.log("Location error:", e);
-        // Location not available, use default
+      const position = await getBestPosition();
+      if (position) {
+        recentredOnUser.current = true;
+        setRegion({ latitude: position.lat, longitude: position.lng, latitudeDelta: 0.05, longitudeDelta: 0.05 });
+        setUserLocation(position);
+        fetchNearbyMoments(position.lat, position.lng);
+      } else {
         setRegion(CHIANG_MAI);
         fetchNearbyMoments(CHIANG_MAI.latitude, CHIANG_MAI.longitude);
       }
     })();
   }, [fetchNearbyMoments]);
+
+  const handleUserLocation = useCallback(({ latitude, longitude }: { latitude: number; longitude: number }) => {
+    // Only the first time, and only if we couldn't centre on the user already;
+    // after that the user owns the map
+    if (recentredOnUser.current) return;
+    recentredOnUser.current = true;
+    setRegion({ latitude, longitude, latitudeDelta: 0.05, longitudeDelta: 0.05 });
+    setUserLocation({ lat: latitude, lng: longitude });
+  }, []);
 
   // Subscribe to real-time updates
   useEffect(() => {
@@ -98,6 +94,7 @@ export default function MapScreen() {
           onPress: () => router.push(`/moment-detail?momentId=${moment.id}`),
         }))}
         onMapReady={() => setMapReady(true)}
+        onUserLocationChange={handleUserLocation}
         showsUserLocation
         style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
         fallback={
@@ -118,7 +115,7 @@ export default function MapScreen() {
       />
 
       {/* Overlay Content */}
-      <SafeAreaView className="flex-1">
+      <SafeAreaView className="flex-1" pointerEvents="box-none">
         {/* Header */}
         <View className="flex-row items-center justify-between px-5 py-3 bg-[#FAFAF9]">
           {/* Menu button */}
@@ -150,8 +147,8 @@ export default function MapScreen() {
           </Pressable>
         </View>
 
-        {/* Content area */}
-        <View className="flex-1">
+        {/* Content area: sized to its content so the map stays visible below */}
+        <View pointerEvents="box-none">
           {loading ? (
             /* Loading State */
             <View className="bg-[#FAFAF9] mx-4 mt-2 rounded-2xl px-5 py-6 items-center">
@@ -188,13 +185,20 @@ export default function MapScreen() {
             </View>
           ) : (
             /* Moments List */
-            <ScrollView className="bg-[#FAFAF9] mx-4 mt-2 rounded-t-2xl">
+            <ScrollView
+              className="bg-[#FAFAF9] mx-4 mt-2 rounded-t-2xl"
+              style={{ maxHeight: windowHeight * 0.45 }}
+            >
               <Text className="text-center text-[15px] text-[#78716C] py-4">
                 Eating soon?
               </Text>
               {moments.map((moment) => {
                 const seatsOpen = moment.seats_total - moment.seats_taken;
                 const isFull = seatsOpen <= 0 || moment.status === "full";
+                const isMine = !!userId && moment.host_id === userId;
+                const isJoined = userConnections.some(
+                  (c) => c.momentId === moment.id && c.status === "confirmed"
+                );
 
                 return (
                   <Pressable
@@ -231,8 +235,16 @@ export default function MapScreen() {
                       </View>
                     </View>
 
-                    {/* Full badge */}
-                    {isFull && (
+                    {/* Your own / joined Moments first, then Full */}
+                    {isMine ? (
+                      <View className="bg-[#FFF7ED] px-2 py-1 rounded-md">
+                        <Text className="text-[12px] text-[#C2410C] font-medium">You're hosting</Text>
+                      </View>
+                    ) : isJoined ? (
+                      <View className="bg-[#ECFDF5] px-2 py-1 rounded-md">
+                        <Text className="text-[12px] text-[#15803D] font-medium">You're in</Text>
+                      </View>
+                    ) : isFull && (
                       <View className="bg-[#F3F4F6] px-2 py-1 rounded-md">
                         <Text className="text-[12px] text-[#6B7280] font-medium">Full</Text>
                       </View>
