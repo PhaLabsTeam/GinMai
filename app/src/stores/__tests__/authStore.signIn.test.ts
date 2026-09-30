@@ -31,7 +31,8 @@ jest.mock('../../config/supabase', () => {
     from: jest.fn(() => query),
     // my_profile() (#62): each profile read returns the next queued result
     // same queue as a direct read, so tests can steer either
-    rpc: jest.fn(async () => {
+    rpc: jest.fn(async (fn: string) => {
+      if (fn !== 'my_profile') return { data: null, error: null };
       const { data, error } = await query.maybeSingle();
       return { data: data ? [data] : [], error };
     }),
@@ -113,10 +114,9 @@ describe('authStore sign-in', () => {
     const saved = await store.getState().completeProfile('+66999999999', '  Tester ');
 
     expect(saved.success).toBe(true);
-    expect(mock.__query.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'user-1', first_name: 'Tester' }),
-      { onConflict: 'id' }
-    );
+    // Trimmed; the database takes the phone from the sign-in record (#62)
+    expect(mock.supabase.rpc).toHaveBeenCalledWith('complete_my_profile', { p_first_name: 'Tester' });
+    expect(mock.__query.upsert).not.toHaveBeenCalled();
     expect(store.getState().user.first_name).toBe('Tester');
     // Own profile comes from my_profile(); others can't read phone numbers (#62)
     expect(mock.supabase.rpc).toHaveBeenCalledWith('my_profile');

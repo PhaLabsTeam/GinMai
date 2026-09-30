@@ -250,18 +250,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ loading: true, error: null });
 
     try {
-      const { error } = await db
-        .from("users")
-        .upsert(
-          {
-            id: userId,
-            phone,
-            first_name: name,
-            phone_verified: true,
-            verified_at: new Date().toISOString(),
-          },
-          { onConflict: "id" }
-        );
+      // Creates (or renames) the caller's own row; the phone comes from the
+      // sign-in record (#62)
+      const { error } = await db.rpc("complete_my_profile", { p_first_name: name });
 
       if (error) throw error;
 

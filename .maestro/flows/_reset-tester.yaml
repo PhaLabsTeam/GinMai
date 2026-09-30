@@ -1,4 +1,5 @@
-# Shared: fresh launch, sign in as Tester, cancel every Moment Tester is hosting
+# Shared: fresh launch, sign in as Tester, cancel every Moment Tester is hosting,
+# open or full
 appId: com.ginmai.app
 ---
 - runFlow: _launch.yaml
@@ -20,15 +21,28 @@ appId: com.ginmai.app
     visible: "Share your .*"
     timeout: 15000
 - tapOn: "Back"
+# Through My Moments, which also finds full Moments (the map list shows only
+# open ones, so a full table was never cleaned up)
+- tapOn: "Menu"
+- tapOn: "My Moments"
 - repeat:
     while:
-      visible: ".*You're hosting.*"
+      notVisible: "Nothing planned right now."
     commands:
-      - tapOn: "Menu"
-      - tapOn: "My Moments"
       - tapOn: ".*Cancel this meal.*"
       - tapOn: "Cancel meal"
       - extendedWaitUntil:
           visible: "Chiang Mai"
           timeout: 15000
-- runFlow: _logout.yaml
+      - tapOn: "Menu"
+      - tapOn: "My Moments"
+# Log out from the menu we're already on (_logout starts from the map)
+- tapOn: "Settings"
+- scrollUntilVisible:
+    element: ".*Log out.*"
+- tapOn: ".*Log out.*"
+- tapOn:
+    point: "68%,56%"
+- extendedWaitUntil:
+    visible: "Let's go"
+    timeout: 15000

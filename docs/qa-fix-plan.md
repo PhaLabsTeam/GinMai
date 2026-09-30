@@ -293,7 +293,11 @@ While getting ready for the full-table test I found that the live `moments` poli
 - users can write only the fields the app sets
 - the app loads its own profile through `my_profile()`
 
-**Found, not fixed:** expired Moments are never closed, and 19 stale "active" rows go back to January. The app filters them by `expires_at`, but signed-out visitors can still read them. The fix is to schedule `expire_moments` with pg_cron, also covering `full`.
+**Regression found and fixed:** re-running `18-delete-account` after `20261002000001` showed that new users couldn't save their name ("permission denied for table users"). PostgREST's upsert needs table-wide read access. Migration `20261002000002_complete_my_profile.sql` adds `complete_my_profile()`, which creates the caller's own row and takes the phone from the sign-in record. Direct inserts are revoked.
+
+**Ended Moments (#63):** `expire_moments()` was never scheduled and skipped full tables, so 19 ended Moments going back to January were still "active" or "full" and readable by signed-out visitors. Migration `20261002000003_expire_moments.sql` covers `full` too, runs every 5 minutes with pg_cron, and closes the backlog.
+
+**Cleanup:** `_reset-tester` now cancels through My Moments, because the map list never shows a full Moment, so full ones were never cleaned up.
 
 ## New issues (found during Phase 1, not yet scheduled)
 
@@ -321,6 +325,7 @@ While getting ready for the full-table test I found that the live `moments` poli
 | 59 | Deleting an account erased reports about that person (so a reported user could wipe them and re-register), and left a deleted host's name on their Moments | 📦 ✅ | `6a04963` + migration `20261001000001` |
 | 60 | **Security:** the live database still had the M1 "Anyone can …" policies on `moments`, so the public anon key alone could edit or delete any Moment. Guests could only join because of that hole: the app counted seats itself from its cache, which could overbook. Legacy `join_moment`/`leave_moment` could act as any user | ✅ applied, anon writes refused | `8106104` + migration `20261002000000` |
 | 61 | A host saw every guest who wasn't also hosting as "Guest": the only rule for reading another profile was "they're hosting an active Moment". Hidden in earlier tests because Sam had a stale January Moment | 🔧 (SQL to apply) | migration `20261002000001` |
+| 63 | Ended Moments were never closed (19 stale "active"/"full" rows back to January, readable by signed-out visitors) | 🔧 (SQL to apply) | migration `20261002000003` |
 | 62 | **Privacy:** any signed-in user could read the phone number and push token of anyone whose profile they could see (a stranger read Tester's and Sam's numbers). Users could also edit their own `no_shows` and `status` | 🔧 (SQL to apply) | migration `20261002000001` |
 | 41 | `tsc` failed (477 errors): TS 6 rejects `baseUrl` and no longer auto-loads `@types`; old tests used a stale `User` shape; an unused client push path had an invalid payload type | 📦 ✅ `npm run typecheck` passes | `f50060e` |
 
