@@ -218,7 +218,7 @@ export default function MapScreen() {
                           {formatTime(moment.starts_at)}
                         </Text>
                         <Text className="text-[15px] text-ink ml-2">
-                          · {moment.location.place_name || moment.location.area_name || "Somewhere tasty"}
+                          · {moment.location.place_name || moment.location.area_name || "Nearby"}
                         </Text>
                       </View>
 

@@ -4,6 +4,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useEffect, useCallback, useRef } from "react";
 import * as Location from "expo-location";
 import { getBestPosition } from "../src/utils/location";
+import { searchPlaces, getPlaceDetails, newSessionToken, type PlaceSuggestion } from "../src/utils/places";
+import { areaNameFor } from "../src/utils/neighborhoods";
+
+// Search bias when the user's position is unknown
+const CHIANG_MAI = { lat: 18.7883, lng: 98.9853 };
 import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { resolvePickedTime, defaultPickerTime, MAX_HOURS_AHEAD } from "../src/utils/pickTime";
 import { useMomentStore } from "../src/stores/momentStore";
@@ -18,12 +23,6 @@ import { formatTime } from "../src/utils/formatTime";
 type TimeOption = "now" | "30min" | "1hr" | "custom";
 type Duration = "quick" | "normal" | "long";
 
-interface SearchResult {
-  name: string;
-  address: string;
-  lat: number;
-  lng: number;
-}
 
 export default function CreateMomentScreen() {
   const router = useRouter();
@@ -60,13 +59,14 @@ export default function CreateMomentScreen() {
   const [currentAreaName, setCurrentAreaName] = useState<string | null>(null);
   const [placeCoords, setPlaceCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [placeName, setPlaceName] = useState<string | null>(null);
+  const [placeArea, setPlaceArea] = useState<string | null>(null);
   const coordinates = useCurrentLocation ? currentCoords : placeCoords;
 
   const scrollRef = useRef<ScrollView>(null);
 
   // Location search
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searchResults, setSearchResults] = useState<PlaceSuggestion[]>([]);
   const [searching, setSearching] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
 
@@ -91,9 +91,10 @@ export default function CreateMomentScreen() {
     // The area name is a nicety; the Moment works without it
     try {
       const [address] = await Location.reverseGeocodeAsync({ latitude: position.lat, longitude: position.lng });
-      setCurrentAreaName(address?.district || address?.subregion || address?.city || null);
+      setCurrentAreaName(areaNameFor(position, address?.district || address?.subregion || address?.city));
     } catch (e) {
       console.log("Reverse geocode failed:", e);
+      setCurrentAreaName(areaNameFor(position));
     }
   }, []);
 
@@ -105,52 +106,52 @@ export default function CreateMomentScreen() {
     return () => clearInterval(interval);
   }, []);
 
-  // Search for places using geocoding
-  const handleSearch = async (query: string) => {
-    setSearchQuery(query);
+  // Restaurant search with Google Places (#13), debounced so typing
+  // "khao soi" is one request, not eight
+  const sessionTokenRef = useRef(newSessionToken());
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestQuery = useRef("");
 
-    if (query.length < 3) {
+  useEffect(() => () => {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+  }, []);
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    latestQuery.current = query;
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+
+    if (query.trim().length < 2) {
       setSearchResults([]);
+      setSearching(false);
       return;
     }
 
     setSearching(true);
-    try {
-      // Add "Chiang Mai" to improve local results
-      const searchText = query.includes("Chiang Mai") ? query : `${query}, Chiang Mai, Thailand`;
-      const results = await Location.geocodeAsync(searchText);
-
-      const formattedResults: SearchResult[] = [];
-
-      for (const result of results.slice(0, 5)) {
-        // Reverse geocode to get address details
-        const [address] = await Location.reverseGeocodeAsync({
-          latitude: result.latitude,
-          longitude: result.longitude,
-        });
-
-        if (address) {
-          formattedResults.push({
-            name: address.name || address.street || query,
-            address: [address.district, address.city, address.region].filter(Boolean).join(", "),
-            lat: result.latitude,
-            lng: result.longitude,
-          });
-        }
-      }
-
-      setSearchResults(formattedResults);
-    } catch (e) {
-      console.log("Search error:", e);
-      setSearchResults([]);
-    } finally {
+    searchTimer.current = setTimeout(async () => {
+      const near = currentCoords ?? CHIANG_MAI;
+      const results = await searchPlaces(query, near, sessionTokenRef.current);
+      // Ignore answers to a query the user has since changed
+      if (latestQuery.current !== query) return;
+      setSearchResults(results);
       setSearching(false);
-    }
+    }, 300);
   };
 
-  const selectSearchResult = (result: SearchResult) => {
-    setPlaceCoords({ lat: result.lat, lng: result.lng });
-    setPlaceName(result.name);
+  const selectSearchResult = async (result: PlaceSuggestion) => {
+    Keyboard.dismiss();
+    setSearching(true);
+    const details = await getPlaceDetails(result.placeId, sessionTokenRef.current);
+    // A details lookup ends the billing session; the next search starts a new one
+    sessionTokenRef.current = newSessionToken();
+    setSearching(false);
+    if (!details) {
+      Alert.alert("Couldn't load that place", "Try again, or pick another.");
+      return;
+    }
+    setPlaceCoords({ lat: details.lat, lng: details.lng });
+    setPlaceName(details.name || result.name);
+    setPlaceArea(areaNameFor(details, details.subdistrict));
     setUseCurrentLocation(false);
     setShowSearch(false);
     setSearchQuery("");
@@ -260,7 +261,7 @@ export default function CreateMomentScreen() {
           lat: coordinates.lat,
           lng: coordinates.lng,
           place_name: !useCurrentLocation ? placeName ?? undefined : undefined,
-          area_name: useCurrentLocation ? currentAreaName ?? undefined : undefined,
+          area_name: (useCurrentLocation ? currentAreaName : placeArea) ?? undefined,
         },
         seats_total: seats,
         seats_taken: 0,
@@ -536,7 +537,7 @@ export default function CreateMomentScreen() {
                   <View className="mt-2 border border-line rounded-xl overflow-hidden">
                     {searchResults.map((result, index) => (
                       <Pressable
-                        key={`${result.lat}-${result.lng}-${index}`}
+                        key={result.placeId}
                         onPress={() => selectSearchResult(result)}
                         className={`px-4 py-3 active:bg-subtle ${
                           index < searchResults.length - 1 ? "border-b border-line" : ""
@@ -550,7 +551,7 @@ export default function CreateMomentScreen() {
                 )}
 
                 {/* No results message */}
-                {searchQuery.length >= 3 && !searching && searchResults.length === 0 && (
+                {searchQuery.trim().length >= 2 && !searching && searchResults.length === 0 && (
                   <Text className="text-[14px] text-ink-muted mt-2 text-center">
                     No places found. Try a different search.
                   </Text>
