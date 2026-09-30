@@ -1,0 +1,49 @@
+# A table of 2 fills up (#42, #60). Part 1: Tester hosts 2 seats, Sam and Kai
+# join. Part 2 (19b) needs the Moment's id for Ben's direct link.
+appId: com.ginmai.app
+---
+- runFlow: _reset-tester.yaml
+
+# Tester hosts a Moment starting now, 2 seats (the default)
+- runFlow: 01-auth-signup.yaml
+- tapOn: "Now.*"
+- tapOn: "Next"
+- assertVisible: "How many seats?"
+- tapOn: "Make visible"
+- runFlow:
+    when:
+      visible: "Want a heads-up\\?"
+    commands:
+      - tapOn: "Not now"
+- extendedWaitUntil:
+    visible: ".* visible\\."
+    timeout: 15000
+- tapOn: "Back"
+- runFlow: _logout.yaml
+
+# Sam takes seat 1
+- runFlow:
+    file: _guest-join.yaml
+    env:
+      PHONE: "123456789"
+      CODE: "159632"
+      NAME: "Sam"
+- tapOn: "Back"
+- tapOn: "Back"
+- runFlow: _logout.yaml
+
+# Kai takes the last seat; the confirmation still finds the now-full Moment
+- runFlow:
+    file: _guest-join.yaml
+    env:
+      PHONE: "812345678"
+      CODE: "123456"
+      NAME: "Kai"
+- assertVisible: ".*Tester.*"
+- assertNotVisible: ".*not found.*"
+- tapOn: "Back"
+- extendedWaitUntil:
+    visible: "0 seats open"
+    timeout: 10000
+- tapOn: "Back"
+- runFlow: _logout.yaml

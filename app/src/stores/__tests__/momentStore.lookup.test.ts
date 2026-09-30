@@ -72,16 +72,20 @@ describe('momentStore lookups for Moments outside the map list', () => {
     );
   });
 
-  it('gives the seat back when a guest leaves a full Moment', async () => {
+  it('leaves the seat count to the database when a guest leaves (#60)', async () => {
     useMomentStore.setState({ momentsById: {} });
     results.push({ data: row(), error: null });
     await useMomentStore.getState().fetchMomentById('m1');
 
-    // leaveMoment: update connection, then decrement seats
-    results.push({ data: null, error: null }, { data: null, error: null });
+    // leaveMoment: cancel the connection, then read back what the database counted
+    results.push({ data: null, error: null }, { data: row({ status: 'active', seats_taken: 1 }), error: null });
     await useMomentStore.getState().leaveMoment('m1', 'guest-1');
 
-    expect(query.update).toHaveBeenCalledWith(expect.objectContaining({ seats_taken: 1 }));
+    expect(query.update).toHaveBeenCalledTimes(1);
+    expect(query.update).not.toHaveBeenCalledWith(expect.objectContaining({ seats_taken: expect.anything() }));
+    expect(useMomentStore.getState().findMoment('m1')).toEqual(
+      expect.objectContaining({ seats_taken: 1, status: 'active' })
+    );
   });
 
   it('finds the Moment a user is hosting, including when full', async () => {

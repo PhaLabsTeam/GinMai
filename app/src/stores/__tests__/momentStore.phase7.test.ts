@@ -16,7 +16,7 @@ jest.mock('../../config/supabase', () => {
 });
 
 
-import { useMomentStore } from '../momentStore';
+import { useMomentStore, joinRefusal } from '../momentStore';
 const { __results: results, __query: query } = require('../../config/supabase');
 
 const moment = {
@@ -38,7 +38,7 @@ describe('momentStore Phase 7 fixes', () => {
     results.push(
       { data: { id: 'c1', status: 'cancelled' }, error: null }, // existing row
       { data: null, error: null }, // update connection
-      { data: null, error: null } // update seats
+      { data: { ...moment, seats_taken: 1 }, error: null } // read back the seat count
     );
 
     const result = await useMomentStore.getState().joinMoment('m1', 'guest');
@@ -55,6 +55,41 @@ describe('momentStore Phase 7 fixes', () => {
 
     expect(result.success).toBe(true);
     expect(query.insert).toHaveBeenCalledWith(expect.objectContaining({ moment_id: 'm1', user_id: 'guest' }));
+  });
+
+  it('never writes seats itself; it reads back what the database counted (#60)', async () => {
+    results.push(
+      { data: null, error: null }, // no existing row
+      { data: null, error: null }, // insert connection
+      { data: { ...moment, seats_taken: 2, status: 'full' }, error: null } // read back
+    );
+
+    await useMomentStore.getState().joinMoment('m1', 'guest');
+
+    expect(query.update).not.toHaveBeenCalled();
+    expect(useMomentStore.getState().findMoment('m1')).toEqual(
+      expect.objectContaining({ seats_taken: 2, status: 'full' })
+    );
+  });
+
+  it('says the meal is full when the database refuses the last seat (#42, #60)', async () => {
+    results.push(
+      { data: null, error: null },
+      { data: null, error: { code: 'P0001', message: 'full: this moment is full' } },
+      { data: { ...moment, seats_taken: 2, status: 'full' }, error: null }
+    );
+
+    const result = await useMomentStore.getState().joinMoment('m1', 'guest');
+
+    expect(result).toEqual({ success: false, error: 'This meal is full.' });
+    expect(useMomentStore.getState().findMoment('m1')?.status).toBe('full');
+  });
+
+  it('turns database refusals into plain words', () => {
+    expect(joinRefusal('blocked: cannot join this moment')).toBe("You can't join this meal.");
+    expect(joinRefusal('closed: this moment is no longer open')).toBe("This meal isn't open any more.");
+    expect(joinRefusal('own: you can\'t join your own moment')).toBe("You can't join your own meal.");
+    expect(joinRefusal('duplicate key value')).toBeNull();
   });
 
   it('reports "eat again" feedback as sent; matching is left to the database (#43)', async () => {

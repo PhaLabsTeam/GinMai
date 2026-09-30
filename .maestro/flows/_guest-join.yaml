@@ -1,0 +1,35 @@
+# Shared: from the welcome screen, sign in as a guest (PHONE, CODE, NAME) by
+# tapping Tester's Moment and join it. Ends on "You're in.", signed in.
+appId: com.ginmai.app
+---
+- tapOn: "Let's go"
+- tapOn: "Share location"
+- extendedWaitUntil:
+    visible: ".*Tester.*"
+    timeout: 15000
+- tapOn: ".*Tester.*"
+- tapOn: "Join"
+- runFlow:
+    file: _signin.yaml
+    env:
+      PHONE: ${PHONE}
+      CODE: ${CODE}
+- runFlow:
+    when:
+      visible: "What should people call you\\?"
+    commands:
+      - tapOn: "First name"
+      - inputText: ${NAME}
+      - tapOn: "Continue"
+- extendedWaitUntil:
+    visible: "Join"
+    timeout: 15000
+- tapOn: "Join"
+- runFlow:
+    when:
+      visible: "Want a heads-up\\?"
+    commands:
+      - tapOn: "Not now"
+- extendedWaitUntil:
+    visible: "You're in\\."
+    timeout: 15000

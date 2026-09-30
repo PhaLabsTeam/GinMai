@@ -19,11 +19,14 @@ let signingIn = false;
 let signInCount = 0;
 
 async function fetchProfile(userId: string): Promise<User | null> {
-  const { data, error } = await db.from("users").select("*").eq("id", userId).maybeSingle();
+  // Phone and push token are private columns (#62); my_profile() returns the
+  // caller's own full row
+  const { data, error } = await db.rpc("my_profile");
   if (error) {
     console.error("[AUTH] Error fetching user profile:", error);
   }
-  return (data as User | null) ?? null;
+  const profile = ((data as User[] | null) ?? [])[0] ?? null;
+  return profile && profile.id === userId ? profile : null;
 }
 
 const hasName = (profile: User | null) => !!profile?.first_name?.trim();
@@ -247,24 +250,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ loading: true, error: null });
 
     try {
-      const { data, error } = await db
-        .from("users")
-        .upsert(
-          {
-            id: userId,
-            phone,
-            first_name: name,
-            phone_verified: true,
-            verified_at: new Date().toISOString(),
-          },
-          { onConflict: "id" }
-        )
-        .select()
-        .single();
+      // Creates (or renames) the caller's own row; the phone comes from the
+      // sign-in record (#62)
+      const { error } = await db.rpc("complete_my_profile", { p_first_name: name });
 
       if (error) throw error;
 
-      set({ user: data as User, loading: false });
+      const profile = await fetchProfile(userId);
+      if (!profile) throw new Error("Couldn't load your profile");
+      set({ user: profile, loading: false });
       return { success: true };
     } catch (error) {
       const message = (error as Error).message;

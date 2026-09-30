@@ -29,6 +29,13 @@ jest.mock('../../config/supabase', () => {
       signOut: jest.fn(async () => ({ error: null })),
     },
     from: jest.fn(() => query),
+    // my_profile() (#62): each profile read returns the next queued result
+    // same queue as a direct read, so tests can steer either
+    rpc: jest.fn(async (fn: string) => {
+      if (fn !== 'my_profile') return { data: null, error: null };
+      const { data, error } = await query.maybeSingle();
+      return { data: data ? [data] : [], error };
+    }),
   };
 
   return {
@@ -103,15 +110,17 @@ describe('authStore sign-in', () => {
     expect(result).toEqual({ success: true, needsProfile: true });
     expect(store.getState().user).toBeNull();
 
-    mock.__query.single.mockResolvedValueOnce({ data: profile('Tester'), error: null });
+    mock.__state.profileReads.push(profile('Tester')); // read back after the upsert
     const saved = await store.getState().completeProfile('+66999999999', '  Tester ');
 
     expect(saved.success).toBe(true);
-    expect(mock.__query.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'user-1', first_name: 'Tester' }),
-      { onConflict: 'id' }
-    );
+    // Trimmed; the database takes the phone from the sign-in record (#62)
+    expect(mock.supabase.rpc).toHaveBeenCalledWith('complete_my_profile', { p_first_name: 'Tester' });
+    expect(mock.__query.upsert).not.toHaveBeenCalled();
     expect(store.getState().user.first_name).toBe('Tester');
+    // Own profile comes from my_profile(); others can't read phone numbers (#62)
+    expect(mock.supabase.rpc).toHaveBeenCalledWith('my_profile');
+    expect(mock.__query.select).not.toHaveBeenCalledWith('*');
   });
 
   it('ignores a stale listener fetch that lands after sign-in', async () => {

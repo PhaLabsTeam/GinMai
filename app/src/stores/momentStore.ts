@@ -79,6 +79,25 @@ export type MyActiveMoment = { moment: MomentLocal; role: "host" | "guest" };
 // it fills up or ends. Screens about one specific Moment (live, confirmation,
 // feedback...) must still find it, so they also look in `momentsById`, a cache of
 // Moments fetched by id regardless of status.
+const FULL_MESSAGE = "This meal is full.";
+
+// Read back the seat count and status the database worked out (#60), into
+// both the map list and the by-id cache
+const refreshSeats = async (get: () => MomentState, id: string) => {
+  const fresh = await get().fetchMomentById(id);
+  if (fresh) get().updateMoment(id, { seats_taken: fresh.seats_taken, status: fresh.status });
+};
+
+// Friendly text for a join the database refused (prevent_blocked_join, claim_seat)
+export const joinRefusal = (message?: string): string | null => {
+  if (!message) return null;
+  if (message.includes("blocked")) return "You can't join this meal.";
+  if (message.startsWith("full:")) return FULL_MESSAGE;
+  if (message.startsWith("closed:")) return "This meal isn't open any more.";
+  if (message.startsWith("own:")) return "You can't join your own meal.";
+  return null;
+};
+
 const findMoment = (state: MomentState, id: string): MomentLocal | undefined =>
   state.moments.find((m) => m.id === id) ?? state.momentsById[id];
 
@@ -385,7 +404,7 @@ export const useMomentStore = create<MomentState>((set, get) => ({
     }
   },
 
-  // Join a moment - create connection and increment seats_taken
+  // Join a moment - create the connection; the database takes the seat
   joinMoment: async (momentId: string, userId: string) => {
     // In DEV_MODE, just update local state
     if (DEV_MODE || !isSupabaseConfigured()) {
@@ -418,7 +437,7 @@ export const useMomentStore = create<MomentState>((set, get) => ({
         throw new Error("Moment not found");
       }
       if (moment.seats_taken >= moment.seats_total) {
-        throw new Error("This moment is full");
+        throw new Error(FULL_MESSAGE);
       }
       if (moment.host_id === userId) {
         throw new Error("You can't join your own moment");
@@ -453,32 +472,16 @@ export const useMomentStore = create<MomentState>((set, get) => ({
           set({ loading: false });
           return { success: true };
         }
-        // prevent_blocked_join trigger: either side has blocked the other
-        if (connectionError.message?.includes("blocked")) {
-          throw new Error("You can't join this meal.");
+        // Database triggers: prevent_blocked_join and claim_seat (#60)
+        const refusal = joinRefusal(connectionError.message);
+        if (refusal) {
+          if (refusal === FULL_MESSAGE) await refreshSeats(get, momentId);
+          throw new Error(refusal);
         }
         throw connectionError;
       }
 
-      // Increment seats_taken
-      const newSeatsTaken = moment.seats_taken + 1;
-      const newStatus = newSeatsTaken >= moment.seats_total ? "full" : "active";
-
-      const { error: updateError } = await db
-        .from("moments")
-        .update({
-          seats_taken: newSeatsTaken,
-          status: newStatus
-        })
-        .eq("id", momentId);
-
-      if (updateError) throw updateError;
-
-      // Update local state
-      get().updateMoment(momentId, {
-        seats_taken: newSeatsTaken,
-        status: newStatus as "active" | "full" | "completed" | "cancelled"
-      });
+      await refreshSeats(get, momentId);
 
       // Add to user connections
       set((state) => ({
@@ -497,7 +500,7 @@ export const useMomentStore = create<MomentState>((set, get) => ({
     }
   },
 
-  // Leave a moment - cancel connection and decrement seats_taken
+  // Leave a moment - cancel the connection; the database frees the seat
   leaveMoment: async (momentId: string, userId: string) => {
     // In DEV_MODE, just update local state
     if (DEV_MODE || !isSupabaseConfigured()) {
@@ -531,27 +534,7 @@ export const useMomentStore = create<MomentState>((set, get) => ({
 
       if (connectionError) throw connectionError;
 
-      // Decrement seats_taken
-      const moment = findMoment(get(), momentId);
-      if (moment && moment.seats_taken > 0) {
-        const newSeatsTaken = moment.seats_taken - 1;
-
-        const { error: updateError } = await db
-          .from("moments")
-          .update({
-            seats_taken: newSeatsTaken,
-            status: "active" // Reopen if was full
-          })
-          .eq("id", momentId);
-
-        if (updateError) throw updateError;
-
-        // Update local state
-        get().updateMoment(momentId, {
-          seats_taken: newSeatsTaken,
-          status: "active"
-        });
-      }
+      await refreshSeats(get, momentId);
 
       // Remove from user connections
       set((state) => ({

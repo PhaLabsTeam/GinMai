@@ -32,7 +32,7 @@ We don't collect your contacts, photos, email, payment details, or advertising i
 
 ## 3. What other people see
 
-Anyone signed in can see Moments on the map: the time, the place, the host's first name, seats, and note. People in the same Moment see each other's first names.
+Anyone using the app, signed in or not, can see open Moments on the map: the time, the place, the host's first name, seats, and note. People in the same Moment see each other's first names.
 
 Your phone number, exact device location, feedback, blocks and reports are never shown to other users.
 

@@ -1,0 +1,51 @@
+# Part 2 of the full table (#42, #60). Needs MOMENT_ID of the full Moment
+# from 19-full-table.yaml.
+appId: com.ginmai.app
+---
+# Ben can't see a way in, even with a direct link
+- runFlow:
+    file: _signin-from-map.yaml
+    env:
+      PHONE: "887654321"
+      CODE: "123456"
+      NAME: "Ben"
+- openLink: "ginmai://moment-detail?momentId=${MOMENT_ID}"
+- extendedWaitUntil:
+    visible: "0 seats open"
+    timeout: 15000
+- assertVisible: "Full"
+- assertNotVisible: "Join"
+
+# Tester's My Moments opens the live screen with both guests
+- runFlow:
+    file: _signin-from-map.yaml
+    env:
+      PHONE: "999999999"
+      CODE: "123456"
+      NAME: "Tester"
+- tapOn: "Menu"
+- tapOn: "My Moments"
+- extendedWaitUntil:
+    visible: ".*Sam.*"
+    timeout: 15000
+- assertVisible: ".*Kai.*"
+- assertNotVisible: ".*not found.*"
+# Guests show by name, not "Guest" (#61)
+- assertNotVisible: "Guest"
+
+# Sam's My Moments opens "You're in" for the full Moment
+- runFlow:
+    file: _signin-from-map.yaml
+    env:
+      PHONE: "123456789"
+      CODE: "159632"
+      NAME: "Sam"
+- tapOn: "Menu"
+- tapOn: "My Moments"
+- extendedWaitUntil:
+    visible: "You're in\\."
+    timeout: 15000
+- assertNotVisible: ".*not found.*"
+
+# Clean up: Tester cancels the Moment
+- runFlow: _reset-tester.yaml
