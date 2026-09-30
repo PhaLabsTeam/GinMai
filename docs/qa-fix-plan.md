@@ -31,6 +31,7 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | 6 | Visual consistency | `refactor/design-consistency` | 📦 awaiting review | — |
 | 7 | Two-user end-to-end testing | `test/two-user-e2e` | 📦 awaiting review | — |
 | 7.5 | Google Places search (#13, #30, #52) | `feat/places-search` | 📦 awaiting review | — |
+| 7.6 | TypeScript clean (#41) | `fix/typescript` | 📦 awaiting review | — |
 
 **Needed from the team**
 - Google Places API key (before Phase 3)
@@ -261,7 +262,7 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | 56 | Profile "Edit" did nothing | 📦 ✅ | `40ee54a` |
 | 57 | "Running late" was only offered after arriving | 📦 ✅ | `312a563` |
 | 58 | Signing in from a Moment, the Menu or Profile left that screen in the back history twice | 📦 ✅ | `312a563` |
-| 41 | `tsc` fails: TypeScript 6 rejects `baseUrl` in `tsconfig.json`, and the test files have no Jest type definitions. Also `notificationStore.ts` builds an `"info"` payload that isn't in `PushNotificationData`'s type union (type-only; sending works) | ⬜ | |
+| 41 | `tsc` failed (477 errors): TS 6 rejects `baseUrl` and no longer auto-loads `@types`; old tests used a stale `User` shape; an unused client push path had an invalid payload type | 📦 ✅ `npm run typecheck` passes | `f50060e` |
 
 ## Phase 1.5: expo-notifications 57 (#40)
 
