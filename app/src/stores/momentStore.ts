@@ -85,6 +85,8 @@ const findMoment = (state: MomentState, id: string): MomentLocal | undefined =>
 interface MomentState {
   moments: MomentLocal[];
   momentsById: Record<string, MomentLocal>;
+  // Users on either side of a block with the current user; their Moments stay off the map
+  hiddenUserIds: string[];
   userConnections: UserConnection[];
   momentGuests: Map<string, MomentGuest[]>; // momentId -> guests
   connectionSubscription: RealtimeChannel | null;
@@ -101,6 +103,8 @@ interface MomentState {
   findMoment: (id: string) => MomentLocal | undefined;
   fetchMomentById: (id: string) => Promise<MomentLocal | null>;
   fetchMyActiveMoment: (userId: string) => Promise<MyActiveMoment | null>;
+  refreshHiddenUsers: () => Promise<void>;
+  hideUser: (userId: string) => void;
 
   // User connections
   fetchUserConnections: (userId: string) => Promise<void>;
@@ -137,6 +141,7 @@ interface MomentState {
 export const useMomentStore = create<MomentState>((set, get) => ({
   moments: [],
   momentsById: {},
+  hiddenUserIds: [],
   userConnections: [],
   momentGuests: new Map(),
   connectionSubscription: null,
@@ -162,6 +167,26 @@ export const useMomentStore = create<MomentState>((set, get) => ({
   clearMoments: () => set({ moments: [] }),
 
   findMoment: (id) => findMoment(get(), id),
+
+  refreshHiddenUsers: async () => {
+    if (DEV_MODE || !isSupabaseConfigured()) return;
+    // Never let this break loading the map: on any failure (signed out, function
+    // not deployed yet, offline) show everything rather than nothing
+    try {
+      const { data, error } = await db.rpc("my_blocked_user_ids");
+      if (error) throw error;
+      set({ hiddenUserIds: ((data as string[]) || []).map(String) });
+    } catch (e) {
+      console.log("Couldn't load blocked users:", (e as Error).message);
+    }
+  },
+
+  // Called right after blocking someone so their Moments disappear immediately
+  hideUser: (userId) =>
+    set((state) => ({
+      hiddenUserIds: state.hiddenUserIds.includes(userId) ? state.hiddenUserIds : [...state.hiddenUserIds, userId],
+      moments: state.moments.filter((m) => m.host_id !== userId),
+    })),
 
   fetchMomentById: async (id) => {
     if (DEV_MODE || !isSupabaseConfigured()) return get().findMoment(id) ?? null;
@@ -281,7 +306,11 @@ export const useMomentStore = create<MomentState>((set, get) => ({
 
       if (error) throw error;
 
-      const localMoments = ((data as Moment[]) || []).map(dbMomentToLocal);
+      await get().refreshHiddenUsers();
+      const hidden = new Set(get().hiddenUserIds);
+      const localMoments = ((data as Moment[]) || [])
+        .map(dbMomentToLocal)
+        .filter((m) => !hidden.has(m.host_id));
       set({ moments: localMoments, loading: false });
     } catch (err) {
       console.error("Error fetching moments:", err);
@@ -403,6 +432,10 @@ export const useMomentStore = create<MomentState>((set, get) => ({
         // Check if it's a duplicate
         if (connectionError.code === "23505") {
           throw new Error("You've already joined this moment");
+        }
+        // prevent_blocked_join trigger: either side has blocked the other
+        if (connectionError.message?.includes("blocked")) {
+          throw new Error("You can't join this meal.");
         }
         throw connectionError;
       }
@@ -642,7 +675,8 @@ export const useMomentStore = create<MomentState>((set, get) => ({
           if (eventType === "INSERT") {
             const newMoment = dbMomentToLocal(newRecord as Moment);
             // Only add if active and not expired
-            if (newMoment.status === "active" && new Date(newMoment.expires_at) > new Date()) {
+            const hostHidden = !!newMoment.host_id && get().hiddenUserIds.includes(newMoment.host_id);
+            if (!hostHidden && newMoment.status === "active" && new Date(newMoment.expires_at) > new Date()) {
               // Avoid duplicates
               const exists = get().moments.some((m) => m.id === newMoment.id);
               if (!exists) {

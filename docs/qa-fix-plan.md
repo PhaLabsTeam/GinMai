@@ -24,7 +24,7 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | 1.5 | expo-notifications 57 API (#40) | `fix/notifications-sdk57` | 📦 awaiting review | — |
 | 2 | Host flow & navigation | `fix/host-flow` | 📦 awaiting review | — |
 | 3 | Create & sign-in inputs (+#39) | `fix/create-flow` | 🔧 in progress, #13 waiting on the Places key | — |
-| 4 | Settings, safety, App Store readiness | `fix/app-store-readiness` | ⬜ | — |
+| 4 | Settings, safety, App Store readiness (+#46–#48) | `fix/app-store-readiness` | 📦 awaiting review, #17 waiting on terms URL | — |
 | 5 | Map & product-feel UX | `fix/ux-polish` | ⬜ | — |
 | 6 | Visual consistency | `refactor/design-consistency` | ⬜ | — |
 | 7 | Two-user end-to-end testing | `test/two-user-e2e` | ⬜ | — |
@@ -127,14 +127,27 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 
 | # | Issue | Status | Commit |
 |---|---|---|---|
-| 6 | Settings toggles don't save and have no effect; "Auto-accept" has nothing to control | ⬜ | |
-| 7 | "Delete account" does nothing (App Store requirement) | ⬜ | |
-| 17 | The "terms" link isn't tappable, and no terms exist | ⬜ | |
-| 18 | Test "Report Inappropriate Behavior" button shows on the Safety screen | ⬜ | |
-| 19 | The Safety banner promises location sharing that doesn't exist | ⬜ | |
-| 20 | Notification permission is requested at launch | ⬜ | |
-| 21 | The location permission prompt uses generic text | ⬜ | |
-| 28a | Safety lists only the US embassy; Tourist Police should come first | ⬜ | |
+| 6 | Settings toggles don't save and have no effect; "Auto-accept" has nothing to control | 📦 ✅ | `69dbcab` |
+| 7 | "Delete account" does nothing (App Store requirement) | 📦 ✅ (unit + SQL; not run on device) | `69dbcab` |
+| 17 | The "terms" link isn't tappable, and no terms exist | ⬜ waiting on terms URL | |
+| 18 | Test "Report Inappropriate Behavior" button shows on the Safety screen | 📦 ✅ | `8fcaa4e` |
+| 19 | The Safety banner promises location sharing that doesn't exist | 📦 ✅ | `8fcaa4e` |
+| 20 | Notification permission is requested at launch | 📦 ✅ | `58a2156` |
+| 21 | The location permission prompt uses generic text | 📦 ✅ | `58a2156` |
+| 28a | Safety lists only the US embassy; Tourist Police should come first | 📦 ✅ | `8fcaa4e` |
+
+**Database:** the three migrations `20260929000000`–`20260929000002` were applied through the SQL editor. The CLI migration history is untouched, by choice. A check query confirmed 2 columns, 3 functions and 1 trigger.
+
+**Verified:**
+- **Jest:** `npm test` passes 84 tests in 17 suites. New tests: `authStore.account` (a saved setting rolls back on failure; deletion clears the session, or keeps it when deletion fails), `pushPermission` (no prompt at launch; the explanation comes before the system prompt; "Not now" never triggers the system prompt), `momentStore.blocks` (blocked hosts are hidden; the map still loads if the blocked list fails)
+- **Maestro:** `10-permissions`: on a fresh install, no notification prompt at launch; the location prompt reads "GinMai shows meals happening near you. That's all we use it for."
+- **Maestro:** `11-safety`: Tourist Police is shown; no US Embassy card, no "trusted contact" promise, no test button; Settings > Blocked users opens
+- **Maestro:** `12-settings`, plus a screenshot: "Meal reminders" stays off after restarting the app
+- **Logs:** `my_blocked_user_ids` runs after sign-in; before sign-in it's denied as intended and the map shows everything
+
+**Not verified on a device:**
+- Delete account (#7): it would delete the only test account. Add a spare test number to run it.
+- "Report or block" on another person, and blocked-join rejection (#47, #48): these need a second account (Phase 7).
 
 ## Phase 5: Map & product-feel UX
 
@@ -169,6 +182,11 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | 42 | Screens about one Moment (live, confirmation, arrival, running-late, feedback, detail) looked it up in the active-only map list, so they showed "not found" once it filled up or ended; leaving a full Moment never gave the seat back; running-late never reached the host of a full Moment | 📦 ✅ | `bc6945c` `b0d9896` |
 | 43 | `submitFeedback` destructures `checkForMatch` from the `matchStore` module, but it's a store method, so "eat again" feedback probably throws (and reports failure) and mutual-match notifications never fire. Needs confirming in Phase 7. | ⬜ | |
 | 44 | Dev only: Metro crashes (`Cannot read properties of undefined (reading 'addedFiles')`) when NativeWind 4.2.1's Tailwind watcher fires under SDK 57's Metro. NativeWind 4.2.7 may fix it. | ⬜ | |
+| 45 | No push is sent when a guest joins, arrives or cancels. `addNotification` can push, but nothing passes it a token, so hosts only hear about guests while the live screen is open. | ⬜ needs decision | |
+| 46 | Settings > Blocked users was a dead link | 📦 ✅ | `69dbcab` |
+| 47 | Nobody could report or block anyone; the Safety test button was the only way into the report screen, and its "Block" option was a TODO | 📦 ✅ (entry points; full flow in Phase 7) | `8fcaa4e` |
+| 48 | Blocking had no effect: `blocks` was never read, and the join check used the legacy `blocked_users` table | 📦 ✅ (map + trigger; join rejection in Phase 7) | `8fcaa4e` |
+| 49 | Leaving a Moment and re-joining it probably fails with "You've already joined": the cancelled connection row still exists and the client only inserts | ⬜ Phase 7 | |
 | 41 | `tsc` fails: TypeScript 6 rejects `baseUrl` in `tsconfig.json`, and the test files have no Jest type definitions. Also `notificationStore.ts` builds an `"info"` payload that isn't in `PushNotificationData`'s type union (type-only; sending works) | ⬜ | |
 
 ## Phase 1.5: expo-notifications 57 (#40)
@@ -191,6 +209,9 @@ Done ahead of Phase 2 because it was a runtime regression from the SDK upgrade.
 | Guest moment-detail view | ⬜ | |
 | Host's live screen stays up when the table fills (#42) | ⬜ | |
 | "Eat again" feedback and mutual match (#43) | ⬜ | |
+| Report / block another user, blocked join rejected (#47, #48) | ⬜ | |
+| Leave and re-join a Moment (#49) | ⬜ | |
+| Delete account on a spare number (#7) | ⬜ | |
 | Block / report a real user | ⬜ | |
 | Profile Edit | ⬜ | |
 | Real push delivery (physical device) | ⬜ | |

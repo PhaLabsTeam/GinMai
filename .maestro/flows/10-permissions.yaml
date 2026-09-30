@@ -1,0 +1,24 @@
+# Fresh install: no notification prompt at launch (#20), and the location
+# prompt explains itself in GinMai's words (#21).
+appId: com.ginmai.app
+---
+- runFlow:
+    file: _launch.yaml
+    env:
+      LOCATION: unset
+      NOTIFICATIONS: unset
+
+# Nothing asked yet: the welcome screen is not covered by a system prompt
+- assertNotVisible: ".*Would Like to Send You Notifications.*"
+- tapOn: "Let's go"
+- assertNotVisible: ".*Would Like to Send You Notifications.*"
+
+- tapOn: "Share location"
+- extendedWaitUntil:
+    visible: "GinMai shows meals happening near you\\. That's all we use it for\\."
+    timeout: 10000
+- tapOn: "Allow While Using App"
+- extendedWaitUntil:
+    visible: "Share where you're eating.*"
+    timeout: 15000
+- assertNotVisible: ".*Would Like to Send You Notifications.*"

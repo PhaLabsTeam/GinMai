@@ -23,6 +23,8 @@ export interface Database {
           meals_joined: number;
           no_shows: number;
           push_token: string | null;
+          notify_reminders: boolean;
+          notify_joins: boolean;
           status: "active" | "limited" | "banned";
           created_at: string;
           updated_at: string;
@@ -37,6 +39,8 @@ export interface Database {
           meals_joined?: number;
           no_shows?: number;
           push_token?: string | null;
+          notify_reminders?: boolean;
+          notify_joins?: boolean;
           status?: "active" | "limited" | "banned";
           created_at?: string;
           updated_at?: string;
@@ -51,6 +55,8 @@ export interface Database {
           meals_joined?: number;
           no_shows?: number;
           push_token?: string | null;
+          notify_reminders?: boolean;
+          notify_joins?: boolean;
           status?: "active" | "limited" | "banned";
           created_at?: string;
           updated_at?: string;
