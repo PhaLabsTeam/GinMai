@@ -35,7 +35,7 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | 7.7 | Terms of Use (#17) | `feat/terms` | 📦 awaiting review | — |
 | 7.8 | Privacy Policy, deletion retention (#59) | `feat/privacy-policy` | 📦 awaiting review | — |
 | 7.9 | Full table (#42), moments lock-down (#60), profile privacy (#61, #62), ended Moments (#63) | `test/full-table` | 📦 awaiting review | — |
-| 8 | Backend audit: app match and security (#64–#75) | `security/backend-audit` | 🔧 SQL to apply | — |
+| 8 | Backend audit: app match and security (#64–#75) | `security/backend-audit` | 🔧 fixes applied and tested; purge next | — |
 
 **Needed from the team**
 - Google Places API key (before Phase 3)
@@ -324,6 +324,18 @@ Branch `security/backend-audit`. Plan: `docs/backend/access-matrix.md`, which li
 - App: `matchStore` uses `my_connections()`; `reportStore` doesn't set `status` and reads only public columns.
 - Jest: new `privacy.test.ts`.
 
+**After applying all three migrations:**
+- **`npm run security-check`: 34 passed, 0 failed.** RT1 passed on the second run, once the realtime server had picked up the newly published tables.
+- **Maestro:** `07-host-manage`, `15-two-user`, `18-delete-account`, `19-full-table` and `19b` all pass against the locked-down backend.
+  - 07 failed once: a tap landed while the map list was re-rendering live, and the rerun passed.
+- `20261003000001` first failed on `DROP EXTENSION earthdistance`, because the unused `idx_moments_location` index used it. The index is now dropped first (`64ae5fe`).
+
+**App types now match live:**
+- `src/types/supabase.generated.ts` is generated from live.
+- `database.ts` was synced: the dropped tables are removed, `reports` has its retention columns, and only callable functions are typed.
+- `src/types/__tests__/schema.test.ts` fails if they drift apart, or if the app calls a function that isn't live. It was checked by putting back `get_user_connections`: the test failed.
+- How to change the backend: `docs/backend/README.md`.
+
 ## New issues (found during Phase 1, not yet scheduled)
 
 | # | Issue | Status | Commit |
@@ -352,18 +364,18 @@ Branch `security/backend-audit`. Plan: `docs/backend/access-matrix.md`, which li
 | 61 | A host saw every guest who wasn't also hosting as "Guest": the only rule for reading another profile was "they're hosting an active Moment". Hidden in earlier tests because Sam had a stale January Moment | 📦 ✅ | migration `20261002000001` |
 | 62 | **Privacy:** any signed-in user could read the phone number and push token of anyone whose profile they could see (a stranger read Tester's and Sam's numbers). Users could also edit their own `no_shows` and `status` | 📦 ✅ | migration `20261002000001` |
 | 63 | Ended Moments were never closed (19 stale "active"/"full" rows back to January, readable by signed-out visitors) | 📦 ✅ | migration `20261002000003` |
-| 64 | Hosts could post under any name, keep a Moment live until 2099, or move its time and place after guests joined | 🔧 | `20261003000000` |
-| 65 | **Security:** guests could move their seat into another (even full) Moment, skipping the seat and block checks; hosts could swap a guest for any user; joins could start as "completed"; anon was covered by the connections policies | 🔧 | `20261003000000` |
-| 66 | Users could change their own `phone`, `phone_verified` and `verified_at` | 🔧 | `20261003000000` |
-| 67 | Feedback could be written about anyone, for any Moment | 🔧 | `20261003000000` |
-| 68 | **Privacy:** reporters could read the reported person's phone number and admin notes, and file reports with a made-up phone or an already "resolved" status | 🔧 | `20261003000000` + app |
-| 69 | Anyone could list anyone's Connections (`get_user_connections(p_user_id)`) or add a fake Connection (`relationships`) | 🔧 | `20261003000001` + app |
-| 70 | anon and signed-in users held every privilege on every table (incl. TRUNCATE); legacy functions callable by anon (`nearby_moments`), no `search_path` on 8 functions | 🔧 | `20261003000000`, `…01` |
-| 71 | **App mismatch:** realtime publication had no tables, so the host's live screen and seat counts never updated live | 🔧 | `20261003000002` |
+| 64 | Hosts could post under any name, keep a Moment live until 2099, or move its time and place after guests joined | 📦 ✅ | `20261003000000` |
+| 65 | **Security:** guests could move their seat into another (even full) Moment, skipping the seat and block checks; hosts could swap a guest for any user; joins could start as "completed"; anon was covered by the connections policies | 📦 ✅ | `20261003000000` |
+| 66 | Users could change their own `phone`, `phone_verified` and `verified_at` | 📦 ✅ | `20261003000000` |
+| 67 | Feedback could be written about anyone, for any Moment | 📦 ✅ | `20261003000000` |
+| 68 | **Privacy:** reporters could read the reported person's phone number and admin notes, and file reports with a made-up phone or an already "resolved" status | 📦 ✅ | `20261003000000` + app |
+| 69 | Anyone could list anyone's Connections (`get_user_connections(p_user_id)`) or add a fake Connection (`relationships`) | 📦 ✅ | `20261003000001` + app |
+| 70 | anon and signed-in users held every privilege on every table (incl. TRUNCATE); legacy functions callable by anon (`nearby_moments`), no `search_path` on 8 functions | 📦 ✅ | `20261003000000`, `…01` |
+| 71 | **App mismatch:** realtime publication had no tables, so the host's live screen and seat counts never updated live | 📦 ✅ | `20261003000002` |
 | 72 | Email sign-in (and maybe anonymous sign-in) may be on: accounts without a phone check | ⬜ dashboard | |
 | 73 | **Launch blocker:** SMS limit 30/hour for the whole project | ⬜ dashboard, before launch | |
 | 74 | Test numbers and codes are in the repo; remove from Supabase at launch, keep repo private | ⬜ before launch | |
-| 75 | The 12-month report purge (#59) was never scheduled | 🔧 | `20261003000002` |
+| 75 | The 12-month report purge (#59) was never scheduled | 📦 ✅ | `20261003000002` |
 | 41 | `tsc` failed (477 errors): TS 6 rejects `baseUrl` and no longer auto-loads `@types`; old tests used a stale `User` shape; an unused client push path had an invalid payload type | 📦 ✅ `npm run typecheck` passes | `f50060e` |
 
 ## Phase 1.5: expo-notifications 57 (#40)
