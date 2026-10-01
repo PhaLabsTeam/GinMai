@@ -139,7 +139,10 @@ DROP FUNCTION IF EXISTS public.increment_user_stats(UUID);
 DROP FUNCTION IF EXISTS public.nearby_moments(DOUBLE PRECISION, DOUBLE PRECISION, DOUBLE PRECISION);
 DROP TABLE IF EXISTS public.relationships;
 DROP TABLE IF EXISTS public.blocked_users;
--- Only nearby_moments used these
+-- Only nearby_moments used these. Its gist index on ll_to_earth(lat, lng)
+-- goes too: the app's map query filters by status and expires_at, which
+-- idx_moments_active and idx_moments_expires cover.
+DROP INDEX IF EXISTS public.idx_moments_location;
 DROP EXTENSION IF EXISTS earthdistance;
 DROP EXTENSION IF EXISTS cube;
 
