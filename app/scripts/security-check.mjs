@@ -223,18 +223,22 @@ async function main() {
     let got = false;
     const ch = tester.c.channel(`check-${id}`).on("postgres_changes", { event: "*", schema: "public", table: "connections", filter: `moment_id=eq.${id}` }, () => (got = true));
     await new Promise((res) => ch.subscribe((s) => s === "SUBSCRIBED" && res()));
+    // Realtime needs a moment after SUBSCRIBED before it delivers (in the app
+    // the host opens the live screen long before anyone joins)
+    await sleep(2000);
     await kai.c.from("connections").insert({ moment_id: id, user_id: kai.id, status: "confirmed" });
-    for (let i = 0; i < 20 && !got; i++) await sleep(250);
+    for (let i = 0; i < 40 && !got; i++) await sleep(250);
     await tester.c.removeChannel(ch);
-    return { ok: got, detail: got ? "event received" : "no event within 5 s" };
+    return { ok: got, detail: got ? "event received" : "no event within 10 s" };
   });
   await check("RT2", "an outsider gets no events about other people's connections", async () => {
     const id = await mk(tester);
     let got = 0;
     const ch = ben.c.channel(`spy-${id}`).on("postgres_changes", { event: "*", schema: "public", table: "connections" }, () => got++);
     await new Promise((res) => ch.subscribe((s) => s === "SUBSCRIBED" && res()));
+    await sleep(2000);
     await kai.c.from("connections").insert({ moment_id: id, user_id: kai.id, status: "confirmed" });
-    await sleep(3000);
+    await sleep(5000);
     await ben.c.removeChannel(ch);
     return { ok: got === 0, detail: `${got} event(s) leaked` };
   });

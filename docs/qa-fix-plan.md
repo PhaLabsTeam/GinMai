@@ -35,7 +35,7 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | 7.7 | Terms of Use (#17) | `feat/terms` | 📦 awaiting review | — |
 | 7.8 | Privacy Policy, deletion retention (#59) | `feat/privacy-policy` | 📦 awaiting review | — |
 | 7.9 | Full table (#42), moments lock-down (#60), profile privacy (#61, #62), ended Moments (#63) | `test/full-table` | 📦 awaiting review | — |
-| 8 | Backend audit: app match and security (#64–#75) | `security/backend-audit` | 🔧 fixes applied and tested; purge next | — |
+| 8 | Backend audit: app match and security (#64–#75) | `security/backend-audit` | 📦 awaiting review (#72 email, #73, #74 in the dashboard) | — |
 
 **Needed from the team**
 - Google Places API key (before Phase 3)
@@ -336,6 +336,17 @@ Branch `security/backend-audit`. Plan: `docs/backend/access-matrix.md`, which li
 - `src/types/__tests__/schema.test.ts` fails if they drift apart, or if the app calls a function that isn't live. It was checked by putting back `get_user_connections`: the test failed.
 - How to change the backend: `docs/backend/README.md`.
 
+**Test-data purge** (`supabase/scripts/purge-test-data.sql`):
+- The preview found no accounts to delete: only the 5 test numbers exist. The old accounts (kiss, Maya, …) were already gone.
+- Their Moments had been left behind with an empty host. The purge removed 42 Moments, those ownerless ones plus the security-check ones, and kept the test users' 58.
+- No open Moments are left.
+
+**Auth:**
+- Anonymous sign-in is refused (`anonymous_provider_disabled`).
+- Email still shows `email: true` in `/auth/v1/settings`; to re-check in the dashboard.
+
+**security-check RT checks:** realtime needs a moment after "subscribed" before it delivers, so RT1 and RT2 now wait 2 s first. They pass 34/34 on two runs in a row.
+
 ## New issues (found during Phase 1, not yet scheduled)
 
 | # | Issue | Status | Commit |
@@ -372,7 +383,7 @@ Branch `security/backend-audit`. Plan: `docs/backend/access-matrix.md`, which li
 | 69 | Anyone could list anyone's Connections (`get_user_connections(p_user_id)`) or add a fake Connection (`relationships`) | 📦 ✅ | `20261003000001` + app |
 | 70 | anon and signed-in users held every privilege on every table (incl. TRUNCATE); legacy functions callable by anon (`nearby_moments`), no `search_path` on 8 functions | 📦 ✅ | `20261003000000`, `…01` |
 | 71 | **App mismatch:** realtime publication had no tables, so the host's live screen and seat counts never updated live | 📦 ✅ | `20261003000002` |
-| 72 | Email sign-in (and maybe anonymous sign-in) may be on: accounts without a phone check | ⬜ dashboard | |
+| 72 | Email sign-in (and maybe anonymous sign-in) may be on: accounts without a phone check | 🔧 anonymous off (verified); email still reported on by /auth/v1/settings | |
 | 73 | **Launch blocker:** SMS limit 30/hour for the whole project | ⬜ dashboard, before launch | |
 | 74 | Test numbers and codes are in the repo; remove from Supabase at launch, keep repo private | ⬜ before launch | |
 | 75 | The 12-month report purge (#59) was never scheduled | 📦 ✅ | `20261003000002` |
