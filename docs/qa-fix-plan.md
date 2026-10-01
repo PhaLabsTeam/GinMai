@@ -35,6 +35,7 @@ Issues found in the iOS simulator QA pass on 2026-09-29, after the Expo SDK 57 u
 | 7.7 | Terms of Use (#17) | `feat/terms` | 📦 awaiting review | — |
 | 7.8 | Privacy Policy, deletion retention (#59) | `feat/privacy-policy` | 📦 awaiting review | — |
 | 7.9 | Full table (#42), moments lock-down (#60), profile privacy (#61, #62), ended Moments (#63) | `test/full-table` | 📦 awaiting review | — |
+| 8 | Backend audit: app match and security (#64–#75) | `security/backend-audit` | 📦 awaiting review (#72 email, #73, #74 in the dashboard) | — |
 
 **Needed from the team**
 - Google Places API key (before Phase 3)
@@ -304,6 +305,48 @@ While getting ready for the full-table test I found that the live `moments` poli
 
 **Cleanup:** `_reset-tester` now cancels through My Moments, because the map list never shows a full Moment, so full ones were never cleaned up.
 
+## Phase 8: Backend audit (#64–#75)
+Branch `security/backend-audit`. Plan: `docs/backend/access-matrix.md`, which lists what the app needs against what live allows. The live snapshot came from `supabase/schema/snapshot.sql`, plus the Supabase Advisors and Auth settings.
+
+**`npm run security-check`** (`app/scripts/security-check.mjs`) checks every rule against live, signed out and as Tester, Sam, Kai and Ben.
+
+**Before the fixes, 20 passed and 14 failed:**
+- **Signed out:** A4 `nearby_moments` callable
+- **Moments:** M2 move time/place, M3 post as any name, M4 expire in 2099
+- **Connections:** C2 join as "completed", C3 move into a full Moment, C4 host swaps a guest
+- **Users and feedback:** U2 change `phone_verified`, F1 feedback about a stranger
+- **Reports:** R1 fake phone or "resolved" status, R2 reporter reads the reported person's phone
+- **Connections list:** L1 fake Connection, L2 someone else's Connections
+- **Realtime:** RT1 no live event
+
+**Fixes:**
+- Migrations `20261003000000_lock_down_writes`, `…01_connections_and_cleanup` and `…02_realtime_and_cron`.
+- App: `matchStore` uses `my_connections()`; `reportStore` doesn't set `status` and reads only public columns.
+- Jest: new `privacy.test.ts`.
+
+**After applying all three migrations:**
+- **`npm run security-check`: 34 passed, 0 failed.** RT1 passed on the second run, once the realtime server had picked up the newly published tables.
+- **Maestro:** `07-host-manage`, `15-two-user`, `18-delete-account`, `19-full-table` and `19b` all pass against the locked-down backend.
+  - 07 failed once: a tap landed while the map list was re-rendering live, and the rerun passed.
+- `20261003000001` first failed on `DROP EXTENSION earthdistance`, because the unused `idx_moments_location` index used it. The index is now dropped first (`64ae5fe`).
+
+**App types now match live:**
+- `src/types/supabase.generated.ts` is generated from live.
+- `database.ts` was synced: the dropped tables are removed, `reports` has its retention columns, and only callable functions are typed.
+- `src/types/__tests__/schema.test.ts` fails if they drift apart, or if the app calls a function that isn't live. It was checked by putting back `get_user_connections`: the test failed.
+- How to change the backend: `docs/backend/README.md`.
+
+**Test-data purge** (`supabase/scripts/purge-test-data.sql`):
+- The preview found no accounts to delete: only the 5 test numbers exist. The old accounts (kiss, Maya, …) were already gone.
+- Their Moments had been left behind with an empty host. The purge removed 42 Moments, those ownerless ones plus the security-check ones, and kept the test users' 58.
+- No open Moments are left.
+
+**Auth:**
+- Anonymous sign-in is refused (`anonymous_provider_disabled`).
+- Email still shows `email: true` in `/auth/v1/settings`; to re-check in the dashboard.
+
+**security-check RT checks:** realtime needs a moment after "subscribed" before it delivers, so RT1 and RT2 now wait 2 s first. They pass 34/34 on two runs in a row.
+
 ## New issues (found during Phase 1, not yet scheduled)
 
 | # | Issue | Status | Commit |
@@ -332,6 +375,18 @@ While getting ready for the full-table test I found that the live `moments` poli
 | 61 | A host saw every guest who wasn't also hosting as "Guest": the only rule for reading another profile was "they're hosting an active Moment". Hidden in earlier tests because Sam had a stale January Moment | 📦 ✅ | migration `20261002000001` |
 | 62 | **Privacy:** any signed-in user could read the phone number and push token of anyone whose profile they could see (a stranger read Tester's and Sam's numbers). Users could also edit their own `no_shows` and `status` | 📦 ✅ | migration `20261002000001` |
 | 63 | Ended Moments were never closed (19 stale "active"/"full" rows back to January, readable by signed-out visitors) | 📦 ✅ | migration `20261002000003` |
+| 64 | Hosts could post under any name, keep a Moment live until 2099, or move its time and place after guests joined | 📦 ✅ | `20261003000000` |
+| 65 | **Security:** guests could move their seat into another (even full) Moment, skipping the seat and block checks; hosts could swap a guest for any user; joins could start as "completed"; anon was covered by the connections policies | 📦 ✅ | `20261003000000` |
+| 66 | Users could change their own `phone`, `phone_verified` and `verified_at` | 📦 ✅ | `20261003000000` |
+| 67 | Feedback could be written about anyone, for any Moment | 📦 ✅ | `20261003000000` |
+| 68 | **Privacy:** reporters could read the reported person's phone number and admin notes, and file reports with a made-up phone or an already "resolved" status | 📦 ✅ | `20261003000000` + app |
+| 69 | Anyone could list anyone's Connections (`get_user_connections(p_user_id)`) or add a fake Connection (`relationships`) | 📦 ✅ | `20261003000001` + app |
+| 70 | anon and signed-in users held every privilege on every table (incl. TRUNCATE); legacy functions callable by anon (`nearby_moments`), no `search_path` on 8 functions | 📦 ✅ | `20261003000000`, `…01` |
+| 71 | **App mismatch:** realtime publication had no tables, so the host's live screen and seat counts never updated live | 📦 ✅ | `20261003000002` |
+| 72 | Email sign-in (and maybe anonymous sign-in) may be on: accounts without a phone check | 🔧 anonymous off (verified); email still reported on by /auth/v1/settings | |
+| 73 | **Launch blocker:** SMS limit 30/hour for the whole project | ⬜ dashboard, before launch | |
+| 74 | Test numbers and codes are in the repo; remove from Supabase at launch, keep repo private | ⬜ before launch | |
+| 75 | The 12-month report purge (#59) was never scheduled | 📦 ✅ | `20261003000002` |
 | 41 | `tsc` failed (477 errors): TS 6 rejects `baseUrl` and no longer auto-loads `@types`; old tests used a stale `User` shape; an unused client push path had an invalid payload type | 📦 ✅ `npm run typecheck` passes | `f50060e` |
 
 ## Phase 1.5: expo-notifications 57 (#40)

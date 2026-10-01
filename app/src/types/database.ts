@@ -153,26 +153,6 @@ export interface Database {
           running_late_at?: string | null;
         };
       };
-      relationships: {
-        Row: {
-          id: string;
-          user_a: string;
-          user_b: string;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_a: string;
-          user_b: string;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          user_a?: string;
-          user_b?: string;
-          created_at?: string;
-        };
-      };
       feedback: {
         Row: {
           id: string;
@@ -202,29 +182,6 @@ export interface Database {
           rating?: "great" | "okay" | "nope";
           note?: string | null;
           eat_again?: boolean | null;
-          created_at?: string;
-        };
-      };
-      blocked_users: {
-        Row: {
-          id: string;
-          blocker_id: string;
-          blocked_id: string;
-          reason: string | null;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          blocker_id: string;
-          blocked_id: string;
-          reason?: string | null;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          blocker_id?: string;
-          blocked_id?: string;
-          reason?: string | null;
           created_at?: string;
         };
       };
@@ -264,6 +221,8 @@ export interface Database {
           reviewed_by: string | null;
           admin_notes: string | null;
           created_at: string;
+          reported_phone: string | null;
+          reported_account_deleted_at: string | null;
         };
         Insert: {
           id?: string;
@@ -277,6 +236,8 @@ export interface Database {
           reviewed_by?: string | null;
           admin_notes?: string | null;
           created_at?: string;
+          reported_phone?: string | null;
+          reported_account_deleted_at?: string | null;
         };
         Update: {
           id?: string;
@@ -290,6 +251,8 @@ export interface Database {
           reviewed_by?: string | null;
           admin_notes?: string | null;
           created_at?: string;
+          reported_phone?: string | null;
+          reported_account_deleted_at?: string | null;
         };
       };
       blocks: {
@@ -313,46 +276,26 @@ export interface Database {
         };
       };
     };
+    // Only what the app may call; everything else is revoked (#60, #70)
     Functions: {
-      nearby_moments: {
-        Args: {
-          user_lat: number;
-          user_lng: number;
-          radius_km?: number;
-        };
-        Returns: Database["public"]["Tables"]["moments"]["Row"][];
-      };
-      expire_moments: {
+      my_profile: {
         Args: Record<string, never>;
-        Returns: number;
+        Returns: Database["public"]["Tables"]["users"]["Row"][];
       };
-      join_moment: {
-        Args: {
-          p_moment_id: string;
-          p_user_id: string;
-        };
-        Returns: Database["public"]["Tables"]["connections"]["Row"];
+      complete_my_profile: {
+        Args: { p_first_name: string };
+        Returns: void;
       };
-      leave_moment: {
-        Args: {
-          p_moment_id: string;
-          p_user_id: string;
-        };
-        Returns: boolean;
+      delete_my_account: {
+        Args: Record<string, never>;
+        Returns: void;
       };
-      maybe_create_relationship: {
-        Args: {
-          p_moment_id: string;
-          p_from_user: string;
-          p_about_user: string;
-          p_eat_again: boolean;
-        };
-        Returns: Database["public"]["Tables"]["relationships"]["Row"] | null;
+      my_blocked_user_ids: {
+        Args: Record<string, never>;
+        Returns: string[];
       };
-      get_user_connections: {
-        Args: {
-          p_user_id: string;
-        };
+      my_connections: {
+        Args: Record<string, never>;
         Returns: {
           user_id: string;
           first_name: string;
@@ -360,12 +303,6 @@ export interface Database {
           meals_hosted: number;
           meals_joined: number;
         }[];
-      };
-      increment_user_stats: {
-        Args: {
-          p_moment_id: string;
-        };
-        Returns: void;
       };
     };
   };
@@ -384,14 +321,10 @@ export type Connection = Database["public"]["Tables"]["connections"]["Row"];
 export type ConnectionInsert = Database["public"]["Tables"]["connections"]["Insert"];
 export type ConnectionUpdate = Database["public"]["Tables"]["connections"]["Update"];
 
-export type Relationship = Database["public"]["Tables"]["relationships"]["Row"];
-export type RelationshipInsert = Database["public"]["Tables"]["relationships"]["Insert"];
 
 export type Feedback = Database["public"]["Tables"]["feedback"]["Row"];
 export type FeedbackInsert = Database["public"]["Tables"]["feedback"]["Insert"];
 
-export type BlockedUser = Database["public"]["Tables"]["blocked_users"]["Row"];
-export type BlockedUserInsert = Database["public"]["Tables"]["blocked_users"]["Insert"];
 
 export type EatAgainMatch = Database["public"]["Tables"]["eat_again_matches"]["Row"];
 

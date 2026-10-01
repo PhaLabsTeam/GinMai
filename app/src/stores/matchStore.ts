@@ -69,11 +69,8 @@ export const useMatchStore = create<MatchState>((set, get) => ({
         return;
       }
 
-      // Fetch matched users' info using the get_user_connections function
-      const { data: users, error: usersError } = await db.rpc(
-        "get_user_connections",
-        { p_user_id: userId }
-      );
+      // The caller's Connections; the database works out who they are (#69)
+      const { data: users, error: usersError } = await db.rpc("my_connections");
 
       if (usersError) {
         console.error("Error fetching matched users:", usersError);

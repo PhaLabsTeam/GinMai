@@ -6,13 +6,18 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 // Type-safe Supabase client helper
 const db = supabase as SupabaseClient<any>;
 
+// What a reporter may read back; review fields and the reported phone stay
+// private (#68)
+const MY_REPORT_COLUMNS = "id, reporter_id, reported_user_id, moment_id, category, description, status, created_at";
+export type MyReport = Pick<Report, "id" | "reporter_id" | "reported_user_id" | "moment_id" | "category" | "description" | "status" | "created_at">;
+
 interface ReportState {
-  reports: Report[];
+  reports: MyReport[];
   loading: boolean;
   error: string | null;
 
   // Submit a new report
-  submitReport: (data: Omit<ReportInsert, "id" | "created_at" | "status">) => Promise<Report | null>;
+  submitReport: (data: Omit<ReportInsert, "id" | "created_at" | "status">) => Promise<MyReport | null>;
 
   // Fetch user's submitted reports (to see status)
   fetchUserReports: (userId: string) => Promise<void>;
@@ -30,15 +35,14 @@ export const useReportStore = create<ReportState>((set, get) => ({
     set({ loading: true, error: null });
 
     try {
-      const reportData: ReportInsert = {
-        ...data,
-        status: "pending",
-      };
+      // Status and the reported person's phone are set by the database, and
+      // private columns can't be read back (#68)
+      const reportData: ReportInsert = { ...data };
 
       const { data: report, error } = await db
         .from("reports")
         .insert(reportData)
-        .select()
+        .select(MY_REPORT_COLUMNS)
         .single();
 
       if (error) {
@@ -69,7 +73,7 @@ export const useReportStore = create<ReportState>((set, get) => ({
     try {
       const { data, error } = await db
         .from("reports")
-        .select("*")
+        .select(MY_REPORT_COLUMNS)
         .eq("reporter_id", userId)
         .order("created_at", { ascending: false });
 
